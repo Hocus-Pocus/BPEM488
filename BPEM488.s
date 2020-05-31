@@ -248,7 +248,7 @@ barocor:      ds 2 ; Barometric Pressure Correction (% x 10)(offset=78)
 matcor:       ds 2 ; Manifold Air Temperature Correction (% x 10)(offset=80) 
 WUEcor:       ds 2 ; Warmup Enrichment Correction (% x 10)(offset=82)
 ASEcor:       ds 2 ; Afterstart Enrichmnet Correction (% x 10)(offset=84)
-WUEandASEcor  ds 2 ; the sum of WUEcor and ASEcor (% x 10)(offset=86)
+WUEandASEcor: ds 2 ; the sum of WUEcor and ASEcor (% x 10)(offset=86)
 Crankcor:     ds 2 ; Cranking pulsewidth temperature correction (% x 10)(offset=88)
 TpsPctDOT:    ds 2 ; TPS difference over time (%/Sec)(update every 100mSec)(offset=90)
 TpsDOTcor:    ds 1 ; Throttle Opening Enrichment table value(%)(offset=92)
@@ -301,13 +301,13 @@ alarmbits:    ds 1  ; Alarm status bit field(offset=137)
 AAoffbits:    ds 1  ; Audio Alarm Off status bit field(offset=138)
 StateStatus:  ds 1  ; State status bit field(offset=139) 
 LoopTime:     ds 2  ; Program main loop time (loops/Sec)(offset=140)
-DutyCyclex10: ds 1  ; Injector duty cycle in run mode (% x 10)(offset=142)
-TestValw:     ds 2  ; Word test value (for program developement only)(offset=143)
-testValb:     ds 1  ; Byte test value (for program developement only)(offset=145)
+DutyCyclex10: ds 2  ; Injector duty cycle in run mode (% x 10)(offset=142)
+TestValw:     ds 2  ; Word test value (for program developement only)(offset=144)
+testValb:     ds 1  ; Byte test value (for program developement only)(offset=146)
 
 ;*****************************************************************************************
 ;*****************************************************************************************
-; - This marks the end of the real time variables (146 bytes in total)
+; - This marks the end of the real time variables (147 bytes in total)
 ;*****************************************************************************************
 
 
@@ -572,144 +572,131 @@ BEEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
 ;*****************************************************************************************
 ; - Clear all real time variables - 
 ;*****************************************************************************************
-    clr   SecH        ; Clear RTI seconds count Hi byte
-    clr   SecL        ; RTI seconds count Lo byte
-    clrw  cltAdc      ; RV15 10 bit ADC AN00 Engine Coolant Temperature ADC
-    clrw  Cltx10      ; Engine Coolant Temperature (Degrees F x 10)
-    clrw  matAdc      ; RV14 10 bit ADC AN01 Manifold Air Temperature ADC
-    clrw  Matx10      ; Manifold Air Temperature (Degrees F x 10)
-    clrw  eftAdc      ; RV13 10 bit ADC AN02 Engine Fuel Temperature ADC
-    clrw  Eftx10      ; Engine Fuel Temperature (Degrees F x 10)
-    clrw  eotAdC      ; RV12 10 bit ADC AN03 Engine Oil Temperature ADC
-    clrw  Eotx10      ; Engine Oil Temperature (Degrees F x 10)
-    clrw  RV11Adc     ; RV11 10 bit ADC AN04
-    clrw  mapAdc      ; RV10 10 bit ADC AN05 Manifold Absolute Pressure ADC
-    clrw  Mapx10      ; Manifold Absolute Pressure (KPAx10)      
-    clrw  baroAdc     ; RV9 10 bit ADC AN06 Barometric Pressure ADC
-    clrw  Barox10     ; Barometric Pressure (KPAx10)
-    clrw  batAdc      ; Battery Voltage 10 bit ADC AN07
-    clrw  BatVx10     ; Battery Voltage (Volts x 10) 
-    clrw  ftrmAdc     ; RV8 10 bit ADC AN08 Fuel Trim ADC
-    clrw  Ftrmx10     ; Fuel Trim (% x 10)
-    clrw  itrmAdc     ; RV7 10 bit ADC AN09 Ignition Trim ADC
-    clrw  Itrmx10     ; Ignition Trim (degrees x 10)
-    clrw  egtAdc      ; RV6 10 bit ADC AN10 Exhaust Gas Temperature ADC
-    clrw  Egt         ; Exhaust Gas Temperature (degrees F)
-    clrw  eopAdc      ; RV5 10 bit ADC AN11 Engine Oil Pressure ADC
-    clrw  Eopx10      ; Engine Oil Pressure (PSI x 10)
-    clrw  efpAdc      ; RV4 10 bit ADC AN12 Engine Fuel Pressure ADC
-    clrw  Efpx10      ; Engine Fuel Pressure (PSI x 10)
-    clrw  tpsAdc      ; RV3 10 bit ADC AN13 Throttle Position Sensor ADC
-    clrw  TpsPctx10   ; Throttle Position Sensor percent of travel (% x 10)
-    clrw  iacAdc      ; RV2 10 bit ADC AN14 Idle Air Control ADC
-    clrw  egoAdc      ; RV1 10 bit ADC AN15 Exhaust Gas Oxygen ADC
-    clrw  afr1x10     ; Air Fuel Ratio for gasoline (AFR x 10)
-    clrw  CASprd      ; Crankshaft Angle Sensor period
-    clrw  VSSprd      ; Vehicle Speed Sensor period
-    clrw  RPM         ; Crankshaft Revolutions Per Minute
-    clrw  KPH         ; Vehicle speed (KpH x 10)
-    clrw  veCurr      ; Current value in VE table (% x 10)
-    clrw  stCurr      ; Current value in ST table (Degrees x 10)
-    clrw  afrCurr     ; Current value in AFR table (AFR x 100)
-    clrw  TPSdot      ; TPS difference over time (%Sec)
-    clrw  LoopSec     ; CPU main loop per second rate
-    clrw  TestVal     ; Test Value (for program developement only)
-    clr   secRead     ; DS3234 Second read value
-    clr   minRead     ; DS3234 Minute read value
-    clr   hourRead    ; DS3234 Hour read value
-    clr   dayRead     ; DS3234 Day read value
-    clr   dateRead    ; DS3234 Date read value
-    clr   monthRead   ; DS3234 Month read value
-    clr   yearRead    ; DS3234 Year read value
-    clr   State       ; Cam-Crank state machine current state 
-    clr   engine      ; Engine status bit field
-    clr   StateStatus ; State status bit field 
-    clr   PortAbits   ; Port A status bit field (93)
-    clr   PortBbits   ; Port B status bit field (94)
-    clr   PortEbits   ; Port E status bit field (95)
-    clr   PortKbits   ; Port K status bit field (96)
-    clr   PortJbits   ; Port J status bit field (97)
-    clr   PortPbits   ; Port P status bit field (98)
-    clr   PortTbits   ; Port T status bit field (99)
-    clrw  primePWtk   ; Primer injector pulswidth (uS x 2.56)(100)
-    clrw  PWtk       ; Injector pulsewidth (uS x 2.56)(102)
-    clrw  barocor     ; Barometric Pressure Correction (% x 10) (104)
-    clrw  wuecor      ; Warmup Enrichment Correction (% x 10)(106)
-    clrw  matcor      ; Manifold Air Temperature Correction (% x 10)(108)
-    clrw  gammae      ; Total fuel enrichments (% x 10)(110)
-    clrw  dwelltk     ; Coil dwell time (uS x 2.56)(112)
-    clrw  advancetk   ; dwellWaittk + dwelltk (114)
-    clrw  fd          ; Fuel delivery pulsewidth (pw - dead time) (mS x 1000)(116)
-    clrw  fdSec       ; Fuel delivery over 1 second (ms x 1000)(118)
-    clrw  dwellcor    ; Coil dwell Correction (% x 10)(120)
-    clrw  crankcor    ; Cranking Pulsewidth Correction (% x 10)(122)
-    clrw  asecor      ; Afterstart Enrichmnet Correction (% x 10)(124)
-    clrw  asecnt      ; Afterstart Enrichment Taper (cycles)(126)
-    clrw  taecor      ; Time Based Aceleration Enrichment Correction (% x 10)(128)      
-    clr   engine2     ; Engine2 status bit field (130)
-    clr   alarmbits   ; Alarm status bit field (131)
-    clrw  dwellWaittk ; Wait time from ignition trigger to energise coil (uS x 2.56) (132)      
-    clr   testValByte ; Byte test value (134)
-    clr   tpsAccel    ; Accel enrichment in % of reqfuel (135)
-    clr   tpsfuelcut  ; Deccel enrichment in % of reqfuel (136)
-    clr   ColdAdd     ; TPS accel enrich cold adder in mS x 10 (137)
-    clr   ColdMul     ; TPS accel enrich cold multiplier in % x 10 (138)      
+
+   clrw cltAdc       ; RV15 10 bit ADC AN00 Engine Coolant Temperature ADC(offset=2) 
+   clrw Cltx10       ; Engine Coolant Temperature (Degrees F x 10)(offset=4)
+   clrw matAdc       ; RV14 10 bit ADC AN01 Manifold Air Temperature ADC(offset=6) 
+   clrw Matx10       ; Manifold Air Temperature (Degrees F x 10)(offset=8) 
+   clrw eftAdc       ; RV13 10 bit ADC AN02 Engine Fuel Temperature ADC(offset=10) 
+   clrw Eftx10       ; Engine Fuel Temperature (Degrees F x 10)(offset=12) 
+   clrw eotAdc       ; RV12 10 bit ADC AN03 Engine Oil Temperature ADC(offset=14) 
+   clrw Eotx10       ; Engine Oil Temperature (Degrees F x 10)(offset=16) 
+   clrw RV11Adc      ; RV11 10 bit ADC AN04(19)(offset=18) 
+   clrw mapAdc       ; RV10 10 bit ADC AN05 Manifold Absolute Pressure ADC(offset=20) 
+   clrw Mapx10       ; Manifold Absolute Pressure (KPAx10)(offset=22)       
+   clrw baroAdc      ; RV9 10 bit ADC AN06 Barometric Pressure ADC(offset=24) 
+   clrw Barox10      ; Barometric Pressure (KPAx10)(offset=26) 
+   clrw batAdc       ; Battery Voltage 10 bit ADC AN07(offset=28) 
+   clrw BatVx10      ; Battery Voltage (Volts x 10)(offset=30) 
+   clrw ftrmAdc      ; RV8 10 bit ADC AN08 Fuel Trim ADC(offset=32)
+   clrw Ftrmx10      ; Fuel Trim (% x 10)(+-20%)(offset=34)
+   clrw itrmAdc      ; RV7 10 bit ADC AN09 Ignition Trim ADC(offset=36)
+   clrw Itrmx10      ; Ignition Trim (degrees x 10)+-20 degrees) (offset=38) 
+   clrw egtAdc       ; RV6 10 bit ADC AN10 Exhaust Gas Temperature ADC(offset=40) 
+   clrw Egt          ; Exhaust Gas Temperature (degrees F)(offset=42) 
+   clrw eopAdc       ; RV5 10 bit ADC AN11 Engine Oil Pressure ADC(offset=44) 
+   clrw Eopx10       ; Engine Oil Pressure (PSI x 10)(offset=46) 
+   clrw efpAdc       ; RV4 10 bit ADC AN12 Engine Fuel Pressure ADC(offset=48) 
+   clrw Efpx10       ; Engine Fuel Pressure (PSI x 10)(offset=50) 
+   clrw tpsADC       ; RV3 10 bit ADC AN13 Throttle Position Sensor ADC (exact for TS)(offset=52)
+   clrw TpsPctx10    ; Throttle Position Sensor % of travel(%x10)(update every 100mSec)(offset=54) 
+   clrw iacAdc       ; RV2 10 bit ADC AN14 Idle Air Control ADC(offset=56) 
+   clrw egoAdc       ; RV1 10 bit ADC AN15 Exhaust Gas Oxygen ADC(offset=58)
+   clrw afr1x10      ; Air Fuel Ratio for gasoline (AFRx10)(exact for TS)(offset=60)  
+
+;*****************************************************************************************
+; - Input capture variables 
+;*****************************************************************************************
+
+   clrw CASprd512    ; Crankshaft Angle Sensor period (5.12uS time base(offset=62)
+   clrw CASprd256    ; Crankshaft Angle Sensor period (2.56uS time base(offset=64) 
+   clrw VSSprd       ; Vehicle Speed Sensor period(offset=66) 
+   clrw RPM          ; Crankshaft Revolutions Per Minute(offset=68) 
+   clrw KPH          ; Vehicle speed (KpH x 10)(offset=70) 
+
+;*****************************************************************************************
+; - Fuel calculation variables
+;*****************************************************************************************
+
+   clrw ReqFuel      ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)(offset=72)
+   clrw AFRcurr      ; Current value in AFR table (AFR x 100)(offset=74) 
+   clrw VEcurr       ; Current value in VE table (% x 10)(offset=76) 
+   clrw barocor      ; Barometric Pressure Correction (% x 10)(offset=78)
+   clrw matcor       ; Manifold Air Temperature Correction (% x 10)(offset=80) 
+   clrw WUEcor       ; Warmup Enrichment Correction (% x 10)(offset=82)
+   clrw ASEcor       ; Afterstart Enrichmnet Correction (% x 10)(offset=84)
+   clrw WUEandASEcor ; the sum of WUEcor and ASEcor (% x 10)(offset=86)
+   clrw Crankcor     ; Cranking pulsewidth temperature correction (% x 10)(offset=88)
+   clrw TpsPctDOT    ; TPS difference over time (%/Sec)(update every 100mSec)(offset=90)
+   clr  TpsDOTcor    ; Throttle Opening Enrichment table value(%)(offset=92)
+   clr  ColdAddpct   ; Throttle Opening Enrichment cold adder (%)(offset=93) 
+   clr  ColdMulpct   ; Throttle Opening Enrichment cold multiplier (%)(offset=94)  
+   clr  TOEpct       ; Throttle Opening Enrichment (%)(offset=95)
+   clrw TOEpw        ; Throttle Opening Enrichment adder (mS x 100)(offset=96)
+   clrw PWlessTOE    ; Injector pulse width before "TOEpw" and "Deadband" (mS x 10)(offset=98)
+   clrw Deadband     ; injector deadband at current battery voltage mS*100(offset=100) 
+   clrw PrimePW      ; Primer injector pulswidth (mS x 10)(offset=102)
+   clrw CrankPW      ; Cranking injector pulswidth (mS x 10)(offset=104)
+   clrw FDpw         ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)(offset=106)
+   clrw PW           ; Running engine injector pulsewidth (mS x 10)(offset=108)
+   clrw FD           ; Fuel Delivery pulse width (mS)(offset=110)
+   clrw FDsec        ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
+   clrw InjDelDegx10 ; Injection delay from trigger to start of injection (deg x 10)(offset=114)
+   clrw InjPrFlo     ; Pair of injectors flow rate (L/hr x 100)(offset=116)
+
+;*****************************************************************************************
+;*****************************************************************************************
+; - Ignition calculation variables
+;*****************************************************************************************
+	 
+   clrw STcurr         ; Current value in ST table (Degrees x 10)(offset=118)
+   clrw Dwell          ; Coil on time (mS*10)(offset=120) 
+   clrw DwellCor       ; Coil dwell voltage correction (%*10)(offset=122)
+   clrw DwellFin       ; ("Dwell" * "DwellCor") (mS*10)(offset=124)
+   clrw STandItrmx10   ; stCurr and Itmx10 (degrees*10)(offset=126)
+
+;*****************************************************************************************
+;*****************************************************************************************
+; - Port status variables
+;*****************************************************************************************
+
+   clr  PortAbits    ; Port A status bit field(offset=128)
+   clr  PortBbits    ; Port B status bit field(offset=129) 
+   clr  PortEbits    ; Port E status bit field(offset=130) 
+   clr  PortKbits    ; Port K status bit field(offset=131) 
+   clr  PortJbits    ; Port J status bit field(offset=132) 
+   clr  PortPbits    ; Port P status bit field(offset=133) 
+   clr  PortTbits    ; Port T status bit field(offset=134) 
+
+;*****************************************************************************************
+; - Misc variables 
+;*****************************************************************************************
+
+   clr  engine       ; Engine status bit field(offset=135) 
+   clr  engine2      ; Engine2 status bit field(offset=136)
+   clr  alarmbits    ; Alarm status bit field(offset=137)
+   clr  AAoffbits    ; Audio Alarm Off status bit field(offset=138)
+   clr  StateStatus  ; State status bit field(offset=139) 
+   clrw LoopTime     ; Program main loop time (loops/Sec)(offset=140)
+   clrw DutyCyclex10 ; Injector duty cycle in run mode (% x 10)(offset=142)
+   clrw TestValw     ; Word test value (for program developement only)(offset=143)
+   clr  testValb     ; Byte test value (for program developement only)(offset=145)
+
+
 ;*****************************************************************************************
 ; - Clear other variables - 
 ;*****************************************************************************************
-    clrw txgoalMSB    ; Clear SCI transmit numb bytes to send 
-    clrw txcnt        ; Clear SCI transmit count of bytes sent
-    clr  rxmode       ; Clear SCI receive mode selector
-    clr  txmode       ; Clear SCI transmit mode selector
-    clr  txcmnd       ; Clear SCI command character identifier
-    clrw rxoffsetMSB  ; Clear SCI offset from start of page 
-    clrw dataMSB      ; Clear SCI data byte received 
-    clr  uSx125       ; Clear 125 microsecond counter
-    clr  mS           ; Clear 1 millisecond counter
-    clr  mSx250       ; Clear 250 millisecond counter
-    clr  clock        ; Clear Time rate flag markers
-    clrw tpsADClast   ; Clear Throttle Position Sensor percent last (ADC)(updated every 100Msec)
-;    clr  tpsaclk      ; Clear TPS accel enrich timer clock value updated every 100 mS
-;    clr  tpsaclkcmp   ; Clear Comparison value for TPS accel enrich time
-    clr  tpsAccel     ; Clear Accel enrichment in % x 10 of reqfuel
-    clr  tpsfuelcut   ; Clear Deccel enrichment in % x 10 of reqfuel
-    clr  coldadd      ; Clear TPS accel enrich cold adder in mS x 10
-    clr  coldmul      ; Clear TPS accel enrich cold multiplier in % x 10
-    clr  CASovflo     ; Clear Overflow detector for CAS periods    
-    clrw  veCurr      ; Clear Current value in VE table (percent)
-    clrw CAS1sttk     ; Clear CAS input capture rising edge 1st time stamp (2.56uS tick)
-    clrw CAS2ndtk     ; Clear CAS input capture rising edge 2nd time stamp (2.56uS tick)
-    clrw CAS3dtk      ; Clear CAS input capture rising edge 3d time stamp (2.56uS tick)
-    clrw CASprd1tk    ; Clear Period between CAS1st and CAS2nd (2.56uS tick)
-    clrw CASprd2tk    ; Clear Period between CAS2nd and CAS3d (2.56uS tick)
-    clrw CASprdtk     ; Clear Period between CAS2nd and CAS3d (2.56uS tick)
-;*    clrw  CAS1st      ; Clear CAS input capture rising edge 1st (clear variable)
-    clrw  VSS1st      ; Clear VSS input capture rising edge 1st (clear variable)
-    clr  ICflgs       ; Clear Input Capture flags
-    clrw LoopCntr     ; Clear Counter for "LoopSec" variable
-    clr  VecDebug     ; Clear Vector Table Debug flag variable
-    clrw ATDCh05      ; Clear ADC0 Ch05(used for minimum MAP calculations)
-    clrw ATDCh10      ; Clear ADC0 Ch10(used for average EGT calculations)
-    clrw ATDCh12      ; Clear ADC0 Ch12(used for average EFP calculations)
-    clrw ATDCh15      ; Clear ADC0 Ch152(used for average EGO calculations)
-    clrw CASovflo     ; Overflow detector for CAS periods
-    clrw CrvPgPtr     ; Pointer to the page where the desired curve resides
-    clrw CrvRowOfst   ; Offset from the curve page to the curve row
-    clrw CrvColOfst   ; Offset from the curve page to the curve column
-    clrw CrvCmpVal    ; Curve comparison value for interpolation
-    clr  CrvBinCnt    ; Number of bins in the curve row or column minus 1
-    clr  IndexNum     ; Position in the row or column of the curve comparison value 
-    clrw CrvRowHi     ; Curve row high boundry value for interpolation
-    clrw CrvRowLo     ; Curve row low boundry value for interpolation
-    clrw CrvColHi     ; Curve column high boundry value for interpolation
-    clrw CrvColLo     ; Curve column low boundry value for interpolation
-    clrw OFCdel       ; Overrun Fuel Cut delay time to wait after all permissives are met
-                      ; (Sec x 10)
-    clrw OFCdelcmp    ; Overrun Fuel Cut delay time to wait after all permissives are met 
-                      ; comparison value(Sec x 10)
-    clr  TOEtim:      ; Throttle Opening Enrichment timer value updated every 100 mS
-    clr  TOEtimcmp:   ; Comparison value for Throttle Opening Enrichment timer	
-    
+
+   clr  tmp1       ; Temporary variable #1
+   clr  tmp2       ; Temporary variable #2
+   clr  tmp3       ; Temporary variable #3
+   clr  tmp4       ; Temporary variable #4
+   clr  tmp5       ; Temporary variable #5
+   clr  tmp6       ; Temporary variable #6
+   clr  tmp7       ; Temporary variable #7
+   clr  tmp8       ; Temporary variable #8
+   clrw LoopCntr   ; Counter for "LoopTime" (incremented every Main Loop pass)
+
 ;*****************************************************************************************
 ; - Initialize other variables -
 ;*****************************************************************************************
@@ -720,7 +707,7 @@ BEEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
 ; - Clear XGATE variables with XGATE Software Trigger 0 -                             
 ;*****************************************************************************************
 
-    movw   #$0101,XGSWT  ; Copy $0101 (%0000000100000001) to XGATE Software Trigger 
+;    movw   #$0101,XGSWT  ; Copy $0101 (%0000000100000001) to XGATE Software Trigger 
                          ; Register ( Enable write access to SWT0 and set SWT0 trigger)
 
 
