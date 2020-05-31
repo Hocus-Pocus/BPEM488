@@ -152,10 +152,10 @@ ECT_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;* - Macros -                                                                            *  
 ;*****************************************************************************************
 
-#macro INIT_REVCNTR, 0
+#macro CLR_ECT_VARS, 0
 
-    movb   #$09,RevCntr      ; Initialize "RevCntr" to decimal 9
-    
+   clrw VSS1st      ; VSS input capture rising edge 1st time stamp (5.12uS or 2.56uS res)
+   
 #emac
 
 ;*****************************************************************************************	

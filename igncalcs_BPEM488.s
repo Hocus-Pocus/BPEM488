@@ -102,7 +102,7 @@ IGNCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 
 Spantk:         ds 2 ; Ignition Span time (5.12uS or 2.56uS res)
 DwellFintk:     ds 2 ; Time required for dwell after correction (5.12uS or 2.56uS res)
-STandItrmtk     ds 2 ; STcurr and Itmx10 (5.12uS or 2.56uS res)  
+STandItrmtk:    ds 2 ; STcurr and Itmx10 (5.12uS or 2.56uS res)  
 Advancetk:      ds 2 ; Delay time for desired spark advance + dwell(5.12uS or 2.56uS res)
 Delaytk:        ds 2 ; Delay time from crank signal to energise coil(5.12uS or 2.56uS res)
 IgnOCadd1:      ds 2 ; First ignition output compare adder (5.12uS or 2.56uS res)
@@ -119,6 +119,18 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 ;* - Macros -                                                                            *  
 ;*****************************************************************************************
+
+#macro CLR_IGN_VARS, 0
+
+   clrw Spantk         ; Ignition Span time (5.12uS or 2.56uS res)
+   clrw DwellFintk     ; Time required for dwell after correction (5.12uS or 2.56uS res)
+   clrw STandItrmtk    ; STcurr and Itmx10 (5.12uS or 2.56uS res)  
+   clrw Advancetk      ; Delay time for desired spark advance + dwell(5.12uS or 2.56uS res)
+   clrw Delaytk        ; Delay time from crank signal to energise coil(5.12uS or 2.56uS res)
+   clrw IgnOCadd1      ; First ignition output compare adder (5.12uS or 2.56uS res)
+   clrw IgnOCadd2      ; Second ignition output compare adder(5.12uS or 2.56uS res)
+
+#emac
 
 ;*****************************************************************************************
 ; For a 2.56uS timer 1 Sec = 1/.00000256 = 390625 tics

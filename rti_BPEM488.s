@@ -190,6 +190,15 @@ RTI_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;* - Macros -                                                                            *  
 ;*****************************************************************************************
 
+#macro CLR_RTI_VARS, 0
+
+   clr uSx125     ; 125 microsecond counter
+   clr mS         ; 1 millisecond counter
+   clr mSx250     ; 250 millisecond counter
+   clr clock      ; Time rate flag marker bit field
+
+#emac
+
 ;*****************************************************************************************
 ; - Initialize Real Time Interrupt for 125uS period -
 ;   OSCLOCK / 2 = Frequency divide rate

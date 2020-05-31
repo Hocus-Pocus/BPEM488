@@ -100,6 +100,22 @@ SCI0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;* - Macros -                                                                            *  
 ;*****************************************************************************************
 
+#macro CLR_SCI0_VARS, 0
+
+   clr  txgoalMSB    ; SCI number of bytes to send/rcv Hi byte
+   clr  txgoalLSB    ; SCI number of bytes to send/rcv Lo byte
+   clrw txcnt        ; SCI count of bytes sent/rcvd
+   clr  rxoffsetMSB  ; SCI offset from start of page Hi byte
+   clr  rxoffsetLSB  ; SCI offset from start of page lo byte
+   clr  rxmode       ; SCI receive mode selector 
+   clr  txmode       ; SCI transmit mode selector
+   clr  pageID       ; SCI page identifier
+   clr  txcmnd       ; SCI command character identifier
+   clr  dataMSB      ; SCI data Most Significant Byte received
+   clr  dataLSB      ; SCI data Least Significant Byte received
+
+#emac
+
 ;*****************************************************************************************
 ; - Initialize the SCI0 interface for 115,200 Baud Rate
 ;   When IREN = 0, SCI Baud Rate = SCI bus clock / 16 x SBR[12-0]

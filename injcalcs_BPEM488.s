@@ -152,7 +152,7 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 
 TpsPctx10last: ds 2 ; Throttle Position Sensor percent last (%x10)(updated every 100Msec)
-OFCdel         ds 1 ; Overrun Fuel Cut delay duration (decremented every 100 mS)
+OFCdel:        ds 1 ; Overrun Fuel Cut delay duration (decremented every 100 mS)
 TOEtim:        ds 1 ; Throttle Opening Enrichment duration (decremented every 100 mS)
 DdBndZ1:       ds 1 ; Deadband interpolation Z1 value
 DdBndZ2:       ds 1 ; Deadband interpolation Z2 value
@@ -166,8 +166,8 @@ ASEcnt:        ds 2 ; Counter value for ASE taper
 PrimePWtk:     ds 2 ; Primer injector pulswidth timer ticks(uS x 5.12)
 CrankPWtk:     ds 2 ; Cranking injector pulswidth timer ticks(uS x 5.12)
 PWtk:          ds 2 ; Running injector pulsewidth timer ticks(uS x 2.56)
-InjOCadd1      ds 2 ; First injector output compare adder (5.12uS res or 2.56uS res)
-InjOCadd2      ds 2 ; Second injector output compare adder (5.12uS res or 2.56uS res)
+InjOCadd1:     ds 2 ; First injector output compare adder (5.12uS res or 2.56uS res)
+InjOCadd2:     ds 2 ; Second injector output compare adder (5.12uS res or 2.56uS res)
 FDt:           ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)
 FDcnt:         ds 2 ; Fuel delivery pulse width total(ms)(for totalizer pulse on rollover)
 AIOTcnt:       ds 1 ; Counter for AIOT totalizer pulse width
@@ -180,6 +180,31 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 ;* - Macros -                                                                            *  
 ;*****************************************************************************************
+
+#macro CLR_INJ_VARS, 0
+
+   clrw TpsPctx10last ; Throttle Position Sensor percent last (%x10)(updated every 100Msec)
+   clr  OFCdel        ; Overrun Fuel Cut delay duration (decremented every 100 mS)
+   clr  TOEtim        ; Throttle Opening Enrichment duration (decremented every 100 mS)
+   clr  DdBndZ1       ; Deadband interpolation Z1 value
+   clr  DdBndZ2       ; Deadband interpolation Z2 value
+   clrw PWcalc1       ; PW calculations result 1
+   clrw PWcalc2       ; PW calculations result 2
+   clrw PWcalc3       ; PW calculations result 3
+   clrw PWcalc4       ; PW calculations result 4
+   clrw PWcalc5       ; PW calculations result 5
+   clrw ASErev        ; Afterstart Enrichment Taper (revolutions)
+   clrw ASEcnt        ; Counter value for ASE taper
+   clrw PrimePWtk     ; Primer injector pulswidth timer ticks(uS x 5.12)
+   clrw CrankPWtk     ; Cranking injector pulswidth timer ticks(uS x 5.12)
+   clrw PWtk          ; Running injector pulsewidth timer ticks(uS x 2.56)
+   clrw InjOCadd1     ; First injector output compare adder (5.12uS res or 2.56uS res)
+   clrw InjOCadd2     ; Second injector output compare adder (5.12uS res or 2.56uS res)
+   clrw FDt           ; Fuel Delivery pulse width total(mS) (for FDsec calcs)
+   clrw FDcnt         ; Fuel delivery pulse width total(ms)(for totalizer pulse on rollover)
+   clr  AIOTcnt       ; Counter for AIOT totalizer pulse width
+
+#emac
 
 #macro PRIME_PW_LU, 0 
 

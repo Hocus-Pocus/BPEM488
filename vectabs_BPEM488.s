@@ -94,6 +94,14 @@ VECTAB_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*****************************************************************************************
 ;* - Macros -                                                                            *  
 ;*****************************************************************************************
+
+#macro CLR_VECTAB_VARS, 0
+
+   clr  ResetFlgs  ; Reset Flags bit field variable
+   clr  VecDebug   ; Vector Table de-bug address holder 
+
+#emac 
+
 ;*****************************************************************************************
 ; ------------------------- Initialize interupt vectors ----------------------------------
 ;

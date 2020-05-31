@@ -117,6 +117,21 @@ INTERP_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;* - Macros -                                                                            *  
 ;*****************************************************************************************
 
+#macro CLR_INTERP_VARS, 0
+
+   clrw CrvPgPtr   ; Pointer to the page where the desired curve resides
+   clrw CrvRowOfst ; Offset from the curve page to the curve row
+   clrw CrvColOfst ; Offset from the curve page to the curve column
+   clrw CrvCmpVal  ; Curve comparison value for interpolation
+   clr  CrvBinCnt  ; Number of bins in the curve row or column minus 1
+   clr  IndexNum   ; Position in the row or column of the curve comparison value 
+   clrw CrvRowHi   ; Curve row high boundry value for interpolation
+   clrw CrvRowLo   ; Curve row low boundry value for interpolation
+   clrw CrvColHi   ; Curve column high boundry value for interpolation
+   clrw CrvColLo   ; Curve column low boundry value for interpolation
+
+#emac
+
 ;*****************************************************************************************
 ;#Perform a 2D interpolation
 ; ========================== 

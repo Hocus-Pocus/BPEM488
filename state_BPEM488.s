@@ -146,7 +146,6 @@ CAS1sttk:    ds 2  ; CAS input capture rising edge 1st time stamp ((5.12uS or 2.
 CAS2ndtk:    ds 2  ; CAS input capture rising edge 2nd time stamp (5.12uS or 2.56uS res)
 CASprd1tk:   ds 2  ; Period between CAS1st and CAS2nd (5.12uS or 2.56uS res)
 CASprd2tk:   ds 2  ; Period between CAS2nd and CAS3d ((5.12uS or 2.56uS res)
-
 Degx10tk512: ds 2  ; Time to rotate crankshaft 1 degree in 5.12uS resolution x 10 
 Degx10tk256: ds 2  ; Time to rotate crankshaft 1 degree in 2.56uS resolution x 10     
 RevCntr:     ds 1  ; Counter for "Revmarker" flag
@@ -175,7 +174,19 @@ STATE_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;* - Macros -                                                                            *  
 ;*****************************************************************************************
 
-; ----------------------------- No macros for this module ------------------------------
+#macro CLR_STATE_VARS, 0
+
+   clrw CAS1sttk    ; CAS input capture rising edge 1st time stamp ((5.12uS or 2.56uS res)
+   clrw CAS2ndtk    ; CAS input capture rising edge 2nd time stamp (5.12uS or 2.56uS res)
+   clrw CASprd1tk   ; Period between CAS1st and CAS2nd (5.12uS or 2.56uS res)
+   clrw CASprd2tk   ; Period between CAS2nd and CAS3d ((5.12uS or 2.56uS res)
+   clrw Degx10tk512 ; Time to rotate crankshaft 1 degree in 5.12uS resolution x 10 
+   clrw Degx10tk256 ; Time to rotate crankshaft 1 degree in 2.56uS resolution x 10     
+   clr  RevCntr     ; Counter for "Revmarker" flag
+   clrw Stallcnt    ; No crank or stall condition counter (1mS increments)
+   clr  ICflgs      ; Input Capture flags bit field
+
+#emac
 
 ;*****************************************************************************************
 ;* - Code -                                                                              *  
