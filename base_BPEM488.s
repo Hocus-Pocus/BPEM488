@@ -168,16 +168,24 @@ BASE_VARS_END_LIN	    EQU @     ; @ Represents the current value of the linear
 ; -  Initialization -
 
 #macro	BASE_INIT, 0
-			INIT_VECTAB   ; Initialize Interrupt vectors (vectabs_BEEM488.s)
-			INIT_EEEM     ; Initialize EEPROM Emulation (eeem_BEEM488.s)
-            INIT_CLOCK    ; Initialize Clocks and RTI(clock_BEEM488.s)
-            INIT_RTI      ; Initialize Real Time Interrupt (rti_BEEM488.s)
-            INIT_SCI0     ; Initialize SCI0 (sci0_BEEM488.s)
-            INIT_ADC0     ; Initialize ADC0 channels (adc0_BEEM488.s)			
-            INIT_GPIO     ; Initialize GPIOs (gpio_BEEM488.s)
-			INIT_ECT      ; Initialize Enhanced Captuer Timers (ect_BEEM488.s)
-            INIT_REVCNTR  ; Initialize rev counter (ect_BEREM488.s)
-            INIT_TIM      ; Initialize Timer (tim_BEEM488.s)
+			INIT_VECTAB     ; Initialize Interrupt vectors (vectabs_BEEM488.s)
+			CLR_VECTAB_VARS ; Clear Vectab variables (vectabs_BPEM488.s)
+			INIT_EEEM       ; Initialize EEPROM Emulation (eeem_BEEM488.s)
+            INIT_CLOCK      ; Initialize Clocks and RTI(clock_BEEM488.s)
+            INIT_RTI        ; Initialize Real Time Interrupt (rti_BEEM488.s)
+			CLR_RTI_VARS    ; Clear RTI variables  (rti_BEEM488.s)
+            INIT_SCI0       ; Initialize SCI0 (sci0_BEEM488.s)
+			CLR_SCI0_VARS   ; Clear SCI0 variables  (sci0_BEEM488.s)
+            INIT_ADC0       ; Initialize ADC0 channels (adc0_BEEM488.s)			
+            INIT_GPIO       ; Initialize GPIOs (gpio_BEEM488.s)
+			INIT_ECT        ; Initialize Enhanced Captuer Timers (ect_BEEM488.s)
+			CLR_ECT_VARS    ; Clear ECT variables  (ect_BEEM488.s) 
+            INIT_TIM        ; Initialize Timer (tim_BEEM488.s)
+			CLR_IGN_VARS    ; Clear Ignition Calcs variables (igncalcs_BPEM488.s)
+			CLR_INJ_VARS    ; Clear Injection Calcs variables (injcalcs_BPEM488.s)
+			CLR_INTERP_VARS ; Clear Interp variables (interp_BPEM488.s)
+			CLR_STATE_VARS  ; Clear State variables (state_BPEM488.s)
+			
 
 			JOB	DONE      ; Jump or branch to DONE	
 				
