@@ -225,9 +225,9 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     movw #veBins,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
                             ; ->page where the desired curve resides 
     movw #$0190,CrvRowOfst  ; 400 -> Offset from the curve page to the curve row
-	                        ; (tempTable2)
+	                        ; (tempTable2)Actual offset is 800)
     movw #$01AC,CrvColOfst  ; 428 -> Offset from the curve page to the curve column
-	                        ; (primePWTable)
+	                        ; (primePWTable)(actual offset is 856)
     movw Cltx10,CrvCmpVal   ; Engine Coolant Temperature (Degrees F x 10) -> 
                             ; Curve comparison value
     movb #$09,CrvBinCnt     ; 9 -> number of bins in the curve row or column minus 1
@@ -272,9 +272,9 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     movw #veBins,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
                             ; ->page where the desired curve resides 
     movw #$0190,CrvRowOfst  ; 400 -> Offset from the curve page to the curve row(
-	                        ; tempTable2)
+	                        ; tempTable2)(actual offset is 800)
     movw #$01B6,CrvColOfst  ; 438 -> Offset from the curve page to the curve column
-	                        ; (crankPctTable)
+	                        ; (crankPctTable)(actual offset is 876)
     movw Cltx10,CrvCmpVal   ; Engine Coolant Temperature (Degrees F x 10) -> 
                             ; Curve comparison value
     movb #$09,CrvBinCnt     ; 9 -> number of bins in the curve row or column minus 1
@@ -289,7 +289,7 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #vebins    ; Load index register Y with address of first configurable 
                      ; constant on buffer RAM page 1 (vebins)
-    ldx   $03DC,Y    ; Load Accu X with value in buffer RAM page 1 offset 988 
+    ldx   $03E1,Y    ; Load Accu X with value in buffer RAM page 1 offset 993 
                      ; ("ReqFuel")
     tfr  X,D         ; "ReqFuel" -> Accu D 						
     ldy  Crankcor    ;Cranking Pulsewidth Correction (% x 10) -> Accu Y
@@ -351,7 +351,7 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     ldy   #veBins    ; Load index register Y with address of the first value in VE table 
                      ;(in RAM)   
     jsr   3D_LOOKUP  ; Jump to subroutine at 3D_LOOKUP:
-    std   veCurr     ; Copy result to "veCurr"(%x10)
+    std   VEcurr     ; Copy result to "VEcurr"(%x10)
 	
 #emac
 
@@ -377,7 +377,7 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     ldy   #afrBins   ; Load index register Y with address of the first value in AFR table 
                      ;(in RAM)   
     jsr   3D_LOOKUP  ; Jump to subroutine at 3D_LOOKUP:
-    std   AFRCurr    ; Copy result to "AFRCurr"
+    std   AFRcurr    ; Copy result to "AFRcurr"
 	
 #emac
 
@@ -422,9 +422,9 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     movw #veBins,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
                             ; ->page where the desired curve resides 
     movw #$0186,CrvRowOfst  ; 390 -> Offset from the curve page to the curve row
-	                        ; (tempTable1)
+	                        ; (tempTable1)(actual offset is 780
     movw #$01D4,CrvColOfst  ; 468 -> Offset from the curve page to the curve column(
-	                        ; wueBins)
+	                        ; wueBins)(actual offset is 936)
     movw Cltx10,CrvCmpVal   ; Engine Coolant Temperature (Degrees F x 10) -> 
                             ; Curve comparison value
     movb #$09,CrvBinCnt     ; 9 -> number of bins in the curve row or column minus 1
@@ -443,9 +443,9 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     movw #veBins,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
                             ; ->page where the desired curve resides 
     movw #$0190,CrvRowOfst  ; 400 -> Offset from the curve page to the curve row
-	                        ; (tempTable2)
+	                        ; (tempTable2)(actual offset is 800)
     movw #$01C0,CrvColOfst  ; 448 -> Offset from the curve page to the curve column
-	                        ; (asePctTable)
+	                        ; (asePctTable)(actual offset is 896)
     movw Cltx10,CrvCmpVal   ; Engine Coolant Temperature (Degrees F x 10) -> 
                             ; Curve comparison value
     movb #$09,CrvBinCnt     ; 9 -> number of bins in the curve row or column minus 1
@@ -461,9 +461,9 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     movw #veBins,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
                             ; ->page where the desired curve resides 
     movw #$0190,CrvRowOfst  ; 400 -> Offset from the curve page to the curve row
-	                        ; (tempTable2)
+	                        ; (tempTable2)(actual offset is 800)
     movw #$01CA,CrvColOfst  ; 458 -> Offset from the curve page to the curve column
-	                        ; (aseRevTable)
+	                        ; (aseRevTable)(actual offset is 916)
     movw Cltx10,CrvCmpVal   ; Engine Coolant Temperature (Degrees F x 10) -> 
                             ; Curve comparison value
     movb #$09,CrvBinCnt     ; 9 -> number of bins in the curve row or column minus 1
@@ -577,10 +577,10 @@ TOE_OFC_CHK:
 ; - The throttle is opening. Check to see if it is opening at a rate greater than the threshold
 ;***********************************************************************************************
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins         ; Load index register Y with address of first configurable constant
-                          ; on buffer RAM page 1 (vebins)
-    ldx   $03D8,Y         ; Load Accu D with value in buffer RAM page 1 offset 984 (tpsThresh)
-                          ;(TPSdot threshold)(offset = 984)($03D8)   
+    ldy   #veBins         ; Load index register Y with address of first configurable constant
+                          ; on buffer RAM page 1 (veBins)
+    ldx   $03CA,Y         ; Load Accu D with value in buffer RAM page 1 offset 970 (tpsThresh)
+                          ;(TPSdot threshold)(offset = 970)($03CA)   
     cpx   TpsPctDOT       ; Compare "tpsThresh" with "TpsPctDOT"
     bhi   TOE_CHK_TIME    ; If "tpsThresh" is greater than "TpsPctDOT", branch to TOE_CHK_TIME: 
                           ; ("TpsPctDOT" below threshold so check if acceleration is done)
@@ -599,16 +599,16 @@ TOE_OFC_CHK:
 ;***********************************************************************************************
 
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins       ; Load index register Y with address of first configurable constant
+    ldy   #veBins       ; Load index register Y with address of first configurable constant
                         ; on buffer RAM page 1 (vebins)
-    ldaa   $03BC,Y      ; Load Accu A with value in buffer RAM page 1 offset 956 (First element 
+    ldaa   $01DE,Y      ; Load Accu A with value in buffer RAM page 1 offset 478 (First element 
                         ; of "TOEbins" table)(Start with first element, will determine actual  
-                        ; next time around)
+                        ; next time around)(actual offset is 956)
     staa  TOEpct        ; Copy to Throttle Opening Enrichment percent(used in later calculations)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins       ; Load index register Y with address of first configurable constant
+    ldy   #veBins       ; Load index register Y with address of first configurable constant
                         ; on buffer RAM page 1 (vebins)
-    ldaa   $03DA,Y      ; Load Accu A with value in buffer RAM page 1 offset 986 (TOEtime_F)
+    ldaa   $03CC,Y      ; Load Accu A with value in buffer RAM page 1 offset 972 (TOEtime_F)
     staa  TOEtim        ; Copy to "TOEtim" (Throttle Opening Enrichment duration 
 	                    ; (decremented every 100 mS))
     bset  engine,TOEon  ; Set "TOEon" bit of "engine" variable (in TOE mode)
@@ -642,7 +642,7 @@ DoColdAdd:
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #vebins    ; Load index register Y with address of first configurable constant
                      ; on buffer RAM page 1 (vebins)
-    ldd   $03F4,Y    ; Load Accu D with value in buffer RAM page 1 (ColdAdd_F)(offset 1012) 
+    ldd   $03CD,Y    ; Load Accu D with value in buffer RAM page 1 (ColdAdd_F)(offset 973) 
                      ;(added amount at -39.72F)    
     pshd             ; Push to stack (Z2)
     
@@ -699,7 +699,7 @@ DoColdMul:
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #vebins    ; Load index register Y with address of first configurable constant
                      ; on buffer RAM page 1 (vebins)
-    ldd   $03F6,Y    ; Load Accu D with value in buffer RAM page 1 "ColdMul_F"(offset 1014) 
+    ldd   $03CE,Y    ; Load Accu D with value in buffer RAM page 1 "ColdMul_F"(offset 974) 
                      ;(added amount at -39.72F)    
     pshd             ; Push to stack (Z2)
 
@@ -745,10 +745,10 @@ ColdMulDone:
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     movw #veBins,CrvPgPtr    ; Address of the first value in VE table(in RAM)(page pointer) 
                              ; ->page where the desired curve resides 
-    movw #$03C4,CrvRowOfst   ; 964 -> Offset from the curve page to the curve row
-	                         ; (TOERates_F)(offset = 964 $03C4)
-    movw #$03BC,CrvColOfst   ; 956 -> Offset from the curve page to the curve column
-	                         ; (TOEBins_F)(offset = 956 $03BC
+    movw #$01E0,CrvRowOfst   ; 480 -> Offset from the curve page to the curve row
+	                         ; (TOERates_F)(actual offset is 964)
+    movw #$01DE,CrvColOfst   ; 478 -> Offset from the curve page to the curve column
+	                         ; (TOEBins_F)(actual offset is 956)
     movw TpsPctDOT,CrvCmpVal ; TPS% difference over time (%/Sec)(update every 100mSec)  
                              ; -> Curve comparison value
     movb #$03,CrvBinCnt      ; 3 -> number of bins in the curve row or column minus 1
@@ -853,25 +853,25 @@ TOE_LOOP:
 
 OFC_CHK:
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins     ; Load index register Y with address of first configurable constant
-                      ; on buffer RAM page 1 (vebins)
-    ldx   $03F2,Y     ; Load X with value in buffer RAM page 1 offset 1010 (OFCtps)
+    ldy   #veBins     ; Load index register Y with address of first configurable constant
+                      ; on buffer RAM page 1 (veBins)
+    ldx   $03D1,Y     ; Load X with value in buffer RAM page 1 offset 977 (OFCtps)
                       ;(Overrun Fuel Cut min TPS%)   
     cpx  TpsPctx10    ; Compare it with value in "TpsPctx10"
     blo  OFC_CHK_DONE ; If (X)>(M), branch to OFC_CHK_DONE: 
                       ;(TPS is above minimum so no fuel cut)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins     ; Load index register Y with address of first configurable constant
-                      ; on buffer RAM page 1 (vebins)
-    ldx   $03EC,Y     ; Load X with value in buffer RAM page 1 offset 1004 (OFCrpm)
+    ldy   #veBins     ; Load index register Y with address of first configurable constant
+                      ; on buffer RAM page 1 (veBins)
+    ldx   $03D2,Y     ; Load X with value in buffer RAM page 1 offset 978 (OFCrpm)
                       ;(Overrun Fuel Cut min RPM)     
     cpx  RPM          ; Compare it value in RPM
     bhi  OFC_CHK_DONE ; If (X)<(M), branch to OFC_CHK_DONE:
                       ;(RPM is below minimum so no fuel cut)
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins     ; Load index register Y with address of first configurable constant
-                      ; on buffer RAM page 1 (vebins)
-    ldx   $03F8,Y     ; Load X with value in buffer RAM page 1 offset 1016 (OFCmap)
+    ldy   #veBins     ; Load index register Y with address of first configurable constant
+                      ; on buffer RAM page 1 (veBins)
+    ldx   $03D4,Y     ; Load X with value in buffer RAM page 1 offset 980 (OFCmap)
                       ;(Overrun Fuel Cut min manifold pressure)     
     cpx  Mapx10       ; Compare it to value in Manifold Absolute Pressure (KPAx10)
     blo  OFC_CHK_DONE ; If (X)<(M), branch to OFC_CHK_DONE:
@@ -896,9 +896,9 @@ OFC_CHK:
 ;*****************************************************************************************
 	
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins       ; Load index register Y with address of first configurable 
-                        ; constant on buffer RAM page 1 (vebins)
-    ldaa   $03F8,Y      ; Load Accu A with value in buffer RAM page 1 offset 1018 
+    ldy   #veBins       ; Load index register Y with address of first configurable 
+                        ; constant on buffer RAM page 1 (veBins)
+    ldaa   $03D6,Y      ; Load Accu A with value in buffer RAM page 1 offset 982 
                         ; (OFCdel_F) (Overrun Fuel Cut delay time)
     staa  OFCdel        ; Copy to "OFCdel" (Overrun Fuel Cut delay duration)(decremented 
  	                    ; every 100mS in rti_BPEM488.s)
@@ -982,16 +982,16 @@ OFC_LOOP:
 ;*****************************************************************************************
 
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins       ; Load index register Y with address of first configurable 
-                        ; constant on buffer RAM page 1 (vebins)
-    ldaa   $03DA,Y      ; Load Accu A with value in buffer RAM page 1 offset 980 
-                        ; Injector deadband at 13.2V (mSec * 100)(offset = 980) 
+    ldy   #veBins       ; Load index register Y with address of first configurable 
+                        ; constant on buffer RAM page 1 (veBins)
+    ldaa   $03C8,Y      ; Load Accu A with value in buffer RAM page 1 offset 968 
+                        ; Injector deadband at 13.2V (mSec*10)(DdBndBase_F)
     staa  tmp1          ; Copy to "tmp1" (Injector deadband at 13.2V (mSec * 100))
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins       ; Load index register Y with address of first configurable 
-                        ; constant on buffer RAM page 1 (vebins)
-    ldaa   $03D6,Y      ; Load Accu A with value in buffer RAM page 1 offset 982 
-                        ; Injector deadband voltage correction (mSec/V x 100)(offset 982)
+    ldy   #veBins       ; Load index register Y with address of first configurable 
+                        ; constant on buffer RAM page 1 (veBins)
+    ldaa   $03C9,Y      ; Load Accu A with value in buffer RAM page 1 offset 969 
+                        ; Injector deadband voltage correction (mSec/V x 100)(DdBndCor_F)
     ldab  #$06          ; Decimal 6-> Accu B
 	mul                 ;(A)x(B)->A:B "Injector deadband voltage correction" * 6
 	stb   tmp2          ;("Injector deadband voltage correction" * 6)-> tmp2
@@ -1098,7 +1098,9 @@ OFC_LOOP:
     movw #veBins,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
                             ; -> page where the desired curve resides 
     movw #$0168,CrvRowOfst  ; 360 -> Offset from the curve page to the curve row(barCorVals)
+	                        ; (actual offset is 720)
     movw #$0171,CrvColOfst  ; 369 -> Offset from the curve page to the curve column(barCorDelta)
+	                        ; (actual offset is 738)
     movw Barox10,CrvCmpVal  ; Barometric Pressure (KPAx10) -> Curve comparison value
     movb #$08,CrvBinCnt     ; 8 -> number of bins in the curve row or column minus 1
     jsr   CRV_LU_P   ; Jump to subroutine at CRV_LU_P:(located in interp_BEEM488.s module)
@@ -1112,7 +1114,9 @@ OFC_LOOP:
     movw #veBins,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
                             ;  ->page where the desired curve resides 
     movw #$019A,CrvRowOfst  ; 410 -> Offset from the curve page to the curve row(matCorrTemps2)
+	                        ; (actual offset is 820)
     movw #$01A3,CrvColOfst  ; 419 -> Offset from the curve page to the curve column(matCorrDelta2)
+	                        ; (actual offset is 838)
     movw Matx10,CrvCmpVal   ; Manifold Air Temperature (Degrees F x 10) -> 
                             ; Curve comparison value
     movb #$08,CrvBinCnt     ; 8 -> number of bins in the curve row or column minus 1

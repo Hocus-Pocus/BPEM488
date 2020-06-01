@@ -344,8 +344,8 @@ RcvData:                 ; "rxmode" = 7
      
 RcvDataMSB:
 ;**********************************************************************
-; - De-Bug LED   FUEL PUMP!!!!                                                        *
-;     bset  PORTB, PB0   ; Set bit0, Port B (LED9, board 1 to 28)      *
+; - De-Bug LED   FUEL PUMP!!!!                                        *
+;     bset  PORTB, PB0   ; Set bit0, Port B (LED9, board 1 to 28)     *
 ;**********************************************************************
 
     ldaa  SCI0DRL       ; Load Accu A with value in "SCI0DRL"(data byte)
@@ -356,7 +356,7 @@ RcvDataMSB:
 RcvDataLSB:             ; "rxmode" = 8
 ;**********************************************************************
 ; - De-Bug LED                                                        *
-;     bset  PORTB, PB1   ; Set Bit1, Port B (LED23, board 1 to 28)     * 
+;     bset  PORTB, PB1   ; Set Bit1, Port B (LED23, board 1 to 28)    * 
 ;**********************************************************************
 
     ldab  SCI0DRL       ; Load Accu B with value in "SCI0DRL"(data byte)
@@ -381,7 +381,7 @@ StorePg1:
 StorePg1Wd:
 ;**********************************************************************
 ; - De-Bug LED                                                        *
-;     bset  PORTB, PB2   ; Set Bit1, Port B (LED4, board 1 to 28)      *
+;     bset  PORTB, PB2   ; Set Bit1, Port B (LED4, board 1 to 28)     *
 ;**********************************************************************
 
     ldx   rxoffsetMSB  ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
@@ -393,7 +393,7 @@ StorePg1Wd:
 StorePg1Bt:
 ;**********************************************************************
 ; - De-Bug LED                                                        *
-;     bset  PORTB, PB4   ; Set bit0, Port B (LED10, board 1 to 28)     *
+;     bset  PORTB, PB4   ; Set bit0, Port B (LED10, board 1 to 28)    *
 ;**********************************************************************
 
     ldx   rxoffsetMSB  ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
@@ -481,7 +481,7 @@ CheckTxCmnd:
 ModeC1:
 ;**********************************************************************
 ; - De-Bug LED                                                        *
-;     bset  PORTK, PK1   ; Set Bit1, Port K (LED6, board 1 to 28)      *
+;     bset  PORTK, PK1   ; Set Bit1, Port K (LED6, board 1 to 28)     *
 ;**********************************************************************
 
 ;*****************************************************************************************
@@ -540,7 +540,7 @@ StartPg3:
 ModeW1:
 ;**********************************************************************
 ; - De-Bug LED                                                        *
-;     bset  PORTK, PK5   ; Set Bit5, Port K (LED3, board 1 to 28)      *
+;     bset  PORTK, PK5   ; Set Bit5, Port K (LED3, board 1 to 28)     *
 ;**********************************************************************
 
 ;*****************************************************************************************
@@ -556,7 +556,7 @@ ModeW1:
 ModeB1:
 ;**********************************************************************
 ; - De-Bug LED                                                        *
-;     bset PORTK, PK4    ; Set bit4 Port K (LED19, board 1 to 28)      *
+;     bset PORTK, PK4    ; Set bit4 Port K (LED19, board 1 to 28)     *
 ;********************************************************************** 
 
 ;*****************************************************************************************
@@ -579,7 +579,7 @@ ModeH:
 ;**********************************************************************
 ; - De-Bug LED
 ;**********************************************************************
-;      bset  PORTK, PK3   ; Set Bit3 (LED2, board 1 to 28)             *
+;      bset  PORTK, PK3   ; Set Bit3 (LED2, board 1 to 28)            *
 ;**********************************************************************                                
                                 
     ldaa  Signature        ; Load accu A with value at "Signature"
@@ -594,23 +594,23 @@ ModeO:
 ; - De-Bug LED
 ;**********************************************************************
 ; - De-Bug LED
-;     ldaa  PORTK        ; Load ACC A with value in Port K             *
-;     eora  #$01         ; Exclusive or with $00000001                 *
-;     staa   PORTK       ; Copy to Port K (toggle Bit0)                * 
-;                        ; LED22, board 1 to 28)                       *
+;     ldaa  PORTK        ; Load ACC A with value in Port K            *
+;     eora  #$01         ; Exclusive or with $00000001                *
+;     staa   PORTK       ; Copy to Port K (toggle Bit0)               * 
+;                        ; LED22, board 1 to 28)                      *
 ;**********************************************************************   
 ;**********************************************************************
 ; - De-Bug LED
-;     ldaa  PORTK        ; Load ACC A with value in Port K             *
-;     eora  #$80         ; Exclusive or with $10000000                 *
-;     staa   PORTK       ; Copy to Port K (toggle Bit7)                * 
+;     ldaa  PORTK        ; Load ACC A with value in Port K            *
+;     eora  #$80         ; Exclusive or with $10000000                *
+;     staa   PORTK       ; Copy to Port K (toggle Bit7)               * 
                         ; LED2, board 87 to 112)                      *
 ;**********************************************************************     
 
     ldaa  secH             ; Load accu A with value at "secH"
     staa  SCI0DRL          ; Copy to SCI0DRL (first byte to send)
     movw  #$0000,txcnt     ; Clear "txcnt"
-    movw  #$008A,txgoalMSB ; Load "txgoalMSB:txgoalLSB" with decimal 138(number of bytes to send) REAL TIME VARIABLES HERE!!!!!!!!
+    movw  #$0093,txgoalMSB ; Load "txgoalMSB:txgoalLSB" with decimal 147(number of bytes to send) REAL TIME VARIABLES HERE!!!!!!!!
     movb  #$02,txmode      ; Load "txmode" with decimal 2
 			
 DoTx:

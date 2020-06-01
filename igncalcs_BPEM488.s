@@ -221,33 +221,6 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ;
 ;                          <-            Advance            ->
 ;      <-            Ignition Span (170 degrees)            ->
-; 
-;
-; Method:
-;
-; - Convert Crank Angle Sensor period to degrees*10 (for 1 tenth of a 
-;   degree resolution calculations).("TkspDegx10")
-; - Convert the Igntion Span(170 degrees) to time (5.12uS or 2.56uS res) (Spantk) 
-; - Multiply dwell time by the correction % (%*10)("DwellFin")
-; - Convert "DwellFin" to time (5.12uS or 2.56uS res).("DwellFintk") 
-; - Correct the current ST value for trim (degrees*10)("STandItrmx10")
-; - Convert "STandItrmx10" to time (5.12uS or 2.56uS res) ("STandItrmtk")
-; - Add "STandItrmtk" and "DwellFintk" = "Advancetk"
-; - Subtract "Advancetk" from "Spantk" = "Delaytk" (1st OC value)
-;
-; Calculations:
-;
-; CASprdtk / 72 = TkspDeg (Time for 1 degree rotation (5.12uS or 2.56uS res))
-; TkspDeg * 10 = TkspDegx10 (Time for 1 degree of rotation (5.12uS or 2.56uS res) x 10)
-; (1700 * TkspDegx10) / 100 = Spantk (Time for 170 degrees of rotation (5.12uS or 2.56uS res) x 10)
-; Dwell * DwellCor = DwellFin (mS*10)
-; DwellFin / .00000256 = DwellFintk (Time (5.12uS or 2.56uS res))(2nd OC value)
-; STcurr + 200 = Igncalc1 (Degrees*10)
-; Igncalc1 + Itrmx10 =  Igncalc2 (Degrees*10)
-; Igncalc2 - 200 = STandItrmx10 (Degrees*10)
-; STandItrmx10 * TkspDegx10 /100 = STandItrimtk
-; STandItrmtk + DwellFintk = Advancetk
-; Spantk - Advancetk = Delaytk (1st OC value)
 ;
 ;*****************************************************************************************
 
@@ -278,7 +251,9 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     movw #veBins,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
                             ;  ->page where the desired curve resides 
     movw #$017A,CrvRowOfst  ; 378 -> Offset from the curve page to the curve row(dwellvolts)
+	                        ;(actual offset is 756
     movw #$0180,CrvColOfst  ; 384 -> Offset from the curve page to the curve column(dwellcorr)
+	                        ;(actual offset is 768)
     movw BatVx10,CrvCmpVal  ; Battery Voltage (Volts x 10) -> Curve comparison value
     movb #$05,CrvBinCnt     ; 5 -> number of bins in the curve row or column minus 1
     jsr   CRV_LU_P   ; Jump to subroutine at CRV_LU_P:(located in interp_BEEM488.s module)
@@ -341,7 +316,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ; - Convert "STandItrmx10" to time in 5.12uS resolution ("STandItrmtk")
 ;*****************************************************************************************
 
-    ldy  Degx10tk512   ;(Time for 1 degree of rotation in 2.56uS resolution x 10)
+    ldy  Degx10tk512  ;(Time for 1 degree of rotation in 2.56uS resolution x 10)
     emul              ;(D)x(Y)=Y:D "STandItrmx10" * Degx10tk512 
 	ldx  #$0064       ; Decimal 100 -> Accu X
 	ediv              ;(Y:D)/(X)=Y;Rem->D (("STandItrmx10" * Degx10tk512)/100 
@@ -364,7 +339,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 	subd  Advancetk  ; Subtract (A:B)-(M:M+1)=>A:B "Spantk" - "Advancetk" = "Delaytk"
 	std   Delaytk    ; Copy result to "Delaytk" 
 	std   IgnOCadd1  ; Copy result to "IgnOCadd1" 
-                     ; This is the first OC value loaaded into the timer
+                     ; This is the first OC value loaded into the timer
 					 
 #emac
 
@@ -446,7 +421,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 	subd  Advancetk  ; Subtract (A:B)-(M:M+1)=>A:B "Spantk" - "Advancetk" = "Delaytk"
 	std   Delaytk    ; Copy result to "Delaytk" 
 	std   IgnOCadd1  ; Copy result to "IgnOCadd1" 
-                     ; This is the first OC value loaaded into the timer
+                     ; This is the first OC value loaded into the timer
 					 
 #emac
 

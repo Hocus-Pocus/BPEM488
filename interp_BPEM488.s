@@ -197,7 +197,6 @@ INTERP_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 		ADDD  \4	; (A:B)+(M:M+1)->A:B Add Z1
 #emac
 
-
 #macro CRV_SETUP, 0
 
 ;*****************************************************************************************
@@ -222,9 +221,6 @@ INTERP_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                       
 #emac
                       
-
-
-
 #macro COL_BOUNDARYS, 0
 
 ;*****************************************************************************************

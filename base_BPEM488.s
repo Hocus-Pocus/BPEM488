@@ -187,7 +187,7 @@ BASE_VARS_END_LIN	    EQU @     ; @ Represents the current value of the linear
 			CLR_STATE_VARS  ; Clear State variables (state_BPEM488.s)
 			
 
-			JOB	DONE      ; Jump or branch to DONE	
+			JOB	DONE        ; Jump or branch to DONE	
 				
 DONE        EQU *     ; * Represents the current value of the paged 
                       ; program counter	

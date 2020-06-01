@@ -119,13 +119,13 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*     PA7 - SW4(57to82)                          (input, pull-up) maintained contact    *
 ;*                                                                                       *
 ;*    Port B:                                                                            *
-;*     PB0 - LED red (D9) (1to28)(Fuel pump and ASD relay)                 (output, low) *
-;*     PB1 - LED red (D23)(1to28)                                          (output, low) *
+;*     PB0 - LED red (D9) (1to28)(FuelPump)                               (output, low) *
+;*     PB1 - LED red (D23)(1to28)(ASDRelay)                               (output, low) *
 ;*     PB2 - LED red (D4) (1to28)                                          (output, low) *
 ;*     PB3 - LED red (D20)(1to28)                                          (output, low) *
 ;*     PB4 - LED red (D10)(1to28)                                          (output, low) *
-;*     PB5 - LED red (D1) (29to56)                                         (output, low) *
-;*     PB6 - LED red (D10)(29to56)                                         (output, low) *
+;*     PB5 - LED red (D1) (29to56)(EngAlarm)                               (output, low) *
+;*     PB6 - LED red (D10)(29to56)(AIOT)                                   (output, low) *
 ;*     PB7 - LED red (D2) (29to56)                                         (output, low) *
 ;*                                                                                       *
 ;*    Port C: - Not Available in 112 LQFP                                                *
@@ -136,7 +136,7 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*     PE0 - XIRQ                                 (input, pull-up) gear tooth K1         *
 ;*     PE1 - IRQ                                  (input, pull-up) gear tooth K2         *
 ;*     PE2 - SD card detect                       (input, pull_up)                       *
-;*     PE3 - SW5(29to56)(Decel Fuel Cut Enable)   (input, pull-up) momentary contact     *
+;*     PE3 - SW5(29to56)(AudAlrmSil)              (input, pull-up) momentary contact     *
 ;*     PE4 - SW2(29to56)(Send Date/Time)          (input, pull-up) maintained contact    *
 ;*     PE5 - SW4 (MODA) (hard wired to ground)    (input, pull-up) SW4 not in service    *
 ;*     PE6 - SW1 (MODB)( hard wired to ground)    (input, pull-up) SW1 not in service    *

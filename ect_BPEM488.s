@@ -84,7 +84,7 @@ ECT_VARS_START_LIN	EQU	@     ; @ Represents the current value of the linear
 ;VSSprd:       ds 2 ; Vehicle Speed Sensor period 
 ;RPM:          ds 2 ; Crankshaft Revolutions Per Minute 
 ;KPH:          ds 2 ; Vehicle speed (KpH x 10)
-;engine:       ds 1  ; Engine status bit field
+;engine:       ds 1 ; Engine status bit field
 
 ;*****************************************************************************************
 ; - "engine" Engine status bit field
@@ -172,51 +172,33 @@ ECT_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*****************************************************************************************
 ;* - The crank trigger wheel on the Dodge V10 has 5 pairs of two notches. Each notch is 
 ;    3 degrees wide. The falling edges of the notch pairs are 18 degrees apart and the 
-;    pairs are 54 degrees apart. The greatest angle that the sensor has to cover is 54
-;    degrees. In one revolution the sensor will see those angles 360/54=6.666 times.  
-;    In order to determine the best timer rate it has to be able to accurately determing  
-;    the period between nothces at cranking speed before rolling over and still have good 
-;    resolution at the highest expected engine speed.
-;    5000RPM = 83.333Hz = .012Sec period / 6.666 =.0018Sec per 54 degrees
-;    4500RPM = 75Hz = .01333Sec period / 6.666 =.002Sec per 54 degrees
-;    4000RPM = 66.666Hz = .015Sec period / 6.666 =.00225Sec per 54 degrees
-;    3500RPM = 58.333Hz = .01714Sec period / 6.666 =.002571Sec per 54 degrees
-;    3000RPM = 50Hz = .02Sec period / 6.666 =.003Sec per 54 degrees
+;    pairs are 54 degrees apart. Any 3 consecutive notches will cover 72 degrees. The 
+;    time period of 72 degrees can be used as a base to calculate RPM, ignition and 
+;    injection timing. In order to determine the best timer rate it has to be able to 
+;    accurately determine the period between notches at cranking speeds before rolling 
+;    over and still have good resolution at the highest expected engine speed. Rather 
+;    than make this compromise the decision was made to use the 5.12uS time base in crank
+;    mode and the 2.56uS time base in run mode. The interrupts for the crankshaft and 
+;    camshaft sensors are handled in the state_BPEM488.s module. It is here that that 
+;    the 72 degree period is calculated and the determination of crank mode and run mode 
+;    are made. 
+;
+;    5000RPM = 83.333Hz = .012Sec period / 5 =.0024Sec per 72 degrees 
 ;
 ;    A prescale of 256 results in a 5.12uS clock tick with a maximum period of 335.5392mS
-;    Lowest cranking speed will be:
-;    .3355392 * 6.666 = 2.2367S = .447Hz * 60 = 26.82RPM
-;    Resolution at the following maximum speeds will be:
-;    5000RPM .0018/.00000512 = 351.5625 5000/351.5625 = 14.222 RPM resolution 
-;    4500RPM .002/.00000512 = 390.625 4500/390.625 = 11.52 RPM resolution 
-;    4000RPM .00225/.00000512 = 439.453 4000/439.453 = 9.1 RPM resolution 
-;    3500RPM .002571/.00000512 = 502.148 3500/502.148 = 6.97 RPM resolution 
-;    3000RPM .003/.00000512 = 585.9375 3000/585.9375 = 5.12 RPM resolution 
+;    Lowest cranking speed can be:
+;    .3355392 * 5 = 1.677696Sec = .596Hz * 60 = 35.76RPM
+;    5000RPM .0024/.00000512 = 468.75 5000/468.75 = 10.666 RPM resolution 
 ;
 ;    A prescale of 128 results in a 2.56uS clock tick with a maximum period of 167.7696mS
-;    Lowest cranking speed will be:
-;    .1677696 * 6.666 = 1.118352S = .8941Hz * 60 = 53.65RPM
-;    Resolution at the following maximum speeds will be:
-;    5000RPM .0018/.00000256 = 703.125 5000/703.125 = 7.111 RPM resolution 
-;    4500RPM .002/.00000256 = 781.25 4500/781.25 = 5.76 RPM resolution 
-;    4000RPM .00225/.00000256 = 878.9 4000/878.9 = 4.55 RPM resolution 
-;    3500RPM .002571/.00000256 = 1004.429 3500/1004.429 = 3.48 RPM resolution 
-;    3000RPM .003/.00000256 = 1171.875 3000/1171.875 = 2.56 RPM resolution 
+;    Lowest cranking speed can be:
+;    .1677696 * 5 = .838848Sec = 1.192111086Hz * 60 = 71.53RPM
+;    5000RPM .0024/.00000256 = 937.5 5000/937.5 = 5.333 RPM resolution 
 ;
-;    A prescale of 64 results in a 1.28uS clock tick with a maximum period of 83.8848mS
-;    Lowest cranking speed will be:
-;    .0838848 * 6.666 = .559176S = 1.78834Hz * 60 = 107.3RPM
-;    Resolution at the following maximum speeds will be:
-;    5000RPM .0018/.00000128 = 1406.25 5000/1406.25 = 3.55 RPM resolution 
-;    4500RPM .002/.00000128 = 1562.5 4500/1562.5 = 2.88 RPM resolution 
-;    4000RPM .00225/.00000128 = 1757.81 4000/1757.81 = 2.27 RPM resolution 
-;    3500RPM .002571/.00000128 = 2008.59 3500/2008.59 = 1.74 RPM resolution 
-;    3000RPM .003/.00000128 = 2343.75 3000/2343.75 = 1.28 RPM resolution 
 ;*****************************************************************************************
 
 #macro INIT_ECT, 0
 
-                        
     movw  #$0500,DDRT   ; Load Port T Data Direction Register and  
                         ; Port T Reduced Drive Register with 
                         ; %0000_0101_0000_0000 (PT2,0 outputs, 
@@ -280,7 +262,6 @@ ECT_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     movb #$44,ECT_TCTL4 ; Load ECT_TCTL4 with %01000100 (rising 
                         ; edge capture Ch3,1)(Capture disabled Ch2,0)
 
-                        
 #emac
 
 #macro CALC_RPM, 0
@@ -293,15 +274,14 @@ ECT_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ; Where:
 ; RPM    = Engine RPM
 ; RPMk   = 24 bit constant using 5.12uS IC clock tick (195.3125khz)
-;             ((195,312.5 tickpsec*60secpmin)/(number of cyl/(stroke/2)))
-; CASprd = 16 bit period count between two consecutive IC events in 5.12uS
+;             ((195,312.5 tickpsec*60secpmin)/(360/72))
+; CASprd = 16 bit period count between three consecutive IC events in 5.12uS
 ;               resolution
 ;   RPMk
 ;   ----- = RPM
-;   CASprd
+;   CASprd512
 ;
-; 10cyl 4stroke RPMk = ((195312.5*60)/5) = 2343750 = $0023C346
-; 10cyl min 35.76333257 RPM ("CASprd" roll over)
+; RPMk = ((195312.5*60)/5) = 2343750 = $0023C346
 ;
 ;*****************************************************************************************
 ;*****************************************************************************************
@@ -310,15 +290,14 @@ ECT_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ; Where:
 ; RPM    = Engine RPM
 ; RPMk   = 24 bit constant using 2.56uS IC clock tick (390.625khz)
-;             ((390,625 tickpsec*60secpmin)/(number of cyl/(stroke/2)))
-; CASprd = 16 bit period count between two consecutive IC events in 2.56uS
+;             ((390,625 tickpsec*60secpmin)/(360/72))
+; CASprd256 = 16 bit period count between three consecutive IC events in 2.56uS
 ;               resolution
 ;   RPMk
 ;   ----- = RPM
-;   CASprd
+;   CASprd256
 ;
-; 10cyl 4stroke RPMk = ((390,625*60)/5) = 4,687,500 = $0047868C
-; 10cyl min 71.5266614 RPM ("CASprd" roll over)
+; RPMk = ((390,625*60)/5) = 4,687,500 = $0047868C
 ;
 ;*****************************************************************************************
 ;*****************************************************************************************
@@ -369,26 +348,6 @@ RunRPMDone:
 ; KPH = CONSTANT/PERIOD
 ; Where:
 ; KPH         = Vehicle speed in Kilometers per Hour
-; KPHk = 19 bit constant using 5.12uS IC clock tick (195.3125khz)
-;             ((195,312.5 tickpsec*60secpmin*60minphr)/4971pulsepkm
-; VSSprd = 16 bit period count between consecutive IC events in 1.28uS
-;               resolution. 8000 pulse per mile, 4971 pulse per KM
-;   KPHk
-;   ----- = KPH
-;   VSSprd
-;
-; KPHk = ((195,312.5*60*60)/4971) = 141,445.3832 = $00022885
-; min 2.158318184 KPH
-; Resolution @ 100KPH = .0354KM
-;
-;*****************************************************************************************
-;*****************************************************************************************
-; ------------------------------- KPH CALCULATION SECTION --------------------------------
-;*****************************************************************************************
-;
-; KPH = CONSTANT/PERIOD
-; Where:
-; KPH         = Vehicle speed in Kilometers per Hour
 ; KPHk = 19 bit constant using 2.56uS IC clock tick (390.625khz)
 ;             ((390.625 tickpsec*60secpmin*60minphr)/4971pulsepkm
 ; VSSprd = 16 bit period count between consecutive IC events in 2.56uS
@@ -402,26 +361,6 @@ RunRPMDone:
 ; Resolution @ 100KPH = .0796KM
 ;
 ;*****************************************************************************************
-;*****************************************************************************************
-; - Check the state of the "Run" bit in "engine" bit field. If it is set we are running 
-;   so change the calculations from timer base from 5.12uS to 2.56 uS.
-;******************************************************************************************
-
-	brset engine,run,RunKPH ; If "run" bit of "engine variable is set branch to RunKPH:
-	
-;*****************************************************************************************
-; - Do KPH calculations for 5.12uS time base when there is a new input capture period
-;   using 32x16 divide                            
-;*****************************************************************************************
-
-    ldd  #$2885         ; Load accu D with Lo word of KPHk
-    ldy  #$0002         ; Load accu Y with Hi word of KPHk
-    ldx  VSSprd         ; Load "X" register with value in "VSSprd"
-    ediv                ; Extended divide (Y:D)/(X)=>Y;Rem=>D (Divide "KPHk" by "VSSprd")
-    sty  KPH            ; Copy result to "KPH"
-    bclr ICflgs,KPHcalc ; Clear "KPHcalc" bit of "ICflgs"
-	bra  RunKPHDone     ; Branch to RunKPHDone:
-	
 ;*****************************************************************************************
 ; - Do KPH calculations for 2.56uS time base when there is a new input capture period
 ;   using 32x16 divide                            
@@ -472,7 +411,6 @@ RunKPHDone:
                         ; (Will trigger an interrupt after the delay time)(LED off)
 
 #emac
-
 
 ;*****************************************************************************************
 ;* - Code -                                                                              *  
@@ -558,14 +496,11 @@ ECT6_ISR_Done:
 ; - NOTE! ECT_TC7_ISR (crankshaft position sensor) is handled in state_BEEM488.s module)
 ;*****************************************************************************************
     
-
-
 ECT_CODE_END		EQU	*     ; * Represents the current value of the paged 
                               ; program counter
 ECT_CODE_END_LIN	EQU	@     ; @ Represents the current value of the linear 
                               ; program counter
-                              
-;*****************************************************************************************
+                              ;*****************************************************************************************
 ;* - Tables -                                                                            *   
 ;*****************************************************************************************
 

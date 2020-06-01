@@ -20,7 +20,7 @@
 ;*    You should have received a copy of the GNU General Public License                  *
 ;*    along with S12CBase. If not,see <http://www.gnu.org/licenses/>.                    *
 ;*****************************************************************************************
-;*    Modified for the BEEM488 Engine Controller for the Dodge 488CID (8.0L) V10 engine  *
+;*    Modified for the BPEM488 Engine Controller for the Dodge 488CID (8.0L) V10 engine  *
 ;*    by Robert Hiebert.                                                                 * 
 ;*    Text Editor: Notepad++                                                             *
 ;*    Assembler: HSW12ASM by Dirk Heisswolf                                              *                           
@@ -84,20 +84,20 @@ BASE_VARS_START_LIN       EQU @   ; @ Represents the current value of the linear
 
 ; - Shared Variables -
 
-BEEM488_SHARED_VARS_START       EQU *   ; * Represents the current value of the paged 
+BPEM488_SHARED_VARS_START       EQU *   ; * Represents the current value of the paged 
                                         ; program counter
-BEEM488_SHARED_VARS_START_LIN   EQU @   ; @ Represents the current value of the linear 
+BPEM488_SHARED_VARS_START_LIN   EQU @   ; @ Represents the current value of the linear 
                                         ; program counter
                               
-BEEM488_SHARED_VARS_START_XG    EQU (BEEM488_SHARED_VARS_START_LIN & $FFFF)
+BPEM488_SHARED_VARS_START_XG    EQU (BPEM488_SHARED_VARS_START_LIN & $FFFF)
 
 ; - XGATE Variables -
 
 		ORG   MMAP_XGATE_RAM_START_XG, MMAP_XGATE_RAM_START_LIN   ; $8000, $0F_8000
         
-BEEM488_XGATE_VARS_START_XG    EQU *   ; * Represents the current value of the paged 
+BPEM488_XGATE_VARS_START_XG    EQU *   ; * Represents the current value of the paged 
                                        ; program counter
-BEEM488_XGATE_VARS_START_LIN   EQU @   ; @ Represents the current value of the linear 
+BPEM488_XGATE_VARS_START_LIN   EQU @   ; @ Represents the current value of the linear 
                                        ; program counter
 
 		ORG   MMAP_FLASH_FD_START, MMAP_FLASH_FD_START_LIN   ; $4000, $7F_4000
@@ -116,12 +116,12 @@ BEEM488_XGATE_VARS_START_LIN   EQU @   ; @ Represents the current value of the l
 ; THIS IS THE AFTER RESET ENTRY POINT                                                    *
 ;*****************************************************************************************
 
-BEEM488_CODE_START       EQU  *  ; * Represents the current value of the paged 
+BPEM488_CODE_START       EQU  *  ; * Represents the current value of the paged 
                                  ; program counter
-BEEM488_CODE_START_LIN   EQU  @  ; @ Represents the current value of the linear 
+BPEM488_CODE_START_LIN   EQU  @  ; @ Represents the current value of the linear 
                                  ; program counter
                               
-		ORG   BEEM488_CODE_END, BEEM488_CODE_END_LIN 
+		ORG   BPEM488EM488_CODE_END, BPEM488_CODE_END_LIN 
         
 BASE_CODE_START       EQU  *  ; * Represents the current value of the paged 
                               ; program counter
@@ -132,15 +132,15 @@ BASE_CODE_START_LIN   EQU  @  ; @ Represents the current value of the linear
 
 ; - Tables -
 
-BEEM488_TABS_START       EQU  *  ; * Represents the current value of the paged 
+BPEM488_TABS_START       EQU  *  ; * Represents the current value of the paged 
                                  ; program counter
-BEEM488_TABS_START_LIN   EQU  @  ; @ Represents the current value of the linear 
+BPEM488_TABS_START_LIN   EQU  @  ; @ Represents the current value of the linear 
                                  ; program counter
 
-		ORG   BEEM488_TABS_END, BEEM488_TABS_END_LIN 
+		ORG   BPEM488_TABS_END, BPEM488_TABS_END_LIN 
 	
-BASE_TABS_START       EQU BEEM488_TABS_END
-BASE_TABS_START_LIN   EQU BEEM488_TABS_END_LIN
+BASE_TABS_START       EQU BPEM488_TABS_END
+BASE_TABS_START_LIN   EQU BPEM488_TABS_END_LIN
 
 ;*****************************************************************************************
 ; - Complete last flash phrase - (Required for D-Bug12)
@@ -155,21 +155,21 @@ BASE_TABS_START_LIN   EQU BEEM488_TABS_END_LIN
 
 		ORG   MMAP_XG_FLASH_START_XG, MMAP_XG_FLASH_START_LIN   ; $0800, $78_0800 
         
-BEEM488_XGATE_CODE_START_XG    EQU *   ; * Represents the current value of the paged 
+BPEM488_XGATE_CODE_START_XG    EQU *   ; * Represents the current value of the paged 
                                        ; program counter
-BEEM488_XGATE_CODE_START_LIN   EQU @   ; @ Represents the current value of the linear 
+BPEM488_XGATE_CODE_START_LIN   EQU @   ; @ Represents the current value of the linear 
                                        ; program counter
 
-		ORG   BEEM488_XGATE_CODE_END_XG, BEEM488_XGATE_CODE_END_LIN   
+		ORG   BPEM488_XGATE_CODE_END_XG, BPEM488_XGATE_CODE_END_LIN   
         
 ; - XGATE Tables -
 
-BEEM488_XGATE_TABS_START_XG    EQU *   ; * Represents the current value of the paged 
+BPEM488_XGATE_TABS_START_XG    EQU *   ; * Represents the current value of the paged 
                                        ; program counter
-BEEM488_XGATE_TABS_START_LIN   EQU @   ; @ Represents the current value of the linear 
+BPEM488_XGATE_TABS_START_LIN   EQU @   ; @ Represents the current value of the linear 
                                        ; program counter
 
-		ORG   BEEM488_XGATE_TABS_END_XG, BEEM488_XGATE_TABS_END_LIN 
+		ORG   BPEM488_XGATE_TABS_END_XG, BPEM488_XGATE_TABS_END_LIN 
 
        ALIGN 7,$FF        
 
@@ -177,7 +177,7 @@ BEEM488_XGATE_TABS_START_LIN   EQU @   ; @ Represents the current value of the l
 ;* - Variables -                                                                         *
 ;*****************************************************************************************
 
-		ORG   BEEM488_SHARED_VARS_START, BEEM488_SHARED_VARS_START_LIN
+		ORG   BPEM488_SHARED_VARS_START, BPEM488_SHARED_VARS_START_LIN
         
         ALIGN 1
         
@@ -532,9 +532,9 @@ LoopCntr:   ds 2 ; Counter for "LoopTime" (incremented every Main Loop pass)
 
 ;*****************************************************************************************
 
-BEEM488_SHARED_VARS_END       EQU *   ; * Represents the current value of the paged 
+BPEM488_SHARED_VARS_END       EQU *   ; * Represents the current value of the paged 
                                       ; program counter
-BEEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the linear 
+BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the linear 
                                       ; program counter
 
 ;*****************************************************************************************
@@ -545,7 +545,7 @@ BEEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
 ;* - Code -                                                                              *  
 ;*****************************************************************************************
 
-		ORG   BEEM488_CODE_START, BEEM488_CODE_START_LIN
+		ORG   BPEM488_CODE_START, BPEM488_CODE_START_LIN
         
 ; - Initialization -
 
@@ -1418,18 +1418,18 @@ No_WUE_ASE:
 ;*****************************************************************************************
 
 
-BEEM488_CODE_END		EQU	*     ; * Represents the current value of the paged 
+BPEM488_CODE_END		EQU	*     ; * Represents the current value of the paged 
                                   ; program counter		
-BEEM488_CODE_END_LIN	EQU	@     ; @ Represents the current value of the linear 
+BPEM488_CODE_END_LIN	EQU	@     ; @ Represents the current value of the linear 
                                   ; program counter		            
 
 ;*****************************************************************************************
 ;* - Tables -                                                                            *   
 ;*****************************************************************************************
 
-			ORG 	BEEM488_TABS_START, BEEM488_TABS_START_LIN
+			ORG 	BPEM488_TABS_START, BPEM488_TABS_START_LIN
 
-BEEM488_TABS_START_LIN	EQU	@     ; @ Represents the current value of the linear 
+BPEM488_TABS_START_LIN	EQU	@     ; @ Represents the current value of the linear 
                                   ; program counter			
 
 ;*********************************************************************
@@ -1549,7 +1549,7 @@ TOErates_F:        ; 8 bytes for Throttle Opening Enrichment rate (TpsPctDOT x 1
     dw $01F4,$03E8,$09C4,$1388
 ;        500, 1000, 2500, 5000
 
-DdBndBase_F:       ; 1 byte for injector deadband at 13.2V (mSec * 100)(offset = 968)($03C8)
+DdBndBase_F:       ; 1 byte for injector deadband at 13.2V (mSec * 10)(offset = 968)($03C8)
     db $5A         ; 90 = .9mS
     
 DdBndCor_F:        ; 1 byte for injector deadband voltage correction (mSec/V x 100)(offset = 969)($03C9)
@@ -1722,10 +1722,7 @@ lfpoff_F:     ; 2 bytes for Low fuel pressure alarm off set point (psi*10)(offse
 InjPrFlo_F    ; 2 bytes for Pair of injectors flow rate (L/hr x 100)(offset = 748)($02EC) 
     dw $0190  ; Decimal 400 = 40L/Hr
 
-
-
 ; 750 bytes used, 1024 - 750 = 274 bytes left
-
 
 ;*********************************************************************
 ; Page 3 copied into RAM on start up. All pages 1024 bytes
@@ -1785,13 +1782,13 @@ afrmapBins_F:       ; column bins (36 bytes)(offset = 684)($02AC)
 
 ; 720 bytes used, 1024 - 720 = 304 bytes left
 
-BEEM488_TABS_END		EQU	*     ; * Represents the current value of the paged 
+BPEM488_TABS_END		EQU	*     ; * Represents the current value of the paged 
                                   ; program counter	
-BEEM488_TABS_END_LIN	EQU	@     ; @ Represents the current value of the linear 
+BPEM488_TABS_END_LIN	EQU	@     ; @ Represents the current value of the linear 
                                   ; program counter	
 
 ;*****************************************************************************************
 ;* - Includes -                                                                          *  
 ;*****************************************************************************************
 
-#include ./base_BEEM488.s		; Include S12CBase bundle for BEEM488.s
+#include ./base_BPEM488.s		; Include S12CBase bundle for BPEM488.s
