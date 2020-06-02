@@ -731,17 +731,17 @@ TRAP_ISR:
 ; - Power-on, Low voltage and External reset -
 RESET_EXT_ENTRY:
     movb  #PoLvExrst,ResetFlgs  ; Load "ResetFlgs" with %00000010 (set bit 1)
-    job   BEEM488_CODE_START       ; Jump or Branch to BEEM488_CODE_START: (Start of BEEM488.s)
+    job   BPEM488_CODE_START    ; Jump or Branch to BPEM488_CODE_START: (Start of BPEM488.s)
     
 ; - Clock Monitor reset -
 RESET_CM_ENTRY:
     movb  #Cmrst,ResetFlgs      ; Load "ResetFlgs" with %00000100 (set bit 2)
-    job   BEEM488_CODE_START       ; Jump or Branch to BEEM488_CODE_START: (Start of BEEM488.s)
+    job   BPEM488_CODE_START    ; Jump or Branch to BPEM488_CODE_START: (Start of BPEM488.s)
 
 ; - COP and user reset -
 RESET_COP_ENTRY:
     movb  #Coprst,ResetFlgs     ; Load "ResetFlgs" with %00001000 (set bit 3)
-    job   BEEM488_CODE_START       ; Jump or Branch to BEEM488_CODE_START: (Start of BEEM488.s)
+    job   BPEM488_CODE_START    ; Jump or Branch to BPEM488_CODE_START: (Start of BPEM488.s)
     
 VECTAB_CODE_END		EQU	*     ; * Represents the current value of the paged 
                               ; program counter	

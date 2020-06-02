@@ -292,7 +292,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     std   RV11Adc   ; Copy to RV11 ADC
     ldd   ATD0DR5H  ; Load accumulator with value in ATD Ch05 
     std   mapAdc    ; Copy to mapAdc
-    std   Ch05Cmp   ; Copy to Ch05Cmp(used for minimum Ch05 calculations)
+;    std   Ch05Cmp   ; Copy to Ch05Cmp(used for minimum Ch05 calculations)
     ldd   ATD0DR6H  ; Load accumulator with value in ATD Ch06 
     std   baroAdc   ; Copy to baroAdc
     ldd   ATD0DR7H  ; Load accumulator with value in ATD Ch07 
@@ -332,7 +332,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     std   RV11Adc   ; Copy to RV11 ADC
     ldd   ATD0DR5H  ; Load accumulator with value in ATD Ch05 
     std   mapAdc    ; Copy to mapAdc
-    std   Ch05Cmp   ; Copy to Ch05Cmp(used for minimum Ch05 calculations)
+;    std   Ch05Cmp   ; Copy to Ch05Cmp(used for minimum Ch05 calculations)
     ldd   ATD0DR6H  ; Load accumulator with value in ATD Ch06 
     std   baroAdc   ; Copy to baroAdc
     ldd   ATD0DR7H  ; Load accumulator with value in ATD Ch07 
@@ -685,7 +685,7 @@ ItrimDone:
 ;*****************************************************************************************
 
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy  #veBins    ; Load index register Y with address of first configurable constant
+    ldy  #veBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 1 (veBins)
     ldd  $03DD,Y    ; Load Accu D with value in buffer RAM page 1 offset 989 (tpsMin)
     ldy  #$000A      ; Load index register Y with decimal 10
@@ -696,7 +696,7 @@ ItrimDone:
     emul             ; Multiply (D)x(Y)=>Y:D  (multiply "tpsADC" by 10) 
     pshd             ; Push to stack (V)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy  #vebins    ; Load index register Y with address of first configurable constant
+    ldy  #vebins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 1 (vebins)
     ldd  $03DF,Y    ; Load Accu D with value in buffer RAM page 1 offset 991 (tpsMax)
     ldy  #$000A      ; Load index register Y with decimal 10
@@ -795,10 +795,10 @@ ItrimDone:
 
 CHK_HET_OFF:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins    ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
-    ldd  $02D2,Y    ; Load Accu D with value in buffer RAM page 2 offset 722 (hetoff)
-	cpd  Cltx10     ; (A:B)-(M:M+1) Compare "hetoff" with "Cltx10"
+    ldd  $02D2,Y    ; Load Accu D with value in buffer RAM page 2 offset 722 (het_off)
+	cpd  Cltx10     ; (A:B)-(M:M+1) Compare "hetoff" with "Cltx10
     bhs  CLEAR_HET  ; If "hetoff" is higher or the same as "Cltx10" branch to CLEAR_HET 	
     bra  CHK_HET_ON ; Branch to CHK_HET_ON:
 
@@ -810,12 +810,12 @@ CLEAR_HET:
 	 
 CHK_HET_ON:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins    ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
     ldd  $02D0,Y    ; Load Accu D with value in buffer RAM page 2 offset 720 (heton)
 	cpd  Cltx10     ; (A:B)-(M:M+1) Compare "heton" with "Cltx10"
     bls  SET_HET    ; If "heton" is lower or the same as "Cltx10" branch to SET_HET 	
-    bra  HET_ALARM_DONE: ; Branch to HET_ALARM_DONE:
+    bra  HET_ALARM_DONE ; Branch to HET_ALARM_DONE:
 
 SET_HET:
      brset   alarmbits,HET,HET_ALARM_DONE ; If "HET" bit of "alarmbits" is set, branch to
@@ -830,7 +830,7 @@ HET_ALARM_DONE:
 
 CHK_HOT_OFF:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins    ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
     ldd  $02D6,Y    ; Load Accu D with value in buffer RAM page 2 offset 726 (hotoff)
 	cpd  Eotx10     ; (A:B)-(M:M+1) Compare "hotoff" with "Eotx10"
@@ -845,12 +845,12 @@ CLEAR_HOT:
 	 
 CHK_HOT_ON:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins    ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
     ldd  $02D4,Y    ; Load Accu D with value in buffer RAM page 2 offset 724 (hoton)
 	cpd  Eotx10     ; (A:B)-(M:M+1) Compare "hoton" with "Eotx10"
     bls  SET_HOT    ; If "hoton" is lower or the same as "Eotx10" branch to SET_HOT 	
-    bra  HOT_ALARM_DONE: ; Branch to HOT_ALARM_DONE:
+    bra  HOT_ALARM_DONE ; Branch to HOT_ALARM_DONE:
 
 SET_HOT:
      brset   alarmbits,HOT,HOT_ALARM_DONE ; If "HOT" bit of "alarmbits" is set, branch to
@@ -865,7 +865,7 @@ HOT_ALARM_DONE:
 
 CHK_HFT_OFF:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins    ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
     ldd  $02DA,Y    ; Load Accu D with value in buffer RAM page 2 offset 730 (hftoff)
 	cpd  Eftx10     ; (A:B)-(M:M+1) Compare "hftoff" with "Eftx10"
@@ -880,12 +880,12 @@ CLEAR_HFT:
 	 
 CHK_HFT_ON:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins    ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
     ldd  $02D8,Y    ; Load Accu D with value in buffer RAM page 2 offset 728 (hfton)
 	cpd  Eftx10     ; (A:B)-(M:M+1) Compare "hfton" with "Eftx10"
     bls  SET_HFT    ; If "hfton" is lower or the same as "Eftx10" branch to SET_HFT 	
-    bra  HFT_ALARM_DONE: ; Branch to HFT_ALARM_DONE:
+    bra  HFT_ALARM_DONE ; Branch to HFT_ALARM_DONE:
 
 SET_HFT:
      brset   alarmbits,HFT,HFT_ALARM_DONE ; If "HFT" bit of "alarmbits" is set, branch to
@@ -900,10 +900,10 @@ HFT_ALARM_DONE:
 
 CHK_HEGT_OFF:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins     ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E     ; Load index register Y with address of first configurable constant
                      ; on buffer RAM page 2 (stBins)
     ldd  $02DE,Y     ; Load Accu D with value in buffer RAM page 2 offset 734 (hegtoff)
-	cpd  Egt         ; (A:B)-(M:M+1) Compare "hegtoff" with "Egt"
+	cpd  Egt         ; (A:B)-(M:M+1) Compare "hegt_ff" with "Egt"
     bhs  CLEAR_HEGT  ; If "hegtoff" is higher or the same as "Egt" branch to CLEAR_HEGT 	
     bra  CHK_HEGT_ON ; Branch to CHK_HEGT_ON:
 
@@ -915,12 +915,12 @@ CLEAR_HEGT:
 	 
 CHK_HEGT_ON:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins     ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E     ; Load index register Y with address of first configurable constant
                      ; on buffer RAM page 2 (stBins)
     ldd  $02DC,Y     ; Load Accu D with value in buffer RAM page 2 offset 732 (hegton)
 	cpd  Egt         ; (A:B)-(M:M+1) Compare "hegton" with "Egt"
     bls  SET_HEGT    ; If "hegton" is lower or the same as "Egt" branch to SET_HEGT 	
-    bra  HEGT_ALARM_DONE: ; Branch to HEGT_ALARM_DONE:
+    bra  HEGT_ALARM_DONE ; Branch to HEGT_ALARM_DONE:
 
 SET_HEGT:
      brset   alarmbits,HEGT,HEGT_ALARM_DONE ; If "HEGT" bit of "alarmbits" is set, branch to
@@ -935,7 +935,7 @@ HEGT_ALARM_DONE:
 
 CHK_LOP_OFF:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins    ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
     ldd  $02E2,Y    ; Load Accu D with value in buffer RAM page 2 offset 738 (lopoff)
 	cpd  Eopx10     ; (A:B)-(M:M+1) Compare "lopoff" with "Eopx10"
@@ -950,12 +950,12 @@ CLEAR_LOP:
 	 
 CHK_LOP_ON:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins     ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E     ; Load index register Y with address of first configurable constant
                      ; on buffer RAM page 2 (stBins)
     ldd  $02E0,Y     ; Load Accu D with value in buffer RAM page 2 offset 736 (lopon)
 	cpd  Eopx10      ; (A:B)-(M:M+1) Compare "lopon" with "Eopx10"
     bhs  SET_LOP     ; If "lopon" is higher or the same as "Eopx10" branch to SET_LOP 	
-    bra  LOP_ALARM_DONE: ; Branch to LOP_ALARM_DONE:
+    bra  LOP_ALARM_DONE ; Branch to LOP_ALARM_DONE:
 
 SET_LOP:
      brset   alarmbits,LOP,LOP_ALARM_DONE ; If "LOP" bit of "alarmbits" is set, branch to
@@ -970,11 +970,11 @@ LOP_ALARM_DONE:
 
 CHK_HFP_OFF:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins    ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
     ldd  $02EA,Y    ; Load Accu D with value in buffer RAM page 2 offset 746 (hfpoff)
-	cpd  Efpx10     ; (A:B)-(M:M+1) Compare "hfpoff" with "Efpx10"
-    bhs  CLEAR_HFP  ; If "hfpoff" is higher or the same as "Efpx10" branch to CLEAR_HFP	
+	cpd  Efpx10     ; (A:B)-(M:M+1) Compare "hfp_off" with "Efpx10"
+    bhs  CLEAR_HFP  ; If "hfpoff" is higher or he same as "Efpx10" branch to CLEAR_HFP	
     bra  CHK_HFP_ON ; Branch to CHK_HFP_ON:
 
 CLEAR_HFP:
@@ -985,12 +985,12 @@ CLEAR_HFP:
 	 
 CHK_HFP_ON:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins     ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E     ; Load index register Y with address of first configurable constant
                      ; on buffer RAM page 2 (stBins)
     ldd  $02E8,Y     ; Load Accu D with value in buffer RAM page 2 offset 744 (hfpon)
 	cpd  Efpx10      ; (A:B)-(M:M+1) Compare "hfpon" with "Efpx10"
     bls  SET_HFP     ; If "hfpon" is lower or the same as "Efpx10" branch to SET_HFP 	
-    bra  HFP_ALARM_DONE: ; Branch to HFP_ALARM_DONE:
+    bra  HFP_ALARM_DONE ; Branch to HFP_ALARM_DONE:
 
 SET_HFP:
      brset   alarmbits,HFP,HFP_ALARM_DONE ; If "LOP" bit of "alarmbits" is set, branch to
@@ -1005,7 +1005,7 @@ HFP_ALARM_DONE:
 
 CHK_LFP_OFF:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins    ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
     ldd  $02EA,Y    ; Load Accu D with value in buffer RAM page 2 offset 746 (lfpoff)
 	cpd  Efpx10     ; (A:B)-(M:M+1) Compare "lfpoff" with "Efpx10"
@@ -1020,12 +1020,12 @@ CLEAR_LFP:
 	 
 CHK_LFP_ON:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins     ; Load index register Y with address of first configurable constant
+    ldy  #stBins_E     ; Load index register Y with address of first configurable constant
                      ; on buffer RAM page 2 (stBins)
     ldd  $02E8,Y     ; Load Accu D with value in buffer RAM page 2 offset 744 (lfpon)
 	cpd  Efpx10      ; (A:B)-(M:M+1) Compare "lfpon" with "Efpx10"
     bhs  SET_LFP     ; If "lfpon" is higher or the same as "Efpx10" branch to SET_LFP 	
-    bra  LFP_ALARM_DONE: ; Branch to LFP_ALARM_DONE:
+    bra  LFP_ALARM_DONE ; Branch to LFP_ALARM_DONE:
 
 SET_LFP:
      brset   alarmbits,LFP,LFP_ALARM_DONE ; If "LOP" bit of "alarmbits" is set, branch to

@@ -388,22 +388,22 @@ BASE_TABS_END_LIN	    EQU	@     ; @ Represents the current value of the linear
 ;* - Includes -                                                                          *  
 ;*****************************************************************************************
 
-#include ./regdefs_BEEM488.s     ; S12XEP100 register map for BEEM488
-#include ./vectabs_BEEM488.s     ; S12XEP100 vector table for BEEM488
-#include ./mmap_BEEM488.s        ; S12XEP100 memory map
-#include ./eeem_BEEM488.s        ; EEPROM Emulation initialize, enable, disable Macros        
-#include ./clock_BEEM488.s       ; S12XEP100 PLL and clock related features
-#include ./rti_BEEM488.s         ; RTI time rates
-#include ./sci0_BEEM488.s        ; SCI0 driver for Tuner Studio communications                  
-#include ./adc0_BEEM488.s        ; ADC0 driver (ADC inputs)     
-#include ./gpio_BEEM488.s        ; Initialization all ports                                    
-#include ./ect_BEEM488.s         ; Enhanced Capture Timer driver (triggers, ignition) 
-#include ./tim_BEEM488.s         ; Timer driver (ignition, injection)                                  
-#include ./state_BEEM488.s       ; State machine to determine crank position and cam phase                          
-#include ./interp_BEEM488.s      ; Interpolation subroutines and macros                         
+#include ./regdefs_BPEM488.s     ; S12XEP100 register map
+#include ./vectabs_BPEM488.s     ; S12XEP100 vector table
+#include ./mmap_BPEM488.s        ; S12XEP100 memory map
+#include ./eeem_BPEM488.s        ; EEPROM Emulation initialize, enable, disable Macros        
+#include ./clock_BPEM488.s       ; S12XEP100 PLL and clock related features
+#include ./rti_BPEM488.s         ; RTI time rates
+#include ./sci0_BPEM488.s        ; SCI0 driver for Tuner Studio communications                  
+#include ./adc0_BPEM488.s        ; ADC0 driver (ADC inputs)     
+#include ./gpio_BPEM488.s        ; Initialization all ports                                    
+#include ./ect_BPEM488.s         ; Enhanced Capture Timer driver (triggers, ignition) 
+#include ./tim_BPEM488.s         ; Timer driver (ignition, injection)                                  
+#include ./state_BPEM488.s       ; State machine to determine crank position and cam phase                          
+#include ./interp_BPEM488.s      ; Interpolation subroutines and macros                         
 #include ./igncalcs_BPEM488.s    ; Calculations for igntion timing 
 #include ./injcalcs_BPEM488.s    ; Calculations for injector pulse widths      
-#include ./DodgeTherm_BEEM488.s  ; Lookup table for Dodge temperature sensors                   
+#include ./DodgeTherm_BPEM488.s  ; Lookup table for Dodge temperature sensors                   
 
 
 

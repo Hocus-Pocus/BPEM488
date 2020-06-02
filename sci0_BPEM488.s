@@ -387,7 +387,7 @@ StorePg1Wd:
     ldx   rxoffsetMSB  ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
     ldd   dataMSB      ; Load double accu D with value in "dataMSB:dataLSB"
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    std   veBins,x     ; Copy "W" data word to "veBins" offset in index register X
+    std   veBins_E,x     ; Copy "W" data word to "veBins" offset in index register X
     bra   StoreDone    ; Branch to StoreDone:
 
 StorePg1Bt:
@@ -399,7 +399,7 @@ StorePg1Bt:
     ldx   rxoffsetMSB  ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
     ldaa  dataLSB      ; Load accu A with value in "dataLSB"
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    staa  veBins,x     ; Copy "W" data byte to "veBins" offset in index register X
+    staa  veBins_E,x     ; Copy "W" data byte to "veBins" offset in index register X
     bra   StoreDone    ; Branch to StoreDone:                        
 
 StorePg2:
@@ -414,14 +414,14 @@ StorePg2Wd:
     ldx   rxoffsetMSB  ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
     ldd   dataMSB      ; Load double accu D with value in "dataMSB:dataLSB"
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    std   stBins,x     ; Copy "W" data word to "stBins" offset in index register X
+    std   stBins_E,x     ; Copy "W" data word to "stBins" offset in index register X
     bra   StoreDone    ; Branch to StoreDone:
      
 StorePg2Bt:
     ldx   rxoffsetMSB  ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
     ldaa  dataLSB      ; Load accu A with value in "dataLSB"
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    staa  stBins,x     ; Copy "W" data byte to "stBins" offset in index register X
+    staa  stBins_E,x     ; Copy "W" data byte to "stBins" offset in index register X
     bra   StoreDone    ; Branch to StoreDone:
      
 StorePg3:
@@ -436,14 +436,14 @@ StorePg3Wd:
     ldx   rxoffsetMSB  ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
     ldd   dataMSB      ; Load double accu D with value in "dataMSB:dataLSB"
     movb  #(BUF_RAM_P3_START>>16),EPAGE  ; Move $FD into EPAGE
-    std   afrBins,x    ; Copy "W" data word to "afrBins" offset in index register X
+    std   afrBins_E,x    ; Copy "W" data word to "afrBins" offset in index register X
     bra   StoreDone    ; Branch to StoreDone:
      
 StorePg3Bt:
     ldx   rxoffsetMSB  ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
     ldaa  dataLSB      ; Load accu A with value in "dataLSB"
     movb  #(BUF_RAM_P3_START>>16),EPAGE  ; Move $FD into EPAGE
-    staa  afrBins,x    ; Copy "W" data byte to "afrBins" offset in index register X
+    staa  afrBins_E,x    ; Copy "W" data byte to "afrBins" offset in index register X
                         
 StoreDone:
     clr   rxmode       ; Clear "rxmode"
@@ -508,7 +508,7 @@ StartPg1:
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldx   rxoffsetMSB   ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
                         ;(Page 1 offset)
-    ldaa  veBins,X      ; Load Accu "A" with value in "veBins, offset in "rxoffsetMSB:rxoffsetLSB"     
+    ldaa  veBins_E,X      ; Load Accu "A" with value in "veBins, offset in "rxoffsetMSB:rxoffsetLSB"     
 ;*    ldaa  veBins        ; Load accu A with first value at "veBins" 
     staa  SCI0DRL       ; Copy to SCI0DRL (first byte to send)
     movw  #$0000,txcnt  ; Clear "txcnt"
@@ -519,7 +519,7 @@ StartPg2:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
     ldx   rxoffsetMSB   ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
                         ;(Page 2 offset)
-    ldaa  stBins,X      ; Load Accu "A" with value in "stBins, offset in "rxoffsetMSB:rxoffsetLSB"  
+    ldaa  stBins_E,X      ; Load Accu "A" with value in "stBins, offset in "rxoffsetMSB:rxoffsetLSB"  
 ;*    ldaa  stBins        ; Load accu A with first value at "stBins" 
     staa  SCI0DRL       ; Copy to SCI0DRL (first byte to send)
     movw  #$0000,txcnt  ; Clear "txcnt"
@@ -530,7 +530,7 @@ StartPg3:
     movb  #(BUF_RAM_P3_START>>16),EPAGE  ; Move $FD into EPAGE
     ldx   rxoffsetMSB   ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
                         ;(Page 3 offset)
-    ldaa  afrBins,X     ; Load Accu "A" with value in "afrBins, offset in "rxoffsetMSB:rxoffsetLSB"  
+    ldaa  afrBins_E,X     ; Load Accu "A" with value in "afrBins, offset in "rxoffsetMSB:rxoffsetLSB"  
 ;*    ldaa  afrBins       ; Load accu A with first value at "afrBins" 
     staa  SCI0DRL       ; Copy to SCI0DRL (first byte to send)
     movw  #$0000,txcnt  ; Clear "txcnt"
@@ -665,7 +665,7 @@ SendVars:              ; "txmode" = 2
 SendPg1:               ; "txmode" = 3
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
 ;*    ldaa  veBins,X     ; Load accu A with value at "veBins:", offset in "X" register
-    ldd   #veBins      ; Load double accumulator D with address of "veBins"
+    ldd   #veBins_E      ; Load double accumulator D with address of "veBins"
     addd  rxoffsetMSB  ; (A:B)+(M:M+1)->A:B Add the address of "veBins" with the offset 
                        ; value to get the effective address of the byte to be sent
     ldaa  D,X          ; Load Accu A with value in the effective address
@@ -674,7 +674,7 @@ SendPg1:               ; "txmode" = 3
 SendPg2:               ; "txmode" = 4
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
 ;*    ldaa  stBins,X     ; Load accu A with value at "stBins:", offset in "X" register
-    ldd   #stBins      ; Load double accumulator D with address of "stBins"
+    ldd   #stBins_E      ; Load double accumulator D with address of "stBins"
     addd  rxoffsetMSB  ; (A:B)+(M:M+1)->A:B Add the address of "stBins" with the offset 
                        ; value to get the effective address of the byte to be sent
     ldaa  D,X          ; Load Accu A with value in the effective address
@@ -683,7 +683,7 @@ SendPg2:               ; "txmode" = 4
 SendPg3:               ; "txmode" = 5
     movb  #(BUF_RAM_P3_START>>16),EPAGE  ; Move $FD into EPAGE
 ;*    ldaa  afrBins,X    ; Load accu A with value at "afrBins:", offset in "X" register
-    ldd   #afrBins      ; Load double accumulator D with address of "afrBins"
+    ldd   #afrBins_E      ; Load double accumulator D with address of "afrBins"
     addd  rxoffsetMSB  ; (A:B)+(M:M+1)->A:B Add the address of "afrBins" with the offset 
                        ; value to get the effective address of the byte to be sent
     ldaa  D,X          ; Load Accu A with value in the effective address

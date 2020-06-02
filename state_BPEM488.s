@@ -291,7 +291,7 @@ STATE_STATUS_done:
 ;*****************************************************************************************
 								 
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #veBins       ; Load index register Y with address of first configurable 
+    ldy   #veBins_E       ; Load index register Y with address of first configurable 
                         ; constant on buffer RAM page 1 (vebins)
     ldd   $03DB,Y       ; Load Accu A with value in buffer RAM page 1 offset 987 
                         ; "Stallcnt" (stall counter)(offset = 987) 

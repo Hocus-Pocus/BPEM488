@@ -89,15 +89,15 @@ BPEM488_SHARED_VARS_START       EQU *   ; * Represents the current value of the 
 BPEM488_SHARED_VARS_START_LIN   EQU @   ; @ Represents the current value of the linear 
                                         ; program counter
                               
-BPEM488_SHARED_VARS_START_XG    EQU (BPEM488_SHARED_VARS_START_LIN & $FFFF)
+;BPEM488_SHARED_VARS_START_XG    EQU (BPEM488_SHARED_VARS_START_LIN & $FFFF)
 
-; - XGATE Variables -
+;; - XGATE Variables -
 
-		ORG   MMAP_XGATE_RAM_START_XG, MMAP_XGATE_RAM_START_LIN   ; $8000, $0F_8000
+;		ORG   MMAP_XGATE_RAM_START_XG, MMAP_XGATE_RAM_START_LIN   ; $8000, $0F_8000
         
-BPEM488_XGATE_VARS_START_XG    EQU *   ; * Represents the current value of the paged 
+;BPEM488_XGATE_VARS_START_XG    EQU *   ; * Represents the current value of the paged 
                                        ; program counter
-BPEM488_XGATE_VARS_START_LIN   EQU @   ; @ Represents the current value of the linear 
+;BPEM488_XGATE_VARS_START_LIN   EQU @   ; @ Represents the current value of the linear 
                                        ; program counter
 
 		ORG   MMAP_FLASH_FD_START, MMAP_FLASH_FD_START_LIN   ; $4000, $7F_4000
@@ -121,7 +121,7 @@ BPEM488_CODE_START       EQU  *  ; * Represents the current value of the paged
 BPEM488_CODE_START_LIN   EQU  @  ; @ Represents the current value of the linear 
                                  ; program counter
                               
-		ORG   BPEM488EM488_CODE_END, BPEM488_CODE_END_LIN 
+		ORG   BPEM488_CODE_END, BPEM488_CODE_END_LIN 
         
 BASE_CODE_START       EQU  *  ; * Represents the current value of the paged 
                               ; program counter
@@ -151,25 +151,25 @@ BASE_TABS_START_LIN   EQU BPEM488_TABS_END_LIN
 ;*		FILL	$FF, 8-(*&7)	
        ALIGN 7,$FF          ; This is the better option
        
-; - XGATE Code -
+;; - XGATE Code -
 
 		ORG   MMAP_XG_FLASH_START_XG, MMAP_XG_FLASH_START_LIN   ; $0800, $78_0800 
         
-BPEM488_XGATE_CODE_START_XG    EQU *   ; * Represents the current value of the paged 
+;BPEM488_XGATE_CODE_START_XG    EQU *   ; * Represents the current value of the paged 
                                        ; program counter
-BPEM488_XGATE_CODE_START_LIN   EQU @   ; @ Represents the current value of the linear 
+;BPEM488_XGATE_CODE_START_LIN   EQU @   ; @ Represents the current value of the linear 
                                        ; program counter
 
-		ORG   BPEM488_XGATE_CODE_END_XG, BPEM488_XGATE_CODE_END_LIN   
+;		ORG   BPEM488_XGATE_CODE_END_XG, BPEM488_XGATE_CODE_END_LIN   
         
-; - XGATE Tables -
+;; - XGATE Tables -
 
-BPEM488_XGATE_TABS_START_XG    EQU *   ; * Represents the current value of the paged 
+;BPEM488_XGATE_TABS_START_XG    EQU *   ; * Represents the current value of the paged 
                                        ; program counter
-BPEM488_XGATE_TABS_START_LIN   EQU @   ; @ Represents the current value of the linear 
+;BPEM488_XGATE_TABS_START_LIN   EQU @   ; @ Represents the current value of the linear 
                                        ; program counter
 
-		ORG   BPEM488_XGATE_TABS_END_XG, BPEM488_XGATE_TABS_END_LIN 
+;		ORG   BPEM488_XGATE_TABS_END_XG, BPEM488_XGATE_TABS_END_LIN 
 
        ALIGN 7,$FF        
 
@@ -740,7 +740,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
     ldd    #$400        ; Load accu D with decimal 1024
     ldx    #veBins_F    ; Load index register X with the address  NOTE CHANGE
                         ; of the first value in "veBins_F" table (Flash)
-    ldy    #veBins      ; Load index register Y with the address  NOTE CHANGE
+    ldy    #veBins_E      ; Load index register Y with the address  NOTE CHANGE
                         ; of the first value in "veBins" table (Ram)
 
 CopyPage1:
@@ -758,7 +758,7 @@ CopyPage1:
     ldd    #$400        ; Load accu D with decimal 1024
     ldx    #stBins_F    ; Load index register X with the address  
                         ; of the first value in "stBins_F" table (Flash)
-    ldy    #stBins      ; Load index register Y with the address  
+    ldy    #stBins_E      ; Load index register Y with the address  
                         ; of the first value in "stBins" table (Ram)
 
 CopyPage2:
@@ -776,7 +776,7 @@ CopyPage2:
     ldd    #$400        ; Load accu D with decimal 1024
     ldx    #afrBins_F   ; Load index register X with the address  
                         ; of the first value in "afrBins_F" table (Flash)
-    ldy    #afrBins     ; Load index register Y with the address  
+    ldy    #afrBins_E     ; Load index register Y with the address  
                         ; of the first value in "afrBins" table (Ram)
 
 CopyPage3:
@@ -893,7 +893,7 @@ PA6Done:
 ;*****************************************************************************************
 
     PRIME_PW_LU              ; (Macro in injcalcs_BEEM488.s)
-	movw primePWtk,InjOCadd  ; Copy value in "primePWtk" to "InjOCadd" (Primer pulse width 
+	movw primePWtk,InjOCadd2 ; Copy value in "primePWtk" to "InjOCadd2" (Primer pulse width 
 	                         ; in 5.12uS res to injector timer output compare adder)
 
 ;*****************************************************************************************
@@ -1068,9 +1068,10 @@ TrimChkDone:
 ; - If we have an audible alarm see if it should be silenced. 
 ;*****************************************************************************************
 
-   brclr alarmbits,NoAlarms ; If "alarmbits" is clear branch to NoAlarms: (no alarms so 
+    ldaa  alarmbits         ; "alarmbits"-> Accu A
+    beq   NoAlarms          ; If "alarmbits" is clear branch to NoAlarms: (no alarms so 
                             ; fall through)
-   
+                            
     CHECK_AUDIBLE_ALARM     ; Macro in adc0BPEM488.s
 	
 NoAlarms:
@@ -1249,7 +1250,7 @@ CrankMode:
 ;*****************************************************************************************
 
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins       ; Load index register Y with address of first configurable 
+    ldy   #vebins_E       ; Load index register Y with address of first configurable 
                         ; constant on buffer RAM page 1 (vebins)
     ldx   $03D6,Y       ; Load Accu X with value in buffer RAM page 1 offset 982 
                         ; "FloodClear" (Flood Clear threshold)   
@@ -1359,9 +1360,15 @@ RunMode:
 ; - Determine if we require Warmup Enrichmeents and or After Start Enrichments
 ;*****************************************************************************************
 
-    brclr   engine,WUEon,No_WUE_ASE ; If "WUEon" bit of "engine" bit field is clear
-                                       ; Branch to No_WUE_ASE: (engine is warm so no  
+    brclr   engine,WUEon,No_WUE_ASE1 ; If "WUEon" bit of "engine" bit field is clear
+                                       ; Branch to No_WUE_ASE1: (engine is warm so no  
 									   ; enrichments are required)
+    bra  No_WUE_ASE_LONG_BRANCH         ; branch to No_WUE-ASE_LONG_BRANCH:
+    
+No_WUE_ASE1:
+    job No_WUE_ASE                     ; Jump or branch to No_WUE_ASE (long branch)
+    
+No_WUE_ASE_LONG_BRANCH:
 									   
 ;*****************************************************************************************
 ; - WUE and or ASE is in progress so do the WUE/ASE calculations

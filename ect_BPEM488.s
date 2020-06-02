@@ -314,12 +314,12 @@ ECT_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
     ldd  #$C346         ; Load accu D with Lo word of  10 cyl RPMk (5.12uS clock tick)
     ldy  #$0023         ; Load accu Y with Hi word of 10 cyl RPMk (5.12uS clock tick)
-    ldx  CASprd512    ; Load "X" register with value in "CASprd512"
+    ldx  CASprd512      ; Load "X" register with value in "CASprd512"
     ediv                ; Extended divide (Y:D)/(X)=>Y;Rem=>D 
 	                    ;(Divide "RPMk" by "CASprd512")
     sty  RPM            ; Copy result to "RPM"
     bclr ICflgs,RPMcalc ; Clear "RPMcalc" bit of "ICflgs"
-	bra  RunRPMDone:    ; Branch to RunRPMDone:  
+	bra  RunRPMDone    ; Branch to RunRPMDone:  
 
 ;*****************************************************************************************
 ; - Do RPM calculations for 2.56uS time base when there is a new input capture period

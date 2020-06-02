@@ -234,7 +234,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
                      ; Absolute Pressure*10 )
     ldd   RPM        ; Load double accumulator D with value in "RPM" (Row value RPM)
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy   #stBins    ; Load index register Y with address of the first value in ST table 
+    ldy   #stBins_E    ; Load index register Y with address of the first value in ST table 
                      ;(in RAM)   
     jsr   3D_LOOKUP  ; Jump to subroutine at 3D_LOOKUP:
     std   STcurr     ; Copy result to "STcurr"
@@ -248,7 +248,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    movw #veBins,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
+    movw #veBins_E,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
                             ;  ->page where the desired curve resides 
     movw #$017A,CrvRowOfst  ; 378 -> Offset from the curve page to the curve row(dwellvolts)
 	                        ;(actual offset is 756
@@ -328,7 +328,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 
    ldd   STandItrmtk     ; "STandItrmtk" -> Accu D 
-   add   DwellFintk      ; (A:B)+(M:M+1)->A:B "STandItrmtk" + "DwellFintk" = "Advancetk"
+   addd  DwellFintk      ; (A:B)+(M:M+1)->A:B "STandItrmtk" + "DwellFintk" = "Advancetk"
    std   Advancetk       ; Copy result to "Advancetk" 
 
 ;*****************************************************************************************
@@ -410,7 +410,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 
    ldd   STandItrmtk     ; "STandItrmtk" -> Accu D 
-   add   DwellFintk      ; (A:B)+(M:M+1)->A:B "STandItrmtk" + "DwellFintk" = "Advancetk"
+   addd  DwellFintk      ; (A:B)+(M:M+1)->A:B "STandItrmtk" + "DwellFintk" = "Advancetk"
    std   Advancetk       ; Copy result to "Advancetk" 
 
 ;*****************************************************************************************
