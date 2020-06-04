@@ -1,7 +1,7 @@
 ;        1         2         3         4         5         6         7         8         9
 ;23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 ;*****************************************************************************************
-;* S12CBase - (gpio_BPEM488.s                                                          *
+;* S12CBase - (gpio_BPEM488.s                                                            *
 ;*****************************************************************************************
 ;*    Copyright 2010-2012 Dirk Heisswolf                                                 *
 ;*    This file is part of the S12CBase framework for Freescale's S12(X) MCU             * 
@@ -377,9 +377,12 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ; - Energise the Fuel pump relay and the Emergency Shutdown relay on Port B Bit0 and Bit1
 ;*****************************************************************************************
 
-    ldaa   PORTB    ; Load Accu A with value in Port B (LED9 board 1 to 28)
-    oraa   #$03     ; Bitwise "OR" Accu A with %00000011 (set bits 0 and 1)
-    staa   PORTB    ; Copy to Port B  (set bits 0 and 1)
+    bset  PORTB,FuelPump  ; Set "FuelPump" pin on Port B(LED9 board 1 to 28)
+	bset  PORTB,ASDRelay  ; Set "ASDRelay" pin on Port B(LED23 board 1 to 28)
+	
+;    ldaa   PORTB    ; Load Accu A with value in Port B (LED9 board 1 to 28)
+;    oraa   #$03     ; Bitwise "OR" Accu A with %00000011 (set bits 0 and 1)
+;    staa   PORTB    ; Copy to Port B  (set bits 0 and 1)
 
 #emac
 
@@ -389,9 +392,12 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ; - De-energise the Fuel pump relay and the Emergency Shutdown relay on Port B Bit0, Bit1
 ;*****************************************************************************************
 
-    ldaa   PORTB    ; Load Accu A with value in Port B (LED9 board 1 to 28)
-    anda   #$03     ; Bitwise "AND" Accu A with %00000011 (clear bits 0 and 1)
-    staa   PORTB    ; Copy to Port B  (clear bits 0 and 1)
+    bclr  PORTB,FuelPump  ; Clear "FuelPump" pin on Port B(LED9 board 1 to 28)
+	bclr  PORTB,ASDRelay  ; Clear "ASDRelay" pin on Port B(LED23 board 1 to 28)
+
+;    ldaa   PORTB    ; Load Accu A with value in Port B (LED9 board 1 to 28)
+;    anda   #$03     ; Bitwise "AND" Accu A with %00000011 (clear bits 0 and 1)
+;    staa   PORTB    ; Copy to Port B  (clear bits 0 and 1)
 
 #emac
 

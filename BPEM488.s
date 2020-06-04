@@ -241,7 +241,7 @@ KPH:          ds 2 ; Vehicle speed (KpH x 10)(offset=70)
 ; - Fuel calculation variables
 ;*****************************************************************************************
 
-ReqFuel:      ds 2 ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)(offset=72)
+reqFuel:      ds 2 ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)(offset=72)
 AFRcurr:      ds 2 ; Current value in AFR table (AFR x 100)(offset=74) 
 VEcurr:       ds 2 ; Current value in VE table (% x 10)(offset=76) 
 barocor:      ds 2 ; Barometric Pressure Correction (% x 10)(offset=78)
@@ -309,11 +309,6 @@ testValb:     ds 1  ; Byte test value (for program developement only)(offset=146
 ;*****************************************************************************************
 ; - This marks the end of the real time variables (147 bytes in total)
 ;*****************************************************************************************
-
-
-;xgate_placehold1:  ds 1  ; Place holder for xgate even address (not part of real time downloads)
-                         ; Comment this out if byte number above is even      
-
 ;*****************************************************************************************
 ; --------------------------------- RS232 equates ----------------------------------------                                                                       
 ;*****************************************************************************************
@@ -344,9 +339,10 @@ FldClr       equ $80  ; %10000000, bit 7, 0 = not in flood clear mode(Grn),
 ; "engine2" equates
 ;*****************************************************************************************
 
-NoCrank        equ $01 ; %00000001, bit 0, 0 = Crank mode not permitted(Red),
-                                     ; 1 = Crank mode permitted(Grn)
-eng2Bit1       equ $02 ; %00000010, bit 1, 0 = , 1 = 
+base512        equ $01 ; %00000001, bit 0, 0 = 5.12uS time base off(White),
+                                         ; 1 = 5.12uS time base on(Grn)
+base256        equ $02 ; %00000010, bit 1, 0 = 2.56uS time base off(White),
+                                         ; 1 = 2.56uS time base on(Grn)
 eng2Bit2       equ $04 ; %00000100, bit 2, 0 = , 1 = 
 eng2Bit3       equ $08 ; %00001000, bit 3, 0 = , 1 = 
 eng2Bit4       equ $10 ; %00010000, bit 4, 0 = , 1 = 
@@ -618,7 +614,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
 ; - Fuel calculation variables
 ;*****************************************************************************************
 
-   clrw ReqFuel      ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)(offset=72)
+   clrw reqFuel      ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)(offset=72)
    clrw AFRcurr      ; Current value in AFR table (AFR x 100)(offset=74) 
    clrw VEcurr       ; Current value in VE table (% x 10)(offset=76) 
    clrw barocor      ; Barometric Pressure Correction (% x 10)(offset=78)
@@ -704,14 +700,6 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
     movb  #$09,RevCntr     ; Counter for Revolution Counter signals
     
 ;*****************************************************************************************
-; - Clear XGATE variables with XGATE Software Trigger 0 -                             
-;*****************************************************************************************
-
-;    movw   #$0101,XGSWT  ; Copy $0101 (%0000000100000001) to XGATE Software Trigger 
-                         ; Register ( Enable write access to SWT0 and set SWT0 trigger)
-
-
-;*****************************************************************************************
 ; - SW2 on the CPU board is labled Load/Run and is labled backwards. In the "Load" 
 ;   position PA6(bit7) is high (set). In the "Run" position PA6(bit7) is low (clear).
 ;   Pole Port A PA6(bit7) to check it's state.
@@ -741,10 +729,10 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
     ldx    #veBins_F    ; Load index register X with the address  NOTE CHANGE
                         ; of the first value in "veBins_F" table (Flash)
     ldy    #veBins_E      ; Load index register Y with the address  NOTE CHANGE
-                        ; of the first value in "veBins" table (Ram)
+                        ; of the first value in "veBins" table (Buffer Ram)
 
 CopyPage1:
-    movb    1,X+, 1,Y+  ; Copy byte value from Flash to Ram and 
+    movb    1,X+, 1,Y+  ; Copy byte value from Flash to Buffer Ram and 
                         ; increment X and Y registers
     dbne    D,CopyPage1 ; Decrement Accu D and loop back to CopyPage1:
                         ; if not zero    
@@ -759,10 +747,10 @@ CopyPage1:
     ldx    #stBins_F    ; Load index register X with the address  
                         ; of the first value in "stBins_F" table (Flash)
     ldy    #stBins_E      ; Load index register Y with the address  
-                        ; of the first value in "stBins" table (Ram)
+                        ; of the first value in "stBins" table ( Buffer Ram)
 
 CopyPage2:
-    movb    1,X+, 1,Y+  ; Copy byte value from Flash to Ram and 
+    movb    1,X+, 1,Y+  ; Copy byte value from Flash to Buffer Ram and 
                         ; increment X and Y registers
     dbne    D,CopyPage2 ; Decrement Accu D and loop back to CopyPage2:
                         ; if not zero    
@@ -777,10 +765,10 @@ CopyPage2:
     ldx    #afrBins_F   ; Load index register X with the address  
                         ; of the first value in "afrBins_F" table (Flash)
     ldy    #afrBins_E     ; Load index register Y with the address  
-                        ; of the first value in "afrBins" table (Ram)
+                        ; of the first value in "afrBins" table (Buffer Ram)
 
 CopyPage3:
-    movb    1,X+, 1,Y+  ; Copy byte value from Flash to Ram and 
+    movb    1,X+, 1,Y+  ; Copy byte value from Flash to Buffer Ram and 
                         ; increment X and Y registers
     dbne    D,CopyPage3 ; Decrement Accu D and loop back to CopyPage3:
                         ; if not zero
@@ -940,6 +928,35 @@ PA6Done:
 ;*****************************************************************************************
 
     FIRE_INJ5               ; Macro in tim_BEEM488.s
+	
+;*****************************************************************************************
+; - Set the "crank" bit and clear the "run" bit of the "engine" bit field in preparation 
+;   for cranking.
+;*****************************************************************************************
+
+   bset engine,crank   ; Set the "crank" bit of "engine" bit field
+   bclr engine,run     ; Clear the "run" bit of "engine" bit field
+   
+;*****************************************************************************************
+; - Set the "base512" bit and clear the "base256" bit of the "engine2" bit field in 
+;   preparation for cranking.
+;*****************************************************************************************
+
+   bset engine2,base512   ; Set the "base512" bit of "engine" bit field
+   bclr engine2,base256   ; Clear the "base256" bit of "engine" bit field
+	
+;*****************************************************************************************
+; - Load stall counter with compare value. Stall check is done in the main loop every 
+;   mSec. "Stallcnt" is decremented every mSec and reloaded at every crank signal.
+;*****************************************************************************************
+								 
+	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy   #veBins_E       ; Load index register Y with address of first configurable 
+                        ; constant on buffer RAM page 1 (vebins)
+    ldd   $03E6,Y       ; Load Accu A with value in buffer RAM page 1 offset 998 
+                        ; "Stallcnt" (stall counter)(offset = 998) 
+    std  Stallcnt       ; Copy to "Stallcnt" (no crank or stall condition counter)
+                        ; (1mS increments)				 
                                                 
 ;*****************************************************************************************
 ;*****************************************************************************************
@@ -1000,7 +1017,7 @@ CheckFtrim:
    
 FtrimOn:
    bset PortAbits,Ftrimen      ; Set "Ftrimen"(bit3) of "PortAbits"
-   bra  CheckFtrim             ; Branch to CheckItrim:
+   bra  CheckItrim             ; Branch to CheckItrim:
 
 Ftrimoff:
    bclr PortAbits,Ftrimen      ; Clear "Ftrimen"(bit3) of "PortAbits"
@@ -1241,18 +1258,18 @@ IgnCalcsDone:
 	bra   RunMode                ; Branch to RunMode:(no need to test "run" bit)
 								  
 CrankMode:
-    bset    engine,WUEon        ; Set "WUEon" bit of "engine" bit field
-    bset    engine,ASEon        ; Set "ASEon" bit of "engine" bit field
-    clr     ASEcnt              ; Clear the after-start enrichment counter variable
+;    bset    engine,WUEon        ; Set "WUEon" bit of "engine" bit field
+;    bset    engine,ASEon        ; Set "ASEon" bit of "engine" bit field
+;    clr     ASEcnt              ; Clear the after-start enrichment counter variable
 	
 ;*****************************************************************************************
 ; Check if we are in flood clear or normal crank mode
 ;*****************************************************************************************
 
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins_E       ; Load index register Y with address of first configurable 
-                        ; constant on buffer RAM page 1 (vebins)
-    ldx   $03D6,Y       ; Load Accu X with value in buffer RAM page 1 offset 982 
+    ldy   #veBins_E     ; Load index register Y with address of first configurable 
+                        ; constant on buffer RAM page 1 (veBins_E)
+    ldx   $03E4,Y       ; Load Accu X with value in buffer RAM page 1 offset 996
                         ; "FloodClear" (Flood Clear threshold)   
     cpx   TpsPctx10     ; Compare "FloodClear" with "TpsPctx10"
     bhi   NoFloodClear  ; If "FloodClear" is greater than "TpsPctx10", branch to 
@@ -1262,7 +1279,7 @@ CrankMode:
     clrw  CrankPWtk     ; Clear Cranking injector pulswidth timer ticks(uS x 5.12)
 	clrw  FDpw          ; Fuel delivery pulsewidth (PW - dead time) 
 	                    ; (mS x 1000)(116)
-    job  MainLoop       ; Jump or branch to "MainLoop" (keep looping here until no 
+    job  MainLoopEnd    ; Jump or branch to "MainLoop" (keep looping here until no 
 	                    ; longer in flood clear mode
 
 NoFloodClear:
@@ -1286,7 +1303,7 @@ NoFloodClear:
 ;*****************************************************************************************
 
     CRANK_COR_LU       ; Macro in injcalcsBPEM.s
-    job  MainLoop      ; Jump or branch to "MainLoop" (keep looping here until no 
+    job  MainLoopEnd   ; Jump or branch to "MainLoopEnd:" (keep looping here until no 
 	                   ; longer in crank mode
 	
 RunMode:
@@ -1357,18 +1374,20 @@ RunMode:
 ;
 ;*****************************************************************************************
 ;*****************************************************************************************
-; - Determine if we require Warmup Enrichmeents and or After Start Enrichments
+; - Determine if we require Warmup Enrichments and or After Start Enrichments
 ;*****************************************************************************************
 
-    brclr   engine,WUEon,No_WUE_ASE1 ; If "WUEon" bit of "engine" bit field is clear
-                                       ; Branch to No_WUE_ASE1: (engine is warm so no  
-									   ; enrichments are required)
-    bra  No_WUE_ASE_LONG_BRANCH         ; branch to No_WUE-ASE_LONG_BRANCH:
+    brset  engine,ASEon,CHECK_ASE   ; If "ASEon" bit of "engine" bit field is set, branch 
+	                                ; to CHECK_ASE:   
+    brclr  engine,WUEon,No_WUE_ASE1 ; If "WUEon" bit of "engine" bit field is clear
+                                    ; Branch to No_WUE_ASE1: (engine is warm and ASE is  
+									; not in progress so no enrichments are required)
+    bra  CHECK_ASE                  ; branch to CHECK_ASE:
     
 No_WUE_ASE1:
     job No_WUE_ASE                     ; Jump or branch to No_WUE_ASE (long branch)
     
-No_WUE_ASE_LONG_BRANCH:
+CHECK_ASE:
 									   
 ;*****************************************************************************************
 ; - WUE and or ASE is in progress so do the WUE/ASE calculations
@@ -1415,6 +1434,8 @@ No_WUE_ASE:
 ;*****************************************************************************************
 ; - Increment "LoopCntr" (counter for "LoopTime")
 ;*****************************************************************************************
+
+MainLoopEnd:
 
 	incw LoopCntr  ; Increment "LoopCntr"(counter for "LoopTime") 
 
@@ -1548,84 +1569,87 @@ wueBins_F:         ; 20 bytes for after warm up enrichment adder (% x 10)(offset
     dw $076C,$06A5,$06A4,$0640,$05DC,$0578,$0514,$04B0,$044C,$03E8
 ;       1900, 1701, 1700, 1600, 1500, 1400, 1300, 1200, 1100, 1000
     
-TOEbins_F:         ; 4 bytes for Throttle Opening Enrichment adder (%)(offset = 956)($03BC)
-    db $14,$19,$1E,$23
-;       20, 25, 30, 35
+TOEbins_F:         ; 8 bytes for Throttle Opening Enrichment adder (%)(offset = 956)($03BC)
+    dw $0014,$0019,$001E,$0023
+;         20,   25,   30,   35
 
-TOErates_F:        ; 8 bytes for Throttle Opening Enrichment rate (TpsPctDOT x 10)(offset = 960)($03C0)
+TOErates_F:        ; 8 bytes for Throttle Opening Enrichment rate (TpsPctDOT x 10)(offset = 964)($03C4)
     dw $01F4,$03E8,$09C4,$1388
 ;        500, 1000, 2500, 5000
 
-DdBndBase_F:       ; 1 byte for injector deadband at 13.2V (mSec * 10)(offset = 968)($03C8)
-    db $5A         ; 90 = .9mS
+DdBndBase_F:       ; 2 bytes for injector deadband at 13.2V (mSec * 10)(offset = 972)($03CC)
+    dw $005A       ; 90 = .9mS
     
-DdBndCor_F:        ; 1 byte for injector deadband voltage correction (mSec/V x 100)(offset = 969)($03C9)
-    db $12         ; 18 = .18mS/V
+DdBndCor_F:        ; 2 bytes for injector deadband voltage correction (mSec/V x 100)(offset = 974)($03CE)
+    dw $0012       ; 18 = .18mS/V
                 	
-tpsThresh_F:       ; 2 bytes for Throttle Opening Enrichment threshold (TpsPctx10/100mS)(offset = 970)($03CA)
+tpsThresh_F:       ; 2 bytes for Throttle Opening Enrichment threshold (TpsPctx10/100mS)(offset = 976)($03D0)
     dw $01C2       ; 450 = 45% per Sec
     
-TOEtime_F:         ; 1 byte for Throttle Opening Enrich time in 100mS increments(mSx10)(offset = 972)($03CC)
-    db $14         ; 20 = 2mS
+TOEtime_F:         ; 2 bytes for Throttle Opening Enrich time in 100mS increments(mSx10)(offset = 978)($03D2)
+    dw $0014       ; 20 = 2mS
     
-ColdAdd_F:         ; 1 byte for Throttle Opening Enrichment cold temperature adder at -40F (%)(offset = 973)($03CD)
-    db $14         ; 20%
+ColdAdd_F:         ; 2 bytes for Throttle Opening Enrichment cold temperature adder at -40F (%)(offset = 980)($03D4)
+    dw $0014       ; 20%
     
-ColdMul_F:         ; 1 byte for Throttle Opening Enrichment multiplyer at -40F (%)(offset = 974)($03CE)
-    db $82         ; 130% 
+ColdMul_F:         ; 2 bytes for Throttle Opening Enrichment multiplyer at -40F (%)(offset = 982)($03D6)
+    dw $0082         ; 130% 
 	
-InjDelDegx10_F:    ; 2 bytes for Injection delay from trigger to start of injection (deg x 10) (offset = 975)($03CF)
-    db $0001       ; 1 = 0.1 degree	
+InjDelDegx10_F:    ; 2 bytes for Injection delay from trigger to start of injection (deg x 10) (offset = 984)($03D8)
+    dw $0001       ; 1 = 0.1 degree	
 	
-OFCtps_F:          ; 1 byte for Overrun Fuel Cut min TpS%x10(offset = 977)($03D1)
-    db $0014       ; 20 = 2%
+OFCtps_F:          ; 2 bytes for Overrun Fuel Cut min TpS%x10(offset = 986)($03DA)
+    dw $0014       ; 20 = 2%
 	
-OFCrpm_F:         ; 2 byte for Overrun Fuel Cut min RPM(offset = 978)($03D2)
-    dw $0384      ; 900
+OFCrpm_F:          ; 2 bytes for Overrun Fuel Cut min RPM(offset = 988)($03DC)
+    dw $0384       ; 900
     
-OFCmap_F:          ; 2 bytes for Overrun Fuel Cut maximum manifold pressure permissive (KPAx10)(offset = 980)($03D4)
+OFCmap_F:          ; 2 bytes for Overrun Fuel Cut maximum manifold pressure permissive (KPAx10)(offset = 990)($03DE)
     dw $00FA       ; 250 = 25.0KPA
 	
-OFCdel_F:          ; 1 byte for Overrun Fuel Cut delay time (Sec x 10)(offset = 982)($03D6)
-    db $32         ; 50 = 5.0Sec
+OFCdel_F:          ; 2 bytes for Overrun Fuel Cut delay time (Sec x 10)(offset = 992)($03E0)
+    dw $0032         ; 50 = 5.0Sec
 	
-crankingRPM_F:     ; 2 bytes for crank/run transition (RPM)(offset = 983)($03D7)
+crankingRPM_F:     ; 2 bytes for crank/run transition (RPM)(offset = 994)($03E2)
     dw $015E       ; 350
     
-floodClear_F:      ; 2 bytes for TPS position for flood clear (% x 10)(offset = 985)($03D9)
+floodClear_F:      ; 2 bytes for TPS position for flood clear (% x 10)(offset = 996)($03E4)
     dw $0384       ; 900
 	
-Stallcnt_F:        ; 2 bytes for no crank or stall condition counter (1mS increments) (offset = 987)($03DB)
-    db $07D0       ; 2000 = 2 seconds
+Stallcnt_F:        ; 2 bytes for no crank or stall condition counter (1mS increments) (offset = 998)($03E6)
+    dw $07D0       ; 2000 = 2 seconds
 	
-tpsMin_F:          ; 2 bytes for TPS calibration closed throttle ADC(offset = 989)($03DD)
+tpsMin_F:          ; 2 bytes for TPS calibration closed throttle ADC(offset = 1000)($03E8)
     dw $0032       ; 50
     
-tpsMax_F:          ; 2 bytes for TPS calibration wide open throttle ADC(offset = 991)($03DF)
+tpsMax_F:          ; 2 bytes for TPS calibration wide open throttle ADC(offset = 1002)($03EA)
     dw $03E8       ; 1000
 	
-reqFuel_F:         ; 2 bytes for Pulse width for 14.7 AFR @ 100% VE (mS x 10)(offset = 993)($03E1)
+reqFuel_F:         ; 2 bytes for Pulse width for 14.7 AFR @ 100% VE (mS x 10)(offset = 1004)($03EC)
     dw $0852       ; 2130 = 21.30 mS
     
-enginesize_F:      ; 2 bytes for displacement of two engine cylinders (for TS reqFuel calcs only)(cc)(offset = 995)($03E3)
+enginesize_F:      ; 2 bytes for displacement of two engine cylinders (for TS reqFuel calcs only)(cc)(offset = 1006)($03EE)
     dw $640        ; 1600
 	
-staged_pri_size_F: ; 1 byte for flow rate of 1 injector (for TS reqFuel calcs only)(cc)(offset = 997)($03E5)
+InjPrFlo_F         ; 2 bytes for Pair of injectors flow rate (L/hr x 100)(offset = 1008)($03F0) 
+    dw $0190       ; Decimal 400 = 40L/Hr
+	
+staged_pri_size_F: ; 1 byte for flow rate of 1 injector (for TS reqFuel calcs only)(cc)(offset = 1010)($03F2)
     db $FC         ; 252
     
-alternate_F:       ; 1 byte for injector staging bit field (for TS reqFuel calcs only)(offset = 998)($03E6)
-    db $00        ; 0
+alternate_F:       ; 1 byte for injector staging bit field (for TS reqFuel calcs only)(offset = 1011)($03F3)
+    db $00         ; 0
     
-nCylinders_F:      ; 1 byte for number of engine cylinders bit field (for TS reqFuel calcs only)(offset = 999)($03E7)
+nCylinders_F:      ; 1 byte for number of engine cylinders bit field (for TS reqFuel calcs only)(offset = 1012)($03F4)
     db $02         ; 2
     
-nInjectors_F:      ; 1 byte for number of injectors bit field (for TS reqFuel calcs only)(offset = 1000)($03E8)
+nInjectors_F:      ; 1 byte for number of injectors bit field (for TS reqFuel calcs only)(offset = 1013)($03F5)
     db $02         ; 2
     
-divider_F:         ; 1 byte for squirts per cycle bit field (for TS reqFuel calcs only)(offset = 1001)($03E9)
+divider_F:         ; 1 byte for squirts per cycle bit field (for TS reqFuel calcs only)(offset = 1014)($03F6)
     db $01         ; 1
 
-; 1002 bytes used, 1024 - 1002 = 22 bytes left
+; 1015 bytes used, 1024 - 1015 = 9 bytes left
 
 
 ;*********************************************************************
@@ -1726,8 +1750,7 @@ lfpon_F:      ; 2 bytes for Low fuel pressure alarm on set point (psi*10)(offset
 lfpoff_F:     ; 2 bytes for Low fuel pressure alarm off set point (psi*10)(offset = 746)($02EA)
     dw $0190  ; Decimal 400 = 40PSI
 
-InjPrFlo_F    ; 2 bytes for Pair of injectors flow rate (L/hr x 100)(offset = 748)($02EC) 
-    dw $0190  ; Decimal 400 = 40L/Hr
+
 
 ; 750 bytes used, 1024 - 750 = 274 bytes left
 

@@ -84,7 +84,7 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;Mapx10:       ds 2 ; Manifold Absolute Pressure (KPAx10)
 ;TpsPctx10:    ds 2 ; Throttle Position Sensor % of travel(%x10)(update every 100mSec)   
 ;RPM:          ds 2 ; Crankshaft Revolutions Per Minute 
-;ReqFuel:      ds 2 ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)
+;reqFuel:      ds 2 ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)
 ;AFRcurr:      ds 2 ; Current value in AFR table (AFR x 100) 
 ;VEcurr:       ds 2 ; Current value in VE table (% x 10) 
 ;barocor:      ds 2 ; Barometric Pressure Correction (% x 10)
@@ -287,9 +287,9 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins_E    ; Load index register Y with address of first configurable 
+    ldy   #veBins_E    ; Load index register Y with address of first configurable 
                      ; constant on buffer RAM page 1 (vebins)
-    ldx   $03E1,Y    ; Load Accu X with value in buffer RAM page 1 offset 993 
+    ldx   $03EC,Y    ; Load Accu X with value in buffer RAM page 1 offset 1004 
                      ; ("ReqFuel")
     tfr  X,D         ; "ReqFuel" -> Accu D 						
     ldy  Crankcor    ;Cranking Pulsewidth Correction (% x 10) -> Accu Y
@@ -584,9 +584,9 @@ TOE_OFC_CHK:
 ; - The throttle is opening. Check to see if it is opening at a rate greater than the threshold
 ;***********************************************************************************************
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #veBins_E         ; Load index register Y with address of first configurable constant
-                          ; on buffer RAM page 1 (veBins)
-    ldx   $03CA,Y         ; Load Accu D with value in buffer RAM page 1 offset 970 (tpsThresh)
+    ldy   #veBins_E       ; Load index register Y with address of first configurable constant
+                          ; on buffer RAM page 1 (veBins_E)
+    ldx   $03D0,Y         ; Load Accu D with value in buffer RAM page 1 offset 976 (tpsThresh)
                           ;(TPSdot threshold)(offset = 970)($03CA)   
     cpx   TpsPctDOT       ; Compare "tpsThresh" with "TpsPctDOT"
     bhi   TOE_CHK_TIME    ; If "tpsThresh" is greater than "TpsPctDOT", branch to TOE_CHK_TIME: 
@@ -607,15 +607,15 @@ TOE_OFC_CHK:
 
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E       ; Load index register Y with address of first configurable constant
-                        ; on buffer RAM page 1 (vebins)
+                        ; on buffer RAM page 1 (veBins_E)
     ldaa   $01DE,Y      ; Load Accu A with value in buffer RAM page 1 offset 478 (First element 
                         ; of "TOEbins" table)(Start with first element, will determine actual  
                         ; next time around)(actual offset is 956)
     staa  TOEpct        ; Copy to Throttle Opening Enrichment percent(used in later calculations)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E       ; Load index register Y with address of first configurable constant
-                        ; on buffer RAM page 1 (vebins)
-    ldaa   $03CC,Y      ; Load Accu A with value in buffer RAM page 1 offset 972 (TOEtime_F)
+                        ; on buffer RAM page 1 (veBins_E)
+    ldaa   $03D2,Y      ; Load Accu A with value in buffer RAM page 1 offset 978 (TOEtime_F)
     staa  TOEtim        ; Copy to "TOEtim" (Throttle Opening Enrichment duration 
 	                    ; (decremented every 100 mS))
     bset  engine,TOEon  ; Set "TOEon" bit of "engine" variable (in TOE mode)
@@ -647,9 +647,9 @@ DoColdAdd:
     ldd  #$0000      ; Load double accumulator with decimal 0 (added amount at 179.9F)
     pshd             ; Push to stack (Z1)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins_E    ; Load index register Y with address of first configurable constant
-                     ; on buffer RAM page 1 (vebins)
-    ldd   $03CD,Y    ; Load Accu D with value in buffer RAM page 1 (ColdAdd_F)(offset 973) 
+    ldy   #veBins_E    ; Load index register Y with address of first configurable constant
+                     ; on buffer RAM page 1 (veBins_E)
+    ldd   $03D4,Y    ; Load Accu D with value in buffer RAM page 1 (ColdAdd_F)(offset 980) 
                      ;(added amount at -39.72F)    
     pshd             ; Push to stack (Z2)
     
@@ -704,9 +704,9 @@ DoColdMul:
                      ;(1.00 multiplier at 180 degrees)
     pshd             ; Push to stack (Z1)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #vebins_E    ; Load index register Y with address of first configurable constant
-                     ; on buffer RAM page 1 (vebins)
-    ldd   $03CE,Y    ; Load Accu D with value in buffer RAM page 1 "ColdMul_F"(offset 974) 
+    ldy   #veBins_E    ; Load index register Y with address of first configurable constant
+                     ; on buffer RAM page 1 (veBins_E)
+    ldd   $03D6,Y    ; Load Accu D with value in buffer RAM page 1 "ColdMul_F"(offset 982) 
                      ;(added amount at -39.72F)    
     pshd             ; Push to stack (Z2)
 
@@ -752,7 +752,7 @@ ColdMulDone:
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     movw #veBins_E,CrvPgPtr    ; Address of the first value in VE table(in RAM)(page pointer) 
                              ; ->page where the desired curve resides 
-    movw #$01E0,CrvRowOfst   ; 480 -> Offset from the curve page to the curve row
+    movw #$01E2,CrvRowOfst   ; 482 -> Offset from the curve page to the curve row
 	                         ; (TOERates_F)(actual offset is 964)
     movw #$01DE,CrvColOfst   ; 478 -> Offset from the curve page to the curve column
 	                         ; (TOEBins_F)(actual offset is 956)
@@ -804,9 +804,9 @@ ADD_COLDADD:
 ; - Calculate the Throttle Opening Enrichment adder for PW calculations.
 ;*****************************************************************************************
 
-    ldd  ReqFuel      ; "ReqFuel" -> Accu D (mS x 100)
+    ldd  reqFuel      ; "reqFuel" -> Accu D (mS x 100)
     ldy  TOEpct       ; "TOEpct" -> Accu D (% x 10)  	
-    emul              ; (D)*(Y)->Y:D "ReqFuel" * "TOEpct" 
+    emul              ; (D)*(Y)->Y:D "reqFuel" * "TOEpct" 
 	ldx  #$0064       ; Decimal 100 -> Accu X 
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("ReqFuel"*"TOEpct")/1000="TOEpw"
 	sty  TOEpw        ; Result -> "TOEpw" TOE adder (mS x 100)						 
@@ -861,24 +861,24 @@ TOE_LOOP:
 OFC_CHK:
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E     ; Load index register Y with address of first configurable constant
-                      ; on buffer RAM page 1 (veBins)
-    ldx   $03D1,Y     ; Load X with value in buffer RAM page 1 offset 977 (OFCtps)
+                      ; on buffer RAM page 1 (veBins_E)
+    ldx   $03DA,Y     ; Load X with value in buffer RAM page 1 offset 986 (OFCtps)
                       ;(Overrun Fuel Cut min TPS%)   
     cpx  TpsPctx10    ; Compare it with value in "TpsPctx10"
     blo  OFC_CHK_DONE ; If (X)>(M), branch to OFC_CHK_DONE: 
                       ;(TPS is above minimum so no fuel cut)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E     ; Load index register Y with address of first configurable constant
-                      ; on buffer RAM page 1 (veBins)
-    ldx   $03D2,Y     ; Load X with value in buffer RAM page 1 offset 978 (OFCrpm)
+                      ; on buffer RAM page 1 (veBins_E)
+    ldx   $03DC,Y     ; Load X with value in buffer RAM page 1 offset 988 (OFCrpm)
                       ;(Overrun Fuel Cut min RPM)     
     cpx  RPM          ; Compare it value in RPM
     bhi  OFC_CHK_DONE ; If (X)<(M), branch to OFC_CHK_DONE:
                       ;(RPM is below minimum so no fuel cut)
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E     ; Load index register Y with address of first configurable constant
-                      ; on buffer RAM page 1 (veBins)
-    ldx   $03D4,Y     ; Load X with value in buffer RAM page 1 offset 980 (OFCmap)
+                      ; on buffer RAM page 1 (veBins_E)
+    ldx   $03DE,Y     ; Load X with value in buffer RAM page 1 offset 990 (OFCmap)
                       ;(Overrun Fuel Cut min manifold pressure)     
     cpx  Mapx10       ; Compare it to value in Manifold Absolute Pressure (KPAx10)
     blo  OFC_CHK_DONE ; If (X)<(M), branch to OFC_CHK_DONE:
@@ -905,7 +905,7 @@ OFC_CHK:
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E       ; Load index register Y with address of first configurable 
                         ; constant on buffer RAM page 1 (veBins)
-    ldaa   $03D6,Y      ; Load Accu A with value in buffer RAM page 1 offset 982 
+    ldaa   $03E0,Y      ; Load Accu A with value in buffer RAM page 1 offset 992 
                         ; (OFCdel_F) (Overrun Fuel Cut delay time)
     staa  OFCdel        ; Copy to "OFCdel" (Overrun Fuel Cut delay duration)(decremented 
  	                    ; every 100mS in rti_BPEM488.s)
@@ -990,14 +990,14 @@ OFC_LOOP:
 
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E       ; Load index register Y with address of first configurable 
-                        ; constant on buffer RAM page 1 (veBins)
-    ldaa   $03C8,Y      ; Load Accu A with value in buffer RAM page 1 offset 968 
+                        ; constant on buffer RAM page 1 (veBins_E)
+    ldaa   $03CC,Y      ; Load Accu A with value in buffer RAM page 1 offset 972 
                         ; Injector deadband at 13.2V (mSec*10)(DdBndBase_F)
     staa  tmp1          ; Copy to "tmp1" (Injector deadband at 13.2V (mSec * 100))
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E       ; Load index register Y with address of first configurable 
-                        ; constant on buffer RAM page 1 (veBins)
-    ldaa   $03C9,Y      ; Load Accu A with value in buffer RAM page 1 offset 969 
+                        ; constant on buffer RAM page 1 (veBins_E)
+    ldaa   $03CE,Y      ; Load Accu A with value in buffer RAM page 1 offset 974 
                         ; Injector deadband voltage correction (mSec/V x 100)(DdBndCor_F)
     ldab  #$06          ; Decimal 6-> Accu B
 	mul                 ;(A)x(B)->A:B "Injector deadband voltage correction" * 6
@@ -1075,7 +1075,7 @@ OFC_LOOP:
 ;PWcalc3:      ds 2 ; PW calculations result 3
 ;PWcalc4:      ds 2 ; PW calculations result 4
 ;PWcalc5:      ds 2 ; PW calculations result 5
-;ReqFuel:      ds 2 ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)
+;reqFuel:      ds 2 ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)
 ;PWlessTOE:    ds 2 ; Injector pulse width before "TOEpw" and "Deadband" (mS x 10)
 ;TOEpw:        ds 2 ; Throttle Opening Enrichment adder (mS x 100)
 ;Deadband:     ds 2 ; injector deadband at current battery voltage mS*100
@@ -1091,7 +1091,7 @@ OFC_LOOP:
 ; ("PWcalc1" * "PWcalc2") / 1000 = "PWcalc3" (0.1% resolution)
 ; ("WUEandASEcor" * "veCurr") / 1000 = "PWcalc4" (0.1% resolution)
 ; ("PWcalc3" * "PWcalc4") / 1000 = "PWcalc5" (0.1% resolution)
-; ("PWcalc5" * ReqFuel") / 1000 = "PWlessTOE" (0.1mS resolution)
+; ("PWcalc5" * reqFuel") / 1000 = "PWlessTOE" (0.1mS resolution)
 ; "PWlessTOE" + "TOEpw" = "FDpw"  (0.1mS resolution)
 ; "FDpw" + "Deadband" = "PW"  (0.1mS resolution) 
 
@@ -1172,10 +1172,10 @@ OFC_LOOP:
 ;*****************************************************************************************
 
     ldd  PWcalc5      ; "PWcalc5" -> Accu D (% x 10)
-    ldy  ReqFuel      ; "ReqFuel" -> Accu D (mS x 10)  	
+    ldy  reqFuel      ; "reqFuel" -> Accu D (mS x 10)  	
     emul              ; (D)*(Y)->Y:D "PWcalc5" * "matcor" 
 	ldx  #$03E8       ; Decimal 1000 -> Accu X 
-	ediv              ;(Y:D)/)X)->Y;Rem->D ("PWcalc5"*"ReqFuel")/1000="PWlessTOE"
+	ediv              ;(Y:D)/)X)->Y;Rem->D ("PWcalc5"*"reqFuel")/1000="PWlessTOE"
 	sty  PWlessTOE    ; Result -> "PWlessTOE" (mS x 10)
 	
 ;*****************************************************************************************

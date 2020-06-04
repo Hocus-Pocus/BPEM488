@@ -292,7 +292,6 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     std   RV11Adc   ; Copy to RV11 ADC
     ldd   ATD0DR5H  ; Load accumulator with value in ATD Ch05 
     std   mapAdc    ; Copy to mapAdc
-;    std   Ch05Cmp   ; Copy to Ch05Cmp(used for minimum Ch05 calculations)
     ldd   ATD0DR6H  ; Load accumulator with value in ATD Ch06 
     std   baroAdc   ; Copy to baroAdc
     ldd   ATD0DR7H  ; Load accumulator with value in ATD Ch07 
@@ -332,7 +331,6 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     std   RV11Adc   ; Copy to RV11 ADC
     ldd   ATD0DR5H  ; Load accumulator with value in ATD Ch05 
     std   mapAdc    ; Copy to mapAdc
-;    std   Ch05Cmp   ; Copy to Ch05Cmp(used for minimum Ch05 calculations)
     ldd   ATD0DR6H  ; Load accumulator with value in ATD Ch06 
     std   baroAdc   ; Copy to baroAdc
     ldd   ATD0DR7H  ; Load accumulator with value in ATD Ch07 
@@ -685,9 +683,9 @@ ItrimDone:
 ;*****************************************************************************************
 
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy  #veBins_E    ; Load index register Y with address of first configurable constant
-                    ; on buffer RAM page 1 (veBins)
-    ldd  $03DD,Y    ; Load Accu D with value in buffer RAM page 1 offset 989 (tpsMin)
+    ldy  #veBins_E   ; Load index register Y with address of first configurable constant
+                     ; on buffer RAM page 1 (veBins)
+    ldd  $03E8,Y     ; Load Accu D with value in buffer RAM page 1 offset 1000 (tpsMin)
     ldy  #$000A      ; Load index register Y with decimal 10
     emul             ; Multiply (D)x(Y)=>Y:D  (multiply "tpsMin" by 10) 
     pshd             ; Push to stack (V1)
@@ -696,9 +694,9 @@ ItrimDone:
     emul             ; Multiply (D)x(Y)=>Y:D  (multiply "tpsADC" by 10) 
     pshd             ; Push to stack (V)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy  #vebins_E    ; Load index register Y with address of first configurable constant
-                    ; on buffer RAM page 1 (vebins)
-    ldd  $03DF,Y    ; Load Accu D with value in buffer RAM page 1 offset 991 (tpsMax)
+    ldy  #veBins_E   ; Load index register Y with address of first configurable constant
+                     ; on buffer RAM page 1 (vebins)
+    ldd  $03EA,Y     ; Load Accu D with value in buffer RAM page 1 offset 1002 (tpsMax)
     ldy  #$000A      ; Load index register Y with decimal 10
     emul             ; Multiply (D)x(Y)=>Y:D  (multiply "tpsMax" by 10)
     pshd             ; Push to stack (V2)    
@@ -797,7 +795,7 @@ CHK_HET_OFF:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
     ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
-    ldd  $02D2,Y    ; Load Accu D with value in buffer RAM page 2 offset 722 (het_off)
+    ldd  $02D2,Y    ; Load Accu D with value in buffer RAM page 2 offset 722 (hetoff)
 	cpd  Cltx10     ; (A:B)-(M:M+1) Compare "hetoff" with "Cltx10
     bhs  CLEAR_HET  ; If "hetoff" is higher or the same as "Cltx10" branch to CLEAR_HET 	
     bra  CHK_HET_ON ; Branch to CHK_HET_ON:
@@ -972,7 +970,7 @@ CHK_HFP_OFF:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
     ldy  #stBins_E    ; Load index register Y with address of first configurable constant
                     ; on buffer RAM page 2 (stBins)
-    ldd  $02EA,Y    ; Load Accu D with value in buffer RAM page 2 offset 746 (hfpoff)
+    ldd  $02E6,Y    ; Load Accu D with value in buffer RAM page 2 offset 742 (hfpoff)
 	cpd  Efpx10     ; (A:B)-(M:M+1) Compare "hfp_off" with "Efpx10"
     bhs  CLEAR_HFP  ; If "hfpoff" is higher or he same as "Efpx10" branch to CLEAR_HFP	
     bra  CHK_HFP_ON ; Branch to CHK_HFP_ON:
@@ -987,7 +985,7 @@ CHK_HFP_ON:
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
     ldy  #stBins_E     ; Load index register Y with address of first configurable constant
                      ; on buffer RAM page 2 (stBins)
-    ldd  $02E8,Y     ; Load Accu D with value in buffer RAM page 2 offset 744 (hfpon)
+    ldd  $02E4,Y     ; Load Accu D with value in buffer RAM page 2 offset 740 (hfpon)
 	cpd  Efpx10      ; (A:B)-(M:M+1) Compare "hfpon" with "Efpx10"
     bls  SET_HFP     ; If "hfpon" is lower or the same as "Efpx10" branch to SET_HFP 	
     bra  HFP_ALARM_DONE ; Branch to HFP_ALARM_DONE:

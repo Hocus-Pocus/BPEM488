@@ -319,7 +319,7 @@ ECT_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 	                    ;(Divide "RPMk" by "CASprd512")
     sty  RPM            ; Copy result to "RPM"
     bclr ICflgs,RPMcalc ; Clear "RPMcalc" bit of "ICflgs"
-	bra  RunRPMDone    ; Branch to RunRPMDone:  
+	bra  RunRPMDone     ; Branch to RunRPMDone:  
 
 ;*****************************************************************************************
 ; - Do RPM calculations for 2.56uS time base when there is a new input capture period
@@ -329,7 +329,7 @@ RunRPM:
 
     ldd  #$868C         ; Load accu D with Lo word of  10 cyl RPMk (2.56uS clock tick)
     ldy  #$0047         ; Load accu Y with Hi word of 10 cyl RPMk (2.56uS clock tick)
-    ldx  CASprd256    ; Load "X" register with value in "CASprd256"
+    ldx  CASprd256      ; Load "X" register with value in "CASprd256"
     ediv                ; Extended divide (Y:D)/(X)=>Y;Rem=>D 
 	                    ;(Divide "RPMk" by "CASprd256")
     sty  RPM            ; Copy result to "RPM"

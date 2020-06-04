@@ -112,26 +112,27 @@ crankPctTable_E:   rmb $14  ; 20 bytes for cranking pulsewidth adder (% x 10 of 
 asePctTable_E:     rmb $14  ; 20 bytes for after start enrichment adder (% x 10)
 aseRevTable_E:     rmb $14  ; 20 bytes for after start enrichment time (engine revolutions)
 wueBins_E:         rmb $14  ; 20 bytes for after warm up enrichment adder (% x 10)
-TOEbins_E:         rmb $04  ; 4 bytes for TPS acceleration adder (%)
+TOEbins_E:         rmb $08  ; 8 bytes for TPS acceleration adder (%)
 TOErates_E:        rmb $08  ; 8 bytes for TPS acceleration rate (%/Sec x 10)
-DdBndBase_E:       rmb $01  ; 1 byte for injector deadband at 13.2V (mSec * 100)
-DdBndCor_E:        rmb $01  ; 1 byte for injector deadband voltage correction (mSec/V x 100)
+DdBndBase_E:       rmb $02  ; 2 bytes for injector deadband at 13.2V (mSec * 100)
+DdBndCor_E:        rmb $02  ; 2 bytes for injector deadband voltage correction (mSec/V x 100)
 tpsThresh_E:       rmb $02  ; 2 bytes for Throttle Opening Enrichment threshold (TpsPctx10/100mS)
-TOEtime_E:         rmb $01  ; 1 byte for Throttle Opening Enrich time in 100mS increments(mSx10)
-ColdAdd_E:         rmb $01  ; 1 byte for Throttle Opening Enrichment cold temperature adder at -40F (%)
-ColdMul_E:         rmb $01  ; 1 byte for Throttle Opening Enrichment multiplyer at -40F (%)
+TOEtime_E:         rmb $02  ; 2 bytes for Throttle Opening Enrich time in 100mS increments(mSx10)
+ColdAdd_E:         rmb $02  ; 2 bytes for Throttle Opening Enrichment cold temperature adder at -40F (%)
+ColdMul_E:         rmb $02  ; 2 bytes for Throttle Opening Enrichment multiplyer at -40F (%)
 InjDelDegx10_E:    rmb $02  ; 2 bytes for Injection delay from trigger to start of injection (deg x 10)
-OFCtps_E:          rmb $01  ; 1 byte for Overrun Fuel Cut min TpS%x10
-OFCrpm_E:          rmb $02  ; 2 byte for Overrun Fuel Cut min RPM
+OFCtps_E:          rmb $02  ; 2 bytes for Overrun Fuel Cut min TpS%x10
+OFCrpm_E:          rmb $02  ; 2 bytes for Overrun Fuel Cut min RPM
 OFCmap_E:          rmb $02  ; 2 bytes for Overrun Fuel Cut maximum manifold pressure permissive (KPAx10)
-OFCdel_E:          rmb $01  ; 1 byte for Overrun Fuel Cut delay time (Sec x 10)
+OFCdel_E:          rmb $02  ; 2 bytes for Overrun Fuel Cut delay time (Sec x 10)
 crankingRPM_E:     rmb $02  ; 2 bytes for crank/run transition (RPM)
 floodClear_E:      rmb $02  ; 2 bytes for TPS position for flood clear (% x 10)
 Stallcnt_E:        rmb $02  ; 2 bytes for no crank or stall condition counter (1mS increments)
 tpsMin_E:          rmb $02  ; 2 bytes for TPS calibration closed throttle ADC
 tpsMax_E:          rmb $02  ; 2 bytes for TPS calibration wide open throttle ADC(
-ReqFuel_E:         rmb $02  ; 2 bytes for Pulse width for 14.7 AFR @ 100% VE (mS x 10)
+reqFuel_E:         rmb $02  ; 2 bytes for Pulse width for 14.7 AFR @ 100% VE (mS x 10)
 enginesize_E:      rmb $02  ; 2 bytes for displacement of two engine cylinders (for TS reqFuel calcs only)(cc)
+InjPrFlo_E:        rmb $02  ; 2 bytes for Pair of injectors flow rate (L/hr x 100)
 staged_pri_size_E: rmb $01  ; 1 byte for flow rate of 1 injector (for TS reqFuel calcs only)(cc)
 alternate_E:       rmb $01  ; 1 byte for injector staging bit field (for TS reqFuel calcs only)
 nCylinders_E:      rmb $01  ; 1 byte for number of engine cylinders bit field (for TS reqFuel calcs only)
@@ -165,9 +166,8 @@ hfpon_E:      rmb $02  ; 2 bytes for High fuel pressure alarm on set point (psi*
 hfpoff_E:     rmb $02  ; 2 bytes for High fuel pressure alarm off set point (psi*10)
 lfpon_E:      rmb $02  ; 2 bytes for Low fuel pressure alarm on set point (psi*10)
 lfpoff_E:     rmb $02  ; 2 bytes for Low fuel pressure alarm off set point (psi*10)
-InjPrFlo_E:   rmb $02  ; 2 bytes for Pair of injectors flow rate (L/hr x 100)
- 
-;*****************************************************************************************
+
+ ;*****************************************************************************************
 ; - Page 3 AFR table, ranges and other configurable constants
 ;  (Copied from EE Emulation D-Flash to Buffer RAM on start up, 
 ;  all pages 1024 bytes)

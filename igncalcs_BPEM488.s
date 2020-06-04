@@ -257,7 +257,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     movw BatVx10,CrvCmpVal  ; Battery Voltage (Volts x 10) -> Curve comparison value
     movb #$05,CrvBinCnt     ; 5 -> number of bins in the curve row or column minus 1
     jsr   CRV_LU_P   ; Jump to subroutine at CRV_LU_P:(located in interp_BEEM488.s module)
-    std   dwellcor   ; Copy result to Dwell battery correction (% x 10)
+    std   DwellCor   ; Copy result to Dwell battery correction (% x 10)
     
 #emac
 

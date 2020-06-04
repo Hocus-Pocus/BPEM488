@@ -82,8 +82,11 @@ RTI_VARS_START_LIN	EQU	@     ; @ Represents the current value of the linear
 ;RPM:        ds 2 ; Crankshaft Revolutions Per Minute
 ;TpsPctx10:  ds 2 ; Throttle Position Sensor % of travel(%x10)(update every 100mSec)
 ;FDsec:      ds 2 ; Fuel delivery pulse width total over 1 second (mS)
+;CASprd512:  ds 2 ; Crankshaft Angle Sensor period (5.12uS time base
+;CASprd256:  ds 2 ; Crankshaft Angle Sensor period (2.56uS time base
 ;LoopTime:   ds 2 ; Program main loop time (loops/Sec)
 ;engine:     ds 1 ; Engine status bit field
+;engine2:    ds 1  ; Engine2 status bit field
 
 ;*****************************************************************************************
 ;*****************************************************************************************
@@ -105,6 +108,22 @@ RTI_VARS_START_LIN	EQU	@     ; @ Represents the current value of the linear
                                         ; 1 = in OFC mode(Red)
 ;FldClr       equ $80  ; %10000000, bit 7, 0 = not in flood clear mode(Grn),
                                         ; 1 = Flood clear mode(Red)
+;*****************************************************************************************
+;*****************************************************************************************
+; "engine2" equates
+;*****************************************************************************************
+
+;base512        equ $01 ; %00000001, bit 0, 0 = 5.12uS time base off(White),
+                                         ; 1 = 5.12uS time base on(Grn)
+;base256        equ $02 ; %00000010, bit 1, 0 = 2.56uS time base off(White),
+                                         ; 1 = 2.56uS time base on(Grn)
+;eng2Bit2       equ $04 ; %00000100, bit 2, 0 = , 1 = 
+;eng2Bit3       equ $08 ; %00001000, bit 3, 0 = , 1 = 
+;eng2Bit4       equ $10 ; %00010000, bit 4, 0 = , 1 = 
+;eng2Bit5       equ $20 ; %00100000, bit 5, 0 = , 1 = 
+;eng2Bit6       equ $40 ; %01000000, bit 6, 0 = , 1 = 
+;eng2Bit7       equ $80 ; %10000000, bit 7, 0 = , 1 =
+
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -259,18 +278,58 @@ AIOT_CHK_DONE:
 ;*****************************************************************************************
 
 DoStall:
-    FUEL_PUMP_AND_ASD_OFF        ; Shut fuel pump and ASD relay off(macro in gpio_BEEM.s)
-    clrw  RPM                    ; Clear "RPM" (engine RPM)
-    clr   State                  ; Clear "State" (Cam-Crank state machine current state )
-    clr   engine                 ; Clear all flags in "engine" bit field
-    clr   ICflgs                 ; Clear all flags in "ICflgs" bit field
-	clr   StateStatus            ; Clear "StateStatus" bit field 
-    bset  StateStatus,SynchLost  ; Set "SynchLost" bit of "StateStatus" bit field (bit1)
-    movb #$FF,ECT_PTPSR          ; Load ECT_PTPSR with %11111111 (prescale 256, 5.12us  
-                                 ; resolution, max period 335.5ms)
-    movb #$FF,TIM_PTPSR          ; Load TIM_PTPSR with %11111111 (prescale 256, 5.12us 
-                                 ; resolution, max period 335.5ms)(min RPM = ~85) 	
+    FUEL_PUMP_AND_ASD_OFF       ; Shut fuel pump and ASD relay off(macro in gpio_BEEM.s)
+    clrw RPM                    ; Clear "RPM" (engine RPM)
+    clr  State                  ; Clear "State" (Cam-Crank state machine current state )
+    clr  engine                 ; Clear all flags in "engine" bit field
+    clr  engine2                ; Clear all flags in "engine2" bit field
+    clr  ICflgs                 ; Clear all flags in "ICflgs" bit field
+	clr  StateStatus            ; Clear "StateStatus" bit field
+    clrw CASprd512              ; Clear Crankshaft Angle Sensor period (5.12uS time base
+    clrw CASprd256              ; Clear Crankshaft Angle Sensor period (2.56uS time base
+    clrw Degx10tk512            ; Clear Time to rotate crankshaft 1 degree (5.12uS x 10) 
+    clrw Degx10tk256            ; Clear Time to rotate crankshaft 1 degree (2.56uS x 10)     	
+    bset StateStatus,SynchLost  ; Set "SynchLost" bit of "StateStatus" bit field (bit1)
+    movb #$FF,ECT_PTPSR         ; Load ECT_PTPSR with %11111111 (prescale 256, 5.12us  
+                                ; resolution, max period 335.5ms)
+    movb #$FF,TIM_PTPSR         ; Load TIM_PTPSR with %11111111 (prescale 256, 5.12us 
+                                ; resolution, max period 335.5ms)(min RPM = ~85)
 								 
+;*****************************************************************************************
+; - Set the "crank" bit and clear the "run" bit of the "engine" bit field in preparation 
+;   for cranking.
+;*****************************************************************************************
+
+   bset engine,crank   ; Set the "crank" bit of "engine" bit field
+   bclr engine,run     ; Clear the "run" bit of "engine" bit field
+   
+;*****************************************************************************************
+; - Set the "base512" bit and clear the "base256" bit of the "engine2" bit field in 
+;   preparation for cranking.
+;*****************************************************************************************
+
+   bset engine2,base512   ; Set the "base512" bit of "engine" bit field
+   bclr engine2,base256   ; Clear the "base256" bit of "engine" bit field
+   
+;*****************************************************************************************
+; - Load stall counter with compare value. Stall check is done in the main loop every 
+;   mSec. "Stallcnt" is decremented every mSec and reloaded at every crank signal.
+;*****************************************************************************************
+								 
+	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy   #veBins_E       ; Load index register Y with address of first configurable 
+                        ; constant on buffer RAM page 1 (vebins)
+    ldd   $03E6,Y       ; Load Accu A with value in buffer RAM page 1 offset 998 
+                        ; "Stallcnt" (stall counter)(offset = 998) 
+    std  Stallcnt       ; Copy to "Stallcnt" (no crank or stall condition counter)
+                        ; (1mS increments)
+
+;*****************************************************************************************
+; - Initialize other variables -
+;*****************************************************************************************
+
+    movb  #$09,RevCntr     ; Counter for Revolution Counter signals						
+									 
 NoStall:
 
 #emac   

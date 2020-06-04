@@ -83,6 +83,7 @@ STATE_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;CASprd512:   ds 2  ; Period between CAS2nd and CAS3d (5.12uS res)
 ;CASprd256:   ds 2  ; Period between CAS2nd and CAS3d (2.56uS res)
 ;engine:      ds 1  ; Engine status bit field
+;engine2:      ds 1  ; Engine2 status bit field
 
 ;*****************************************************************************************
 ; - "engine" Engine status bit field
@@ -105,6 +106,22 @@ STATE_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;FldClr       equ $80  ; %10000000, bit 7, 0 = not in flood clear mode(Grn),
                                         ; 1 = Flood clear mode(Red)
 										
+;*****************************************************************************************
+;*****************************************************************************************
+; "engine2" equates
+;*****************************************************************************************
+
+;base512        equ $01 ; %00000001, bit 0, 0 = 5.12uS time base off(White),
+                                         ; 1 = 5.12uS time base on(Grn)
+;base256        equ $02 ; %00000010, bit 1, 0 = 2.56uS time base off(White),
+                                         ; 1 = 2.56uS time base on(Grn)
+;eng2Bit2       equ $04 ; %00000100, bit 2, 0 = , 1 = 
+;eng2Bit3       equ $08 ; %00001000, bit 3, 0 = , 1 = 
+;eng2Bit4       equ $10 ; %00010000, bit 4, 0 = , 1 = 
+;eng2Bit5       equ $20 ; %00100000, bit 5, 0 = , 1 = 
+;eng2Bit6       equ $40 ; %01000000, bit 6, 0 = , 1 = 
+;eng2Bit7       equ $80 ; %10000000, bit 7, 0 = , 1 =
+
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - RS232 variables - (declared in injcalcs_BPEM488.s)
@@ -226,7 +243,6 @@ ECT_TC5_ISR:
     staa   State            ; Copy to "State"
     rti                     ; Return from interrupt
         
-
 ECT_TC7_ISR:
 ;*****************************************************************************************
 ; - ECT_TC7_ISR Interrupt Service Routine (Crankshaft sensor notch)
@@ -287,14 +303,15 @@ STATE_STATUS_done:
 ;   RPM, Ignition and  Fuel calculations are done in the main loop.                                               
 ;*****************************************************************************************
 ;*****************************************************************************************
-; - Reload stall counter with compare value. Stall check is done in the main loop every mS
+; - Reload stall counter with compare value. Stall check is done in the main loop every 
+;   mSec. "Stallcnt" is decremented every mSec and reloaded at every crank signal.
 ;*****************************************************************************************
 								 
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E       ; Load index register Y with address of first configurable 
                         ; constant on buffer RAM page 1 (vebins)
-    ldd   $03DB,Y       ; Load Accu A with value in buffer RAM page 1 offset 987 
-                        ; "Stallcnt" (stall counter)(offset = 987) 
+    ldd   $03E6,Y       ; Load Accu A with value in buffer RAM page 1 offset 998 
+                        ; "Stallcnt" (stall counter)(offset = 998) 
     std  Stallcnt       ; Copy to "Stallcnt" (no crank or stall condition counter)
                         ; (1mS increments)				 
 
@@ -319,17 +336,18 @@ CAS_3d:
     subd  CAS2ndtk        ; Subtract (A:B)-(M:M+1)=>A:B "CAS2ndtk" from value in "ECT_TC7H"
     std   CASprd2tk       ; Copy result to "CASprd2tk"
     addd  CASprd1tk       ; (A:B)+(M:M+1)_->A:B "CASprd2tk" + "CASprd1tk" = "CASprdtk"
+    bclr  ICflgs,Ch7_3d   ; Clear "Ch7_3d" bit of "ICflgs"
 	
 ;*****************************************************************************************
 ; - All calculations that use the Crank Angle Sensor period need to know what the 
 ;   resolution is. The timers are initalized with a 5.12uS resoluion but switched to 
-;   2.56uS resoluiton when the engine tranistions from crank mode to run mode.
+;   2.56uS resolution when the engine tranistions from crank mode to run mode.
 ;*****************************************************************************************
 
     brset engine,run,CAS256 ; If "run" bit of "engine" bit field is set branch to 
 	                      ; CAS256: 		
     std   CASprd512       ; Copy result to "CASprd512" (CAS period in 5.12uS resolution)
-	
+
 ;******************************************************************************************
 ; - Convert Crank Angle Sensor period (5.12uS res)to degrees x 10 of rotation (for 1 tenth  
 ;   of a degree resolution calculations).("Degx10tk512") 
@@ -341,11 +359,12 @@ CAS_3d:
 	ldy   #$000A         ; Decimal 10 -> Accu Y
 	emul                 ; (D)*(Y)->Y:D result * 10 = "Degx10tk512"
 	std   Degx10tk512    ; Copy result to "Degx10tk512" 
+	clrw  Degx10tk256    ; Clear "Degx10tk256" 
 	bra   CASprdDone     ; Branch to CASprdDone: 
 	
 CAS256:
     std   CASprd256      ; Copy result to "CASprd256" (CAS period in 2.56uS resolution)
-	
+
 ;******************************************************************************************
 ; - Convert Crank Angle Sensor period (2.56uS res)to degrees x 10 of rotation (for 1 tenth  
 ;   of a degree resolution calculations).("Degx10tk256") 
@@ -356,10 +375,11 @@ CAS256:
     tfr   X,D            ; Copy result in "X" to "D"
 	ldy   #$000A         ; Decimal 10 -> Accu Y
 	emul                 ; (D)*(Y)->Y:D result * 10 = "Degx10tk256"
-	std   Degx10tk256    ; Copy result to "Degx10tk256" 
+	std   Degx10tk256    ; Copy result to "Degx10tk256"
+    clrw  Degx10tk512    ; Clear "Degx10tk512"	
 	
 CASprdDone:
-	
+	 
 ;*****************************************************************************************
 ; - Determine if the engine is cranking or running. The timer is initialized with a 
 ;   5.12uS time base and the engine status bit field "engine" is cleared on power up.
@@ -371,8 +391,9 @@ CASprdDone:
 ;   loop if the period between crank sensor signals is greater than ~2 seconds.   
 ;*****************************************************************************************
 	
-    brset  engine,run,CASDone ; If "run" bit of "engine" bit field is set branch to 
-	                      ; CASDone: 	
+    brset  engine,run,CASprdOK ; If "run" bit of "engine" bit field is set branch to 
+	                      ; CASDone:
+    ldd   CASprd512       ; "CASprd512"-> Accu D (CAS period in 5.12uS resolution)   						  
 	cpd   #$1E84          ; Compare with decimal 7812 ("CASprdtk" for 300 RPM @5.12uS 
 	                      ; time base)
 	bhi   StillCranking   ; Period is greater than that for 300 RPM so engine is still
@@ -388,6 +409,9 @@ SwitchToRun:
                           ; max period 167.7696ms)
     bset  engine,run      ; Set "run" bit of "engine" variable
     bclr  engine,crank    ; Clear "crank" bit of "engine" variable
+    bclr engine2,base512  ; Clear the "base512" bit of "engine" bit field
+    bset engine2,base256  ; Set the "base256" bit of "engine" bit field
+    clrw  CASprd512       ; Clear "CASprd512"
 	FUEL_PUMP_AND_ASD_ON  ; Energise fuel pump and ASD Relay (macro in gpio_BEEM.s)
 	bra   CASprdOK        ; Branch to CASprdOK:
 
@@ -399,15 +423,15 @@ StillCranking:
     movb #$FF,TIM_PTPSR   ; Load TIM_PTPSR with %11111111
                           ; (prescale 256, 5.12us resolution, 
                           ; max period 335.5ms)
-    bclr  engine,run      ; Clear "run" bit of "engine" variable
-    bset  engine,crank    ; Set "crank" bit of "engine" variable
+    bclr engine,run       ; Clear "run" bit of "engine" variable
+    bset engine,crank     ; Set "crank" bit of "engine" variable
+    bset engine2,base512  ; Set the "base512" bit of "engine" bit field
+    bclr engine2,base256  ; Clear the "base256" bit of "engine" bit field
 	FUEL_PUMP_AND_ASD_ON  ; Energise fuel pump and ASD Relay (macro in gpio_BEEM.s)
 
 CASprdOK:    
-    bclr  ICflgs,Ch7_3d   ; Clear "Ch7_3d" bit of "ICflgs"
     bset  ICflgs,RPMcalc  ; Set "RPMcalc" bit of "ICflgs"
-	bra   CASDone         ; Branch to CASDone:
-	
+    
 CASDone:
 
 ;******************************************************************************************
