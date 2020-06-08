@@ -112,7 +112,25 @@ ADC0_VARS_START_LIN	EQU   @ ; @ Represents the current value of the linear
 ;afr1x10:      ds 2 ; Air Fuel Ratio for gasoline (AFRx10)(exact for TS)(60)
 ;PortAbits:    ds 1  ; Port A status bit field(offset=128)
 ;alarmbits:    ds 1  ; Alarm status bit field(offset=137)
-;AAoffbits:    ds 1  ; Audio Alarm Off status bit field(offset=138)
+;engine2:      ds 1  ; Engine2 status bit field(offset=136)
+
+;*****************************************************************************************
+; "engine2" equates
+;*****************************************************************************************
+
+;base512        equ $01 ; %00000001, bit 0, 0 = 5.12uS time base off(White),
+                                         ; 1 = 5.12uS time base on(Grn)
+;base256        equ $02 ; %00000010, bit 1, 0 = 2.56uS time base off(White),
+                                         ; 1 = 2.56uS time base on(Grn)
+;AudAlrm        equ $04 ; %00000100, bit 2, 0 = Audible Alarm on(Grn),
+                                         ; 1 = Audible Alarm off(Red) 
+;eng2Bit3       equ $08 ; %00001000, bit 3, 0 = , 1 = 
+;eng2Bit4       equ $10 ; %00010000, bit 4, 0 = , 1 = 
+;eng2Bit5       equ $20 ; %00100000, bit 5, 0 = , 1 = 
+;eng2Bit6       equ $40 ; %01000000, bit 6, 0 = , 1 = 
+;eng2Bit7       equ $80 ; %10000000, bit 7, 0 = , 1 =
+
+;*****************************************************************************************
  
 ;***************************************************************************************** 
 ; "alarmbits" equates
@@ -135,24 +153,7 @@ ADC0_VARS_START_LIN	EQU   @ ; @ Represents the current value of the linear
 ;Bit7       equ $80 ; %10000000, bit 7, 0 = , 1 = 
 
 ;*****************************************************************************************
-;***************************************************************************************** 
-; "AAoffbits"equates
-;*****************************************************************************************
-;LOPoff        equ $01 ; %00000001, bit 0, 0 = No LOP audio alarm silence, 
-                                      ;1 = LOP audio alarm silence
-;HOToff        equ $02 ; %00000010, bit 1, 0 = No HOT audio alarm silence,
-                                      ;1 = HOT audio alarm silence
-;HEToff       fequ $04 ; %00000100, bit 2, 0 = No HET audio alarm silence,
-                                      ;1 = HET audio alarm silence 
-;HEGToff       equ $08 ; %00001000, bit 3, 0 = No HEGT audio alarm silence,
-                                      ;1 = HEGT audio alarm silence
-;HFToff        equ $10 ; %00010000, bit 4, 0 = No HFT audio alarm silence,
-                                      ;1 = HFT audio alarm silence 
-;LFPoff        equ $20 ; %00100000, bit 5, 0 = No LFP audio alarm silence,
-                                      ;1 = LFP audio alarm silence 
-;HFPoff        equ $40 ; %01000000, bit 6, 0 = No HFP audio alarm silence,
-                                       ;1 = HFP audio alarm silence
-;Bit7       fffequ $80 ; %10000000, bit 7, 0 = , 1 =
+
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; PortAbits: Port A status bit field (PORTA)
@@ -170,8 +171,13 @@ ADC0_VARS_START_LIN	EQU   @ ; @ Represents the current value of the linear
                                                          ;1 = EEMload not enabled(Grn)
 ;SW4on57to82  equ  $80 ;(PA7)%10000000, bit 7
 
-;*****************************************************************************************   
-
+;*****************************************************************************************
+;Port B
+;EngAlarm   equ $20 ;(PB5)%00100000, bit 5, D1on29to56, 0 = Alarm Relay off,
+                                                      ; 1 = Alarm Relay on
+;Port E
+;AudAlrmSil equ $08 ;(PE3)%00001000, bit 3, SW5on29to56, 0 = No Audible Alarm Silence
+                                                       ; 1 = Audible Alarm Silence    
 ;*****************************************************************************************
 
 ADC0_VARS_END		EQU	*     ; * Represents the current value of the paged 
@@ -1030,320 +1036,44 @@ SET_LFP:
                                           ; LFP_ALARM_DONE:
      bset    alarmbits,LFP                ; Set "LFP" bit of "alarmbits"
 
-LFP_ALARM_DONE:	
-
-#emac
-
-#macro CHECK_AUDIBLE_ALARM, 0
+LFP_ALARM_DONE:
 
 ;*****************************************************************************************
 ; - When an engine alarm condition occurs an indicator light on the dashbord is 
-;   illuminated and  an audible alarm will sound. The alarm can be silenced by pressing 
-;   the alarm silence button on the dashboard but the light will remain illuminated until 
-;   the alarm conditionn is no longer met.
-;*****************************************************************************************
-;Port B
-;EngAlarm   equ $20 ;(PB5)%00100000, bit 5, D1on29to56, 0 = Alarm Relay off,
-                                                      ; 1 = Alarm Relay on
-;Port E
-;AudAlrmSil equ $08 ;(PE3)%00001000, bit 3, SW5on29to56, 0 = No Audible Alarm Silence
-                                                       ; 1 = Audible Alarm Silence  
-
-;*****************************************************************************************
-; - Check to see if the alarm should be silenced.
+;   illuminated and an audible alarm will sound. The alarm can be silenced by switching 
+;   the alarm silence switch on the dashboard to the on position but the light will remain  
+;   illuminated  until the alarm conditionn is no longer met. When the alarm silence 
+;   switch is in the on posiiton an indicator on the dashboard will warn the driver that 
+;   feature is off and that subsequent alarms will be indicator lights only.
 ;*****************************************************************************************
 ;*****************************************************************************************
-; - High engine temperature Section
-;***************************************************************************************** 
-
-    brset alarmbits,HEToff,HETChkAudOn ; If "HET" bit of "alarmbits" is set branch to 
-	                                ; HETChkAudOn: (High oil temperature alarm) 	
-	brclr AAoffbits,HEToff,HETNoSil ; If "HET" bit of "AAoffbits" is clear branch to
-	                                ; HETNoSil: (audio alarm not on so fall through)   
-	bclr  AAoffbits,HEToff          ; Clear "HET"bit of "AAoffbits" (audio alarm is 
-	                                ; off flag)
-    bra   HETChkSil                 ; Branch to HETChkSil: (no HET alarm, Audio alarm 
-	                                ; is not on, fall through)
-	
-HETChkAudOn:
-   brset  PORTB,EngAlarm,HETChkSil ; If "EngAlarm" pin on Port B is high branch to 
-                                   ; HETChkSil: (Audio alarm is on, check if the silence 
-								   ; button is pressed) 
-
-HETSetAlrm:
-   brset AAoffbits,HEToff,HETNoSil ; If "HET" bit of "AAoffbits" is set branch to HOTNoSil:
-                                   ; (audible alarm has been silenced so fall through)   
-   bset  PORTB,EngAlarm            ; Set "EngAlarm" pin on Port B (pin high)
-                                   ; (audible alarm on)
-   bra   HETNoSil                  ; Branch to HETNoSil (audio alarm is on, fall through)
-
-   
-HETChkSil:
-   brset  AAoffbits,HEToff,HETNoSil ; If "HET" bit of "AAoffbits is set branch to HETNoSil:
-                                    ; (audio alarm has been silenced, fall through)   
-   brclr PORTE,AudAlrmSil,HETSilAlrm ; If "AudAlrmSil" (PE3)pin on Port E is low branch to 
-                                  ; HETSilAlrm:(switch is on,silence the audio alarm)
-   bra  HETNoSil                  ; Branch to HETNoSil: (Pin must be high, switch is 
-                                  ; off, fall through)
-	
-HETSilAlrm:
-   bclr  PORTB,EngAlarm           ; Clear "EngAlarm" pin on Port B (pin goes low, audible 
-                                  ; alarm off)
-   bset  AAoffbits,HEToff         ; Set "HET" bit on "AAoffbits" (audio alarm has been 
-                                  ; silenced) 
-   
-HETNoSil:                         ; End of high engine temperature audible alarm routine
-
+; - If we have an audible alarm see if it should be silenced. 
 ;*****************************************************************************************
-; - High oil temperature Section
-;***************************************************************************************** 
 
-    brset alarmbits,HOToff,HOTChkAudOn ; If "HOT" bit of "alarmbits" is set branch to 
-	                                ; HOTChkAudOn: (High oil temperature alarm) 	
-	brclr AAoffbits,HOToff,HOTNoSil ; If "HOT" bit of "AAoffbits" is clear branch to
-	                                ; HOTNoSil: (audio alarm not on so fall through)   
-	bclr  AAoffbits,HOToff          ; Clear "HOT"bit of "AAoffbits" (audio alarm is 
-	                                ; off flag)
-    bra   HOTChkSil                 ; Branch to HOTChkSil: (no HOT alarm, Audio alarm 
-	                                ; is not on, fall through)
-	
-HOTChkAudOn:
-   brset  PORTB,EngAlarm,HOTChkSil ; If "EngAlarm" pin on Port B is high branch to 
-                                   ; HOTChkSil: (Audio alarm is on, check if the silence 
-								   ; button is pressed) 
+    brclr PORTE,PE4,NoAudAlrm ; If "AudAlrmSil"(PE4) pin on port E is clear, branch to 
+                                     ; NoAudAlrm: (Switch is on so prohibit audible alarm)
+    bclr engine2,AudAlrm             ; Clear "AudAlrm" bit of "engine2" bit field
+    bra  ChkAlarmbits                ; Branch to ChkAlarmbits: 
 
-HOTSetAlrm:
-   brset AAoffbits,HOToff,HOTNoSil ; If "HOT" bit of "AAoffbits" is set branch to HOTNoSil:
-                                   ; (audible alarm has been silenced so fall through)   
-   bset  PORTB,EngAlarm            ; Set "EngAlarm" pin on Port B (pin high)
-                                   ; (audible alarm on)
-   bra   HOTNoSil                  ; Branch to HOTNoSil (audio alarm is on, fall through)
+NoAudAlrm:
+    bset engine2,AudAlrm             ; Set "AudAlrm" bit of "engine2" bit field 
 
-HOTChkSil:
-   brset  AAoffbits,HOToff,HOTNoSil ; If "HOT" bit of "AAoffbits is set branch to HOTNoSil:
-                                    ; (audio alarm has been silenced, fall through)   
-   brclr PORTE,AudAlrmSil,HOTSilAlrm ; If "AudAlrmSil" (PE3)pin on Port E is low branch to 
-                                  ; HOTSilAlrm:(switch is on,silence the audio alarm)
-   bra  HOTNoSil                  ; Branch to HOTNoSil: (Pin must be high, switch is 
-                                  ; off, fall through)
-	
-HOTSilAlrm:
-   bclr  PORTB,EngAlarm           ; Clear "EngAlarm" pin on Port B (pin goes low, audible 
-                                  ; alarm off)
-   bset  AAoffbits,HOToff            ; Set "HOT" bit on "AAoffbits" (audio alarm has been 
-                                  ; silenced) 
-   
-HOTNoSil:                         ; End of high oil temperature audible alarm routine
+ChkAlarmbits:    
+    ldaa  alarmbits                  ; "alarmbits"-> Accu A
+    oraa  #$00000000                 ; Inclusive or with %00000000 (all bits cleared 
+                                     ; on power up and bit 7 is not assigned
+    beq   AudibleAlarmOff            ; If all bits are zero branch to AudibleAlarmOff: 
+    brset engine2,AudAlrm,AudibleAlarmOff  ; if "AudAlrm" bit of "engine2" is set branch 
+                                     ; to AudibleAlarmOff: (Switch is on so prohibit audible 
+                                     ; alarm) 
+    bset  PORTB,EngAlarm             ; Set "EngAlarm pin on Port B (audible alarm on)           
+    bra   AudibleAlarmDone           ; Branch to AudibleAlarmDone:  
+    
+AudibleAlarmOff:
+    bclr  PORTB,EngAlarm             ; Clear "EngAlarm" pin on port B (audible alarm on)
 
-;*****************************************************************************************
-; - High fuel temperature Section
-;***************************************************************************************** 
+AudibleAlarmDone:    	
 
-	brset alarmbits,HFToff,HFTChkAudOn ; If "HFT" bit of "alarmbits" is set branch to 
-	                                ; HFTChkAudOn: (High fuel temperature alarm)
-	brclr AAoffbits,HFToff,HFTNoSil    ; If "HFT" bit of "AAoffbits" is clear branch to
-	                                ; HFTNoSil: (audio alarm not on so fall through)   
-	bclr  AAoffbits,HFToff             ; Clear "HFT"bit of "AAoffbits" (audio alarm is 
-	                                ; off flag)
-    bra   HFTChkSil                 ; Branch to HFTChkSil: (no HFT alarm, Audio alarm 
-	                                ; is not on, fall through)
-	
-HFTChkAudOn:
-   brset  PORTB,EngAlarm,HFTChkSil ; If "EngAlarm" pin on Port B is high branch to 
-                                   ; HFTChkSil: (Audio alarm is on, check if the silence 
-								   ; button is pressed) 
-
-HFTSetAlrm:
-   brset AAoffbits,HFToff,HFTNoSil    ; If "HFT" bit of "AAoffbits" is set branch to HFTNoSil:
-                                   ; (audible alarm has been silenced so fall through)   
-   bset  PORTB,EngAlarm            ; Set "EngAlarm" pin on Port B (pin high)
-                                   ; (audible alarm on)
-   bra   HFTNoSil                  ; Branch to HFTNoSil (audio alarm is on, fall through)
-
-   
-HFTChkSil:
-   brset  AAoffbits,HFToff,HFTNoSil  ; If "HFT" bit of "AAoffbits is set branch to HFTNoSil:
-                                  ; (audio alarm has been silenced, fall through)   
-   brclr PORTE,AudAlrmSil,HFTSilAlrm ; If "AudAlrmSil" (PE3)pin on Port E is low branch to 
-                                  ; HFTSilAlrm:(switch is on,silence the audio alarm)
-   bra  HFTNoSil                  ; Branch to HFTNoSil: (Pin must be high, switch is 
-                                  ; off, fall through)
-	
-HFTSilAlrm:
-   bclr  PORTB,EngAlarm           ; Clear "EngAlarm" pin on Port B (pin goes low, audible 
-                                  ; alarm off)
-   bset  AAoffbits,HFToff            ; Set "HFT" bit on "AAoffbits" (audio alarm has been 
-                                  ; silenced) 
-   
-HFTNoSil:                         ; End of high fuel temperature audible alarm routine
-
-;*****************************************************************************************
-; - High exhaust gas temperature Section
-;***************************************************************************************** 
-
-	brset alarmbits,HEGToff,HEGTChkAudOn ; If "HEGT" bit of "alarmbits" is set branch to 
-	                                  ; HEGTChkAudOn: (High exhaust gas temperature alarm)
-	brclr AAoffbits,HEGToff,HEGTNoSil ; If "HEGT" bit of "AAoffbits" is clear branch to
-	                                  ; HEGTNoSil: (audio alarm not on so fall through)   
-	bclr  AAoffbits,HEGToff           ; Clear "HEGT"bit of "AAoffbits" (audio alarm is 
-	                                  ; off flag)
-    bra   HEGTChkSil                  ; Branch to HEGTChkSil: (no HEGT alarm, Audio alarm 
-	                                  ; is not on, fall through)
-	
-HEGTChkAudOn:
-   brset  PORTB,EngAlarm,HEGTChkSil ; If "EngAlarm" pin on Port B is high branch to 
-                                    ; HEGTChkSil: (Audio alarm is on, check if the silence 
-								    ; button is pressed) 
-
-HEGTSetAlrm:
-   brset AAoffbits,HEGToff,HEGTNoSil ; If "HEGT" bit of "AAoffbits" is set branch to HEGTNoSil:
-                                     ; (audible alarm has been silenced so fall through)   
-   bset  PORTB,EngAlarm              ; Set "EngAlarm" pin on Port B (pin high)
-                                     ; (audible alarm on)
-   bra   HEGTNoSil                   ; Branch to HEGTNoSil (audio alarm is on, fall through)
-
-   
-HEGTChkSil:
-   brset  AAoffbits,HEGToff,HEGTNoSil ; If "HEGT" bit of "AAoffbits is set branch to HEGTNoSil:
-                                      ; (audio alarm has been silenced, fall through)   
-   brclr PORTE,AudAlrmSil,HEGTSilAlrm ; If "AudAlrmSil" (PE3)pin on Port E is low branch to 
-                                   ; HEGTSilAlrm:(switch is on,silence the audio alarm)
-   bra  HEGTNoSil                  ; Branch to HEGTNoSil: (Pin must be high, switch is 
-                                   ; off, fall through)
-	
-HEGTSilAlrm:
-   bclr  PORTB,EngAlarm           ; Clear "EngAlarm" pin on Port B (pin goes low, audible 
-                                  ; alarm off)
-   bset  AAoffbits,HEGToff        ; Set "HEGT" bit on "AAoffbits" (audio alarm has been 
-                                  ; silenced) 
-   
-HEGTNoSil:                        ; End of high exhaust gas temperature audible alarm routine
- 
-;*****************************************************************************************
-; - Low oil pressure section
-;***************************************************************************************** 
-
-    brset alarmbits,LOPoff,LOPChkAudOn ; If "LOP" bit of "alarmbits" is set branch to 
-	                                ; LOPChkAudOn: (Low oil pressure alarm) 	
-	brclr AAoffbits,LOPoff,LOPNoSil ; If "LOP" bit of "AAoffbits" is clear branch to
-	                                ; LOPNoSil: (audio alarm not on so fall through)   
-	bclr  AAoffbits,LOPoff          ; Clear "LOP"bit of "AAoffbits" (audio alarm is 
-	                                ; off flag)
-    bra   LOPChkSil                 ; Branch to LOPChkSil: (no LOP alarm, Audio alarm 
-	                                ; is not on, fall through)
-	
-LOPChkAudOn:
-   brset  PORTB,EngAlarm,LOPChkSil ; If "EngAlarm" pin on Port B is high branch to 
-                                   ; LOPChkSil: (Audio alarm is on, check if the silence 
-								   ; button is pressed) 
-
-LOPSetAlrm:
-   brset AAoffbits,LOPoff,LOPNoSil    ; If "LOP" bit of "AAoffbits" is set branch to LOPNoSil:
-                                   ; (audible alarm has been silenced so fall through)   
-   bset  PORTB,EngAlarm            ; Set "EngAlarm" pin on Port B (pin high)
-                                   ; (audible alarm on)
-   bra   LOPNoSil                  ; Branch to LOPNoSil (audio alarm is on, fall through)
-
-LOPChkSil:
-   brset  AAoffbits,LOPoff,LOPNoSil ; If "LOP" bit of "AAoffbits is set branch to LOPNoSil:
-                                    ; (audio alarm has been silenced, fall through)   
-   brclr PORTE,AudAlrmSil,LOPSilAlrm ; If "AudAlrmSil" (PE3)pin on Port E is low branch to 
-                                  ; LOPSilAlrm:(switch is on,silence the audio alarm)
-   bra  LOPNoSil                  ; Branch to LOPNoSil: (Pin must be high, switch is 
-                                  ; off, fall through)
-	
-LOPSilAlrm:
-   bclr  PORTB,EngAlarm           ; Clear "EngAlarm" pin on Port B (pin goes low, audible 
-                                  ; alarm off)
-   bset  AAoffbits,LOPoff         ; Set "LOP" bit on "AAoffbits" (audio alarm has been 
-                                  ; silenced) 
-   
-LOPNoSil:                         ; End of low oil pressure audible alarm routine
-
-;*****************************************************************************************
-; - High fuel pressure Section
-;*****************************************************************************************
- 
-    brset alarmbits,HFPoff,HFPChkAudOn ; If "HFP" bit of "alarmbits" is set branch to 
-	                                ; HFPChkAudOn: (High fuel pressure alarm)
-	brclr AAoffbits,HFPoff,HFPNoSil ; If "HFP" bit of "AAoffbits" is clear branch to
-	                                ; LFPNoSil: (audio alarm not on so fall through)   
-	bclr  AAoffbits,HFPoff          ; Clear "HFP"bit of "AAoffbits" (audio alarm is 
-	                                ; off flag)
-    bra   HFPChkSil                 ; Branch to HFPChkSil: (no HFP alarm, Audio alarm 
-	                                ; is not on, fall through)
-	
-HFPChkAudOn:
-   brset  PORTB,EngAlarm,HFPChkSil ; If "EngAlarm" pin on Port B is high branch to 
-                                   ; HFPChkSil: (Audio alarm is on, check if the silence 
-								   ; button is pressed) 
-
-HFPSetAlrm:
-   brset AAoffbits,HFPoff,HFPNoSil ; If "HFP" bit of "AAoffbits" is set branch to HFPNoSil:
-                                   ; (audible alarm has been silenced so fall through)   
-   bset  PORTB,EngAlarm            ; Set "EngAlarm" pin on Port B (pin high)
-                                   ; (audible alarm on)
-   bra   HFPNoSil                  ; Branch to HFPNoSil (audio alarm is on, fall through)
-
-   
-HFPChkSil:
-   brset  AAoffbits,HFPoff,HFPNoSil ; If "HFP" bit of "AAoffbits is set branch to HFPNoSil:
-                                    ; (audio alarm has been silenced, fall through)   
-   brclr PORTE,AudAlrmSil,HFPSilAlrm ; If "AudAlrmSil" (PE3)pin on Port E is low branch to 
-                                  ; HFPSilAlrm:(switch is on,silence the audio alarm)
-   bra  HFPNoSil                  ; Branch to HFPNoSil: (Pin must be high, switch is 
-                                  ; off, fall through)
-	
-HFPSilAlrm:
-   bclr  PORTB,EngAlarm           ; Clear "EngAlarm" pin on Port B (pin goes low, audible 
-                                  ; alarm off)
-   bset  AAoffbits,HFPoff         ; Set "HFP" bit on "AAoffbits" (audio alarm has been 
-                                  ; silenced) 
-   
-HFPNoSil:                         ; End of high fuel pressure audible alarm routine
-
-;*****************************************************************************************
-; - Low fuel pressure Section
-;***************************************************************************************** 
-
-    brset alarmbits,LFPoff,LFPChkAudOn ; If "LFP" bit of "alarmbits" is set branch to 
-	                                ; LFPChkAudOn: (Low fuel pressure alarm)
-	brclr AAoffbits,LFPoff,LFPNoSil ; If "LFP" bit of "AAoffbits" is clear branch to
-	                                ; LFPNoSil: (audio alarm not on so fall through)   
-	bclr  AAoffbits,LFPoff          ; Clear "LFP"bit of "AAoffbits" (audio alarm is 
-	                                ; off flag)
-    bra   LFPChkSil                 ; Branch to LFPChkSil: (no LFP alarm, Audio alarm 
-	                                ; is not on, fall through)
-	
-LFPChkAudOn:
-   brset  PORTB,EngAlarm,LFPChkSil ; If "EngAlarm" pin on Port B is high branch to 
-                                   ; LFPChkSil: (Audio alarm is on, check if the silence 
-								   ; button is pressed) 
-
-LFPSetAlrm:
-   brset AAoffbits,LFPoff,LFPNoSil ; If "LFP" bit of "AAoffbits" is set branch to LFPNoSil:
-                                   ; (audible alarm has been silenced so fall through)   
-   bset  PORTB,EngAlarm            ; Set "EngAlarm" pin on Port B (pin high)
-                                   ; (audible alarm on)
-   bra   LFPNoSil                  ; Branch to LFPNoSil (audio alarm is on, fall through)
-
-   
-LFPChkSil:
-   brset  AAoffbits,LFPoff,LFPNoSil ; If "LFP" bit of "AAoffbits is set branch to LFPNoSil:
-                                    ; (audio alarm has been silenced, fall through)   
-   brclr PORTE,AudAlrmSil,LFPSilAlrm ; If "AudAlrmSil" (PE3)pin on Port E is low branch to 
-                                  ; LFPSilAlrm:(switch is on,silence the audio alarm)
-   bra  LFPNoSil                  ; Branch to LFPNoSil: (Pin must be high, switch is 
-                                  ; off, fall through)
-	
-LFPSilAlrm:
-   bclr  PORTB,EngAlarm           ; Clear "EngAlarm" pin on Port B (pin goes low, audible 
-                                  ; alarm off)
-   bset  AAoffbits,LFPoff         ; Set "LFP" bit on "AAoffbits" (audio alarm has been 
-                                  ; silenced) 
-   
-LFPNoSil:                         ; End of low fuel pressure audible alarm routine
-									  
 #emac
 
 ;*****************************************************************************************     

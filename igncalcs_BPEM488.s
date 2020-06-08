@@ -84,7 +84,6 @@ IGNCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;Itrmx10:        ds 2 ; Ignition Trim (degrees x 10)+-20 degrees)
 ;RPM:            ds 2 ; Crankshaft Revolutions Per Minute
 ;STcurr:         ds 2 ; Current value in ST table (Degrees x 10)
-;Dwell:          ds 2 ; Coil on time (mS*10) 
 ;DwellCor:       ds 2 ; Coil dwell voltage correction (%*10)
 ;DwellFin:       ds 2 ; ("Dwell" * "DwellCor") (mS*10)
 ;STandItrmx10:   ds 2 ; STcurr and Itmx10 (degrees*10)
@@ -109,6 +108,19 @@ IgnOCadd1:      ds 2 ; First ignition output compare adder (5.12uS or 2.56uS res
 IgnOCadd2:      ds 2 ; Second ignition output compare adder(5.12uS or 2.56uS res)
 
 ;******************************************************************************************
+;*****************************************************************************************
+; - These configurable constants are located in BPEM488.s in page 2 starting with the 
+;   ST table
+;*****************************************************************************************
+;Dwell_F       ; 1 byte for run mode dwell time (mSec*10)(offset = 748)($02EC)
+;   db $28     ; 40 = 4.0mSec
+
+;CrnkDwell_F   ; 1 byte for crank mode dwell time (mSec*10)(offset = 749)($02ED)
+;   db $3C     ; 60 = 6.0 mSec
+
+;CrnkAdv_F     ; 1 byte for crank mode ignition advance (Deg*10)(offset = 750)($02EE)
+;   db $64     ; 100 = 10.0 degrees   
+
 ;*****************************************************************************************
 
 IGNCALCS_VARS_END		EQU	* ; * Represents the current value of the paged 
@@ -234,11 +246,10 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
                      ; Absolute Pressure*10 )
     ldd   RPM        ; Load double accumulator D with value in "RPM" (Row value RPM)
     movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy   #stBins_E    ; Load index register Y with address of the first value in ST table 
-                     ;(in RAM)   
+    ldy   #stBins_E  ; Load index register Y with address of the first value in ST table
     jsr   3D_LOOKUP  ; Jump to subroutine at 3D_LOOKUP:
     std   STcurr     ; Copy result to "STcurr"
-	
+    	
 #emac
 	
 #macro DWELL_COR_LU, 0
@@ -279,7 +290,10 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ; - Multiply dwell time (mS*10) by the correction and divide by 1000 (%*10)("DwellFin")
 ;******************************************************************************************
 
-    ldd   Dwell         ; "Dwell" -> Accu D (mS*10)
+    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
+    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
+                    ; on buffer RAM page 2 (stBins)
+    ldd  $02EC,Y    ; Load Accu D with value in buffer RAM page 2 offset 748 ("Dwell") 
     ldy   DwellCor      ; "DwellCor" -> Accu Y (%*10)
     emul                ;(D)x(Y)=Y:D "Dwell" * "DwellCor" 
     ldx   #$03E8        ; Decimal 1000 -> Accu Y (for integer math)
@@ -361,12 +375,15 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ; - Multiply dwell time (mS*10) by the correction and divide by 1000 (%*10)("DwellFin")
 ;******************************************************************************************
 
-    ldd   Dwell         ; "Dwell" -> Accu D (mS*10)
-    ldy   DwellCor      ; "DwellCor" -> Accu Y (%*10)
-    emul                ;(D)x(Y)=Y:D "Dwell" * "DwellCor" 
-    ldx   #$03E8        ; Decimal 1000 -> Accu Y (for integer math)
-    ediv                ; (Y:D)/(X)=Y;Rem->D (("Dwell" * "DwellCor")/1000) = "DwellFin"
-	sty   DwellFin      ; Copy result to "DwellFin
+    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
+    ldy  #stBins_E     ; Load index register Y with address of first configurable constant
+                       ; on buffer RAM page 2 (stBins_E)
+    ldd  $02EC,Y       ; Load Accu D with value in buffer RAM page 2 offset 748 ("Dwell") 
+    ldy  DwellCor      ; "DwellCor" -> Accu Y (%*10)
+    emul               ;(D)x(Y)=Y:D "Dwell" * "DwellCor" 
+    ldx  #$03E8        ; Decimal 1000 -> Accu Y (for integer math)
+    ediv               ; (Y:D)/(X)=Y;Rem->D (("Dwell" * "DwellCor")/1000) = "DwellFin"
+	sty  DwellFin      ; Copy result to "DwellFin
 	
 ;******************************************************************************************
 ; - Convert "DwellFin" to time in 2.56uS resolution.("DwellFintk") 

@@ -166,6 +166,11 @@ hfpon_E:      rmb $02  ; 2 bytes for High fuel pressure alarm on set point (psi*
 hfpoff_E:     rmb $02  ; 2 bytes for High fuel pressure alarm off set point (psi*10)
 lfpon_E:      rmb $02  ; 2 bytes for Low fuel pressure alarm on set point (psi*10)
 lfpoff_E:     rmb $02  ; 2 bytes for Low fuel pressure alarm off set point (psi*10)
+Dwell_E:      rmb $02  ; 2 bytes for run mode dwell time (mSec*10)
+CrnkDwell_E:  rmb $02  ; 2 bytes for crank mode dwell time (mSec*10)
+CrnkAdv_E:    rmb $02  ; 2 bytes for crank mode ignition advance (Deg*10)
+
+
 
  ;*****************************************************************************************
 ; - Page 3 AFR table, ranges and other configurable constants

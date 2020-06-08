@@ -139,13 +139,19 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;   VE table
 ;*****************************************************************************************
 
-;tpsThresh_F: dw   ; Throttle Opening Enrichment threshold (TpsPctx10/100mS)(offset = 984)
-;TOEtime_F:   dw   ; Throttle Opening Enrich time in 100mS increments(mSx10)(offset = 986)
-;OFCrpm_F     dw   ; Overrun Fuel Cut minimum RPM (RPM)(Offset 1004)($03EC) 
-;OFCtps_F     dw   ; Overrun Fuel Cut minimum throttle position (%x10)(offset 1010)($03F2)
-;OFCmap_F     dw   ; Overrun Fuel Cut maximum manifold pressure (KPAx10)(offset 1016)($03F8)
-;OFCdel_F     db   ; Overrun Fuel Cut delay duration (Sec x 10)(offset 1018)($03FA)
-
+;tpsThresh_F:       ; 2 bytes for Throttle Opening Enrichment threshold (TpsPctx10/100mS)(offset = 976)($03D0)
+;    dw $01C2       ; 450 = 45% per Sec
+;TOEtime_F:         ; 2 bytes for Throttle Opening Enrich time in 100mS increments(mSx10)(offset = 978)($03D2)
+;    dw $0014       ; 20 = 2mS
+;OFCtps_F:          ; 2 bytes for Overrun Fuel Cut min TpS%x10(offset = 986)($03DA)
+;    dw $0014       ; 20 = 2%
+;OFCrpm_F:          ; 2 bytes for Overrun Fuel Cut min RPM(offset = 988)($03DC)
+;    dw $0384       ; 900
+;OFCmap_F:          ; 2 bytes for Overrun Fuel Cut maximum manifold pressure permissive (KPAx10)(offset = 990)($03DE)
+;    dw $00FA       ; 250 = 25.0KPA
+;OFCdel_F:          ; 2 bytes for Overrun Fuel Cut delay time (Sec x 10)(offset = 992)($03E0)
+;    dw $0032         ; 50 = 5.0Sec
+	
 ;*****************************************************************************************  
 ;*****************************************************************************************
 ; - Non RS232 variables (declared in this module)
@@ -154,8 +160,8 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 TpsPctx10last: ds 2 ; Throttle Position Sensor percent last (%x10)(updated every 100Msec)
 OFCdel:        ds 1 ; Overrun Fuel Cut delay duration (decremented every 100 mS)
 TOEtim:        ds 1 ; Throttle Opening Enrichment duration (decremented every 100 mS)
-DdBndZ1:       ds 1 ; Deadband interpolation Z1 value
-DdBndZ2:       ds 1 ; Deadband interpolation Z2 value
+DdBndZ1:       ds 2 ; Deadband interpolation Z1 value
+DdBndZ2:       ds 2 ; Deadband interpolation Z2 value
 PWcalc1:       ds 2 ; PW calculations result 1
 PWcalc2:       ds 2 ; PW calculations result 2
 PWcalc3:       ds 2 ; PW calculations result 3
@@ -186,8 +192,8 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
    clrw TpsPctx10last ; Throttle Position Sensor percent last (%x10)(updated every 100Msec)
    clr  OFCdel        ; Overrun Fuel Cut delay duration (decremented every 100 mS)
    clr  TOEtim        ; Throttle Opening Enrichment duration (decremented every 100 mS)
-   clr  DdBndZ1       ; Deadband interpolation Z1 value
-   clr  DdBndZ2       ; Deadband interpolation Z2 value
+   clrw  DdBndZ1       ; Deadband interpolation Z1 value
+   clrw  DdBndZ2       ; Deadband interpolation Z2 value
    clrw PWcalc1       ; PW calculations result 1
    clrw PWcalc2       ; PW calculations result 2
    clrw PWcalc3       ; PW calculations result 3
@@ -289,23 +295,23 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E    ; Load index register Y with address of first configurable 
                      ; constant on buffer RAM page 1 (vebins)
-    ldx   $03EC,Y    ; Load Accu X with value in buffer RAM page 1 offset 1004 
+    ldd   $03EC,Y    ; Load Accu X with value in buffer RAM page 1 (offset 1004)($03EC) 
                      ; ("ReqFuel")
-    tfr  X,D         ; "ReqFuel" -> Accu D 						
     ldy  Crankcor    ;Cranking Pulsewidth Correction (% x 10) -> Accu Y
     emul             ;(D)x(Y)=Y:D "ReqFuel" * "Crankcor" 
-	ldx  #$0064      ; Decimal 100 -> Accu X
-	ediv             ;(Y:D)/(X)=Y;Rem->D ("ReqFuel" * "Crankcor" )/100 
+	ldx  #$03E8      ; Decimal 1000 -> Accu X
+	ediv             ;(Y:D)/(X)=Y;Rem->D ("ReqFuel" * "Crankcor" )/10000 
 	
 ;*****************************************************************************************
 ; - Store the result as "FDpw"(fuel delivery pulse width)(mS x 10)
 ;*****************************************************************************************
-	tfr   Y,D        ; ("ReqFuel" * "Crankcor" )/100 -> Accu D
-	std  FDpw        ; Result -> "FDpw" (fuel delivery pulsewidth (mS x 10)
 
+	sty  FDpw        ; Result -> "FDpw" (fuel delivery pulsewidth (mS x 10)
+    
 ;*****************************************************************************************
 ; - Add "deadband and store the result as "CrankPW"(cranking injector pulsewidth)(mS x 10)
-;*****************************************************************************************	
+;*****************************************************************************************
+    ldd  FDpw        ; "FDpw"-> Accu D	
 	addd Deadband    ; (A:B)+(M:M+1)->A:B ("FDpw"+"Deadband"="CrankPW"
 	std  CrankPW     ; Result -> "CrankPW" (cranking injector pulsewidth) (mS x 10)
 	
@@ -608,15 +614,15 @@ TOE_OFC_CHK:
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E       ; Load index register Y with address of first configurable constant
                         ; on buffer RAM page 1 (veBins_E)
-    ldaa   $01DE,Y      ; Load Accu A with value in buffer RAM page 1 offset 478 (First element 
+    ldd   $01DE,Y       ; Load Accu D with value in buffer RAM page 1 offset 478 (First element 
                         ; of "TOEbins" table)(Start with first element, will determine actual  
                         ; next time around)(actual offset is 956)
-    staa  TOEpct        ; Copy to Throttle Opening Enrichment percent(used in later calculations)
+    std   TOEpct        ; Copy to Throttle Opening Enrichment percent(used in later calculations)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #veBins_E       ; Load index register Y with address of first configurable constant
+    ldy   #veBins_E     ; Load index register Y with address of first configurable constant
                         ; on buffer RAM page 1 (veBins_E)
-    ldaa   $03D2,Y      ; Load Accu A with value in buffer RAM page 1 offset 978 (TOEtime_F)
-    staa  TOEtim        ; Copy to "TOEtim" (Throttle Opening Enrichment duration 
+    ldd   $03D2,Y       ; Load Accu D with value in buffer RAM page 1 offset 978 (TOEtime_F)
+    std   TOEtim        ; Copy to "TOEtim" (Throttle Opening Enrichment duration 
 	                    ; (decremented every 100 mS))
     bset  engine,TOEon  ; Set "TOEon" bit of "engine" variable (in TOE mode)
     bclr  engine,OFCon  ; Clear "OFCon" bit of "engine" variable (not in OFC mode)
@@ -760,11 +766,17 @@ ColdMulDone:
                              ; -> Curve comparison value
     movb #$03,CrvBinCnt      ; 3 -> number of bins in the curve row or column minus 1
     jsr   CRV_LU_P           ; Jump to subroutine at CRV_LU_P:(located in interp_BEEM488.s module)
-    stab  TpsDOTcor          ; Copy result to TpsDOTcor (%)(TOE bins use byte values)
+    stab  TpsDOTcor          ; Copy result to TpsDOTcor (%)(TOE bins use word values)
     
 ;*****************************************************************************************
 ; - Multiply "TpsDOTcor" by "ColdMulpct" and divide by 100 
 ;*****************************************************************************************
+
+;    ldd   TpsDOTcor   ;  "TpsDOTcor" -> Accu D (%)
+;	ldy   ColdMulpct  ; "ColdMulpct" -> Accu Y (%)
+;	emul              ;(D)x(Y)=Y:D ("TpsDOTcor" * "ColdMulpct" )
+;	ldx   #$0064      ; Decimal 100 -> Accu X
+;    ediv              ;(Y:D)/(X)=Y;Rem->D(("TpsDOTcor" * "ColdMulpct")/100)(%)
 
     ldaa  TpsDOTcor      ; "TpsDOTcor" -> A (%)
     ldab  ColdMulpct     ; "ColdMulpct" -> B (%)
@@ -791,12 +803,12 @@ NO_ROUND_UP:
 
 ADD_COLDADD:
     adda  ColdAddpct     ; (A)+(M)->(A) (("TpsDOTcor" * ColdMulpct)/100) + "ColdAddpct")
-    staa  tmp1           ; Copy to "tmp1"(("TpsDOTcor" * ColdMulpct)/100) + "ColdAddpct")
+    staa  tmp5b           ; Copy to "tmp5b"(("TpsDOTcor" * ColdMulpct)/100) + "ColdAddpct")
     cmpa  TOEpct         ; Compare result with "TOEpct"
     blo   TOE_CHK_TIME   ; If (A) is less than (M), branch to TOE_CHK_TIME: (result 
                          ; < "TOEpct" so use this value for "TOEpct" and check if 
 						 ; acceleration is done)
-    ldaa  tmp1           ; "tmp1" -> A(("TpsDOTcor" * ColdMulpct)/100) + "ColdAddpct")
+    ldaa  tmp5b           ; "tmp5b" -> A(("TpsDOTcor" * ColdMulpct)/100) + "ColdAddpct")
     staa  TOEpct         ; Copy result to "TOEpct"(result is higher than current
                          ; so update TOEpct with the higher value)
 
@@ -804,7 +816,12 @@ ADD_COLDADD:
 ; - Calculate the Throttle Opening Enrichment adder for PW calculations.
 ;*****************************************************************************************
 
-    ldd  reqFuel      ; "reqFuel" -> Accu D (mS x 100)
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy   #veBins_E   ; Load index register Y with address of first configurable 
+                      ; constant on buffer RAM page 1 (veBins_E)
+    ldd   $03EC,Y     ; Load Accu D with value in buffer RAM page 1 (offset 1004)($03EC) 
+                      ; ("reqFuel")
+;    tfr  X,D          ; "reqFuel" -> Accu D 	
     ldy  TOEpct       ; "TOEpct" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "reqFuel" * "TOEpct" 
 	ldx  #$0064       ; Decimal 100 -> Accu X 
@@ -986,29 +1003,39 @@ OFC_LOOP:
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Calculate values at Z1 and Z2
+; DdBndBase_F = 90 (.9 mSec)
+; DdBndCor_F = 18 (.18 mSec/V)
 ;*****************************************************************************************
 
-	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #veBins_E       ; Load index register Y with address of first configurable 
+	movb   #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy    #veBins_E    ; Load index register Y with address of first configurable 
                         ; constant on buffer RAM page 1 (veBins_E)
-    ldaa   $03CC,Y      ; Load Accu A with value in buffer RAM page 1 offset 972 
+    ldd    $03CC,Y      ; Load Accu A with value in buffer RAM page 1 offset 972 
                         ; Injector deadband at 13.2V (mSec*10)(DdBndBase_F)
-    staa  tmp1          ; Copy to "tmp1" (Injector deadband at 13.2V (mSec * 100))
-	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #veBins_E       ; Load index register Y with address of first configurable 
+    std    tmp1w        ; Copy to "tmp1w" (Injector deadband at 13.2V (mSec * 100))
+	movb   #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy    #veBins_E    ; Load index register Y with address of first configurable 
                         ; constant on buffer RAM page 1 (veBins_E)
-    ldaa   $03CE,Y      ; Load Accu A with value in buffer RAM page 1 offset 974 
+    ldd    $03CE,Y      ; Load Accu A with value in buffer RAM page 1 offset 974 
                         ; Injector deadband voltage correction (mSec/V x 100)(DdBndCor_F)
-    ldab  #$06          ; Decimal 6-> Accu B
-	mul                 ;(A)x(B)->A:B "Injector deadband voltage correction" * 6
-	stab   tmp2         ;("Injector deadband voltage correction" * 6)-> tmp2
-	addb  tmp1          ;(B)+(M)->B (Injector deadband at 13.2V + (Injector deadband 
+    std    tmp2w        ; Copy to "tmp2w"
+    ldy    #$06         ; Decimal 6-> Accu Y
+	emul                ; (D)*(Y)->Y:D "Injector deadband voltage correction" * 6
+	std    tmp3w        ;("Injector deadband voltage correction" * 6)-> tmp3w
+	addd   tmp1w        ; A:B)+((M:M+1)->A:B  (Injector deadband at 13.2V + (Injector deadband 
 	                    ; voltage correction * 6)
-	stab   DdBndZ2      ; Copy result to "DdBndZ2"
-    ldaa  tmp1          ; (Injector deadband at 13.2V)-> Accu A
-    suba  tmp2          ; (A)-(M)->A ((Injector deadband at 13.2V) - 
+	std   DdBndZ2       ; Copy result to "DdBndZ2"
+    ldd   tmp1w         ; (Injector deadband at 13.2V)-> Accu A
+    subd  tmp3w         ;  A:B)-((M:M+1)->A:B  ((Injector deadband at 13.2V) - 
 	                    ; (Injector deadband voltage correction * 6))
+    bpl   NotMinus      ; N bit = 0 so not a minus result, branch to NotMinus: 
+    clr   DdBndZ1       ; Result is minus so clear "DdBndZ1"
+    bra   WasMinus      ; Branch to WasMinus: (skip over)    
+    
+NotMinus:
     staa  DdBndZ1       ; Copy result to "DdBndZ1"
+    
+WasMinus:
 
 #emac
 
@@ -1017,17 +1044,17 @@ OFC_LOOP:
 ;*****************************************************************************************
 ; - Interpolate injector deadband at current battery voltage
 ;*****************************************************************************************
-  
+
     ldd  #$0048      ; Decimal 72 (7.2 volts) -> Accu D
     pshd             ; Push to stack (V1)
     ldd  BatVx10     ; "BatVx10"(battery volts x 10) -> Accu D
     pshd             ; Push to stack (V)
     ldd  #$00C0      ; Decimal 192 (19.2 volts) -> Accu D
     pshd             ; Push to stack (V2)
-	ldd  DdBndZ1     ;((Injector deadband at 13.2V) - (Injector deadband voltage 
+	ldd  DdBndZ2     ;((Injector deadband at 13.2V) + (Injector deadband voltage 
 	                 ; correction * 6)) -> Accu D 
     pshd             ; Push to stack (Z1)
-	ldd  DdBndZ2     ;((Injector deadband at 13.2V) + (Injector deadband voltage 
+	ldd  DdBndZ1     ;((Injector deadband at 13.2V) - (Injector deadband voltage 
 	                 ; correction * 6)) -> Accu D 
     pshd             ; Push to stack (Z2)
     
@@ -1053,9 +1080,13 @@ OFC_LOOP:
 ;*****************************************************************************************
 
     leas  10,SP     ; Stack pointer -> bottom of stack    
-    stab  Deadband  ; Copy result to "Deadband" (Injector deadband at current battery 
-	                ; voltage) (mS x 10)
-					
+    std  tmp4w      ; Copy result to "tmp4w" (Injector deadband at current battery 
+	                ; voltage) (mSec x 100)
+    ldd  tmp4w      ; Result in "tmp4w" -> Accu D
+    ldx  #$000A     ; Decimal 10-> Accu X
+    idiv            ; (D)/(X)->Xrem->D ("tmp4w"/10="Deadband")(mSec*10)
+    stx  Deadband   ; Copy result to "Deadband"(mSec*10)  
+
 #emac
 
 #macro RUN_PW_CALCS, 0
@@ -1172,7 +1203,12 @@ OFC_LOOP:
 ;*****************************************************************************************
 
     ldd  PWcalc5      ; "PWcalc5" -> Accu D (% x 10)
-    ldy  reqFuel      ; "reqFuel" -> Accu D (mS x 10)  	
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy   #veBins_E   ; Load index register Y with address of first configurable 
+                      ; constant on buffer RAM page 1 (veBins_E)
+    ldx   $03EC,Y     ; Load Accu X with value in buffer RAM page 1 (offset 1004)($03EC) 
+                      ; ("reqFuel")
+    tfr  X,Y          ; "reqFuel" -> Accu Y 	
     emul              ; (D)*(Y)->Y:D "PWcalc5" * "matcor" 
 	ldx  #$03E8       ; Decimal 1000 -> Accu X 
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("PWcalc5"*"reqFuel")/1000="PWlessTOE"

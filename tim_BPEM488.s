@@ -181,7 +181,12 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;   5.12uS resolution.
 ;*****************************************************************************************
 
-    ldd  InjDelDegx10 ; InjDelDegx10 -> Accu Y (Delay to start injection)(Degx10)   
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy   #veBins_E   ; Load index register Y with address of first configurable 
+                      ; constant on buffer RAM page 1 (vebins)
+    ldx   $03D8,Y     ; Load Accu X with value in buffer RAM page 1 (offset 984)($03D8) 
+                      ; ("InjDelDegx10")
+    tfr  X,D          ; "InjDelDegx10" -> Accu D 	
     ldy  Degx10tk512  ;(Time for 1 degree of rotation in 5.12uS resolution x 10)
     emul              ;(D)x(Y)=Y:D "InjDelDegx10" * Degx10tk512 
 	ldx  #$0064       ; Decimal 100 -> Accu X
@@ -198,7 +203,12 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;   2.56uS resolution.
 ;*****************************************************************************************
 
-    ldd  InjDelDegx10 ; InjDelDegx10 -> Accu Y (Delay to start injection)(Degx10)   
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy   #veBins_E   ; Load index register Y with address of first configurable 
+                      ; constant on buffer RAM page 1 (vebins)
+    ldx   $03D8,Y     ; Load Accu X with value in buffer RAM page 1 (offset 984)($03D8) 
+                      ; ("InjDelDegx10")
+    tfr  X,D          ; "InjDelDegx10" -> Accu D 	
     ldy  Degx10tk256  ;(Time for 1 degree of rotation in 2.56uS resolution x 10)
     emul              ;(D)x(Y)=Y:D "InjDelDegx10" * Degx10tk256 
 	ldx  #$0064       ; Decimal 100 -> Accu X
