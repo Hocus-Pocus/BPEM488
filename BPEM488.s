@@ -241,7 +241,7 @@ KPH:          ds 2 ; Vehicle speed (KpH x 10)(offset=70)
 ; - Fuel calculation variables
 ;*****************************************************************************************
 
-Place72:      ds 2 ; Place holder(offset=72)
+ASEcnt:       ds 2 ; Counter for "ASErev"(offset=72)
 AFRcurr:      ds 2 ; Current value in AFR table (AFR x 100)(offset=74) 
 VEcurr:       ds 2 ; Current value in VE table (% x 10)(offset=76) 
 barocor:      ds 2 ; Barometric Pressure Correction (% x 10)(offset=78)
@@ -613,7 +613,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
 ; - Fuel calculation variables
 ;*****************************************************************************************
 
-   clrw Place72      ; Place holder(offset=72)
+   clrw ASEcnt       ; Counter for "ASErev"(offset=72)
    clrw AFRcurr      ; Current value in AFR table (AFR x 100)(offset=74) 
    clrw VEcurr       ; Current value in VE table (% x 10)(offset=76) 
    clrw barocor      ; Barometric Pressure Correction (% x 10)(offset=78)
@@ -845,8 +845,15 @@ PA6Done:
 ;   been changed. 
 ;*****************************************************************************************
 
-    DEADBAND_Z1_Z2   ; Macro in injcalcs_BPEM488.s
-	
+;    DEADBAND_Z1_Z2   ; Macro in injcalcs_BPEM488.s
+    
+;*****************************************************************************************
+; - Injector dead band is the time required for the injectors to open and close and must
+;   be included in the pulse width time. The amount of time will depend on battery voltge.
+;   Battery voltage correction for injector deadband is calculated as a linear function
+;   of battery voltage from 7.2 volts to 19.2 volts with 13.2 volts being the nominal 
+;   operating voltage where no correction is applied.
+;*****************************************************************************************
 ;*****************************************************************************************
 ; - Interpolate injector deadband at current battery voltage
 ;*****************************************************************************************
@@ -930,21 +937,23 @@ PA6Done:
     FIRE_INJ5               ; Macro in tim_BEEM488.s
 	
 ;*****************************************************************************************
-; - Set the "crank" bit and clear the "run" bit of the "engine" bit field in preparation 
-;   for cranking.
+; - Set up the "engine" bit field in preparation for cranking.
 ;*****************************************************************************************
 
    bset engine,crank   ; Set the "crank" bit of "engine" bit field
    bclr engine,run     ; Clear the "run" bit of "engine" bit field
+   bset engine,WUEon   ; Set "WUEon" bit of "engine" bit field
+   bset engine,ASEon   ; Set "ASEon" bit of "engine" bit field
+   clr   ASEcnt        ; Clear the after-start enrichment counter variable
    
 ;*****************************************************************************************
 ; - Set the "base512" bit and clear the "base256" bit of the "engine2" bit field in 
 ;   preparation for cranking.
 ;*****************************************************************************************
 
-   bset engine2,base512   ; Set the "base512" bit of "engine" bit field
-   bclr engine2,base256   ; Clear the "base256" bit of "engine" bit field
-	
+   bset engine2,base512   ; Set the "base512" bit of "engine2" bit field
+   bclr engine2,base256   ; Clear the "base256" bit of "engine2" bit field
+   	
 ;*****************************************************************************************
 ; - Load stall counter with compare value. Stall check is done in the main loop every 
 ;   mSec. "Stallcnt" is decremented every mSec and reloaded at every crank signal.
@@ -956,8 +965,25 @@ PA6Done:
     ldd   $03E6,Y       ; Load Accu A with value in buffer RAM page 1 offset 998 
                         ; "Stallcnt" (stall counter)(offset = 998) 
     std  Stallcnt       ; Copy to "Stallcnt" (no crank or stall condition counter)
-                        ; (1mS increments)				 
-                                                
+                        ; (1mS increments)
+
+;*****************************************************************************************
+; ----------------------- After Start Enrichment Taper (ASErev)---------------------------
+;
+; After Start Enrichment is applied for a specified number of engine revolutions after 
+; start up. This number is interpolated from the After Start Enrichment Taper table which 
+; plots engine temperature in degrees F to 0.1 degree resoluion against revolutions. 
+; The ASE starts with the value of "ASEcor" first and is linearly interpolated down to 
+; zero after "ASErev" crankshaft revolutions.
+;
+;*****************************************************************************************
+;*****************************************************************************************
+; - Look up current value in Afterstart Enrichment Taper Table (ASErev) and update the 
+;   counter (ASEcnt)     
+;*****************************************************************************************
+
+    ASE_TAPER_LU       ; Macro in injcalcsBPEM.s
+                            
 ;*****************************************************************************************
 ;*****************************************************************************************
 ;************************* --- M A I N  E V E N T  L O O P --- ***************************
@@ -1044,7 +1070,136 @@ MainLoop:
 ;*****************************************************************************************
 
     CHECK_ALARMS    ; Macro in adc0BPEM488.s
+    
+;*****************************************************************************************
+; - Injector dead band is the time required for the injectors to open and close and must
+;   be included in the pulse width time. The amount of time will depend on battery voltge.
+;   Battery voltage correction for injector deadband is calculated as a linear function
+;   of battery voltage from 7.2 volts to 19.2 volts with 13.2 volts being the nominal 
+;   operating voltage where no correction is applied.
+;*****************************************************************************************
+;*****************************************************************************************
+; - Interpolate injector deadband at current battery voltage
+;*****************************************************************************************
+
+    DEADBAND_CALCS   ; Macro in injcalcs_BPEM488.s
 	
+;*****************************************************************************************
+; - Look up current value in Cranking Pulsewidth Correction Table (Crankcor)          
+;*****************************************************************************************
+
+    CRANK_COR_LU       ; Macro in injcalcsBPEM.s
+    
+;*****************************************************************************************
+; The base value for injector pulse width calculations in mS to 0.1mS resolution is called 
+; "ReqFuel". It represents the pulse width reqired to achieve 14.7:1 Air/Fuel Ratio at  
+; 100% volumetric efficiency. The VE table contains percentage values to 0.1 percent 
+; resolultion and plots intake manifold pressure in KPA to 0.1KPA resolution against RPM.
+; These values are part of the injector pulse width calculations for a running engine.
+;*****************************************************************************************
+;*****************************************************************************************
+; - Look up current value in VE table (veCurr)(%x10)
+;*****************************************************************************************
+
+    VE_LU       ; Macro in injcalcsBPEM.s
+    
+;*****************************************************************************************
+; The Air/Fuel Ratio of the fuel mixture affects how an engine will run. Generally 
+; speaking AFRs of less than ~7:1 are too rich to ignite. Ratios of greater than ~20:1 are 
+; too lean to ignite. Stoichiometric ratio is at ~14.7:1. This is the ratio at which all  
+; the fuel and all the oxygen are consumed and is best for emmisions concerns. Best power  
+; is obtained between ratios of ~12:1 and ~13:1. Best economy is obtained as lean as ~18:1 
+; in some engines. This controller runs in open loop so the AFR numbers are used as 
+; a tuning aid only.  
+;*****************************************************************************************
+;*****************************************************************************************
+; - Look up current value in AFR table (afrCurr)(AFRx10)
+;*****************************************************************************************
+
+    AFR_LU       ; Macro in injcalcsBPEM.s
+    
+;*****************************************************************************************
+; - Look up current value in Barometric Correction Table (barocor) 
+;*****************************************************************************************
+
+    BARO_COR_LU       ; Macro in injcalcsBPEM.s
+    
+;*****************************************************************************************
+; - Look up current value in MAT Air Density Table (matcor)           
+;*****************************************************************************************
+
+    MAT_COR_LU       ; Macro in injcalcsBPEM.s
+    
+;*****************************************************************************************
+;*****************************************************************************************
+; - Determine if we will require Warmup Enrichments and or After Start Enrichments
+;*****************************************************************************************
+
+    brset  engine,ASEon,CHECK_WUE_ASE   ; If "ASEon" bit of "engine" bit field is set, branch 
+	                                ; to CHECK_WUE_ASE:   
+    brclr  engine,WUEon,NO_WUE_ASE1 ; If "WUEon" bit of "engine" bit field is clear
+                                    ; Branch to NO_WUE_ASE1: (engine is warm and ASE is  
+									; not in progress so no enrichments are required)
+    bra  CHECK_WUE_ASE              ; branch to CHECK_WUE_ASE:
+    
+NO_WUE_ASE1:
+    job NO_WUE_ASE                     ; Jump or branch to NO_WUE_ASE (long branch)
+    
+CHECK_WUE_ASE:
+
+;*****************************************************************************************
+; ---------------------------- Warm Up Enrichment (WUEcor)--------------------------------
+;
+; Warm Up Enrichment is applied until the engine is up to full operating temperature.
+; "WUEcor" specifies how much fuel is added as a percentage. It is interpolated from the   
+; Warm Up Enrichment table which plots engine temperature in degrees F to 0.1 degree 
+; resoluion against percent to 0.1 percent resolution and is part of the calculations 
+; to determine pulse width when the engine is running.
+;
+;*****************************************************************************************
+;*****************************************************************************************
+; - Look up current value in Warmup Enrichment Table (WUEcor) 
+;*****************************************************************************************
+
+    WUE_COR_LU       ; Macro in injcalcsBPEM.s
+    
+;*****************************************************************************************
+; -------------------------- After Start Enrichment (ASEcor)------------------------------
+:
+; Immediately after the engine has started it is normal to need additional fuel for a  
+; short period of time. "ASEcor"specifies how much fuel is added as a percentage. It is   
+; interpolated from the After Start Enrichment table which plots engine temperature in 
+; degrees F to 0.1 degree resoluion against percent to 0.1 percent resolution and is added 
+; to "WUEcor" as part of the calculations to determine pulse width when the engine is 
+; running.
+;  
+;*****************************************************************************************
+;*****************************************************************************************
+; - Look up current value in Afterstart Enrichment Percentage Table (ASEcor)   
+;*****************************************************************************************
+
+    ASE_COR_LU       ; Macro in injcalcsBPEM.s
+    									   
+;*****************************************************************************************
+; - WUE and or ASE is in progress so do the WUE/ASE calculations
+;*****************************************************************************************
+
+    WUE_ASE_CALCS       ; Macro in injcalcsBPEM.s									   
+									   
+NO_WUE_ASE:
+
+;*****************************************************************************************
+; - When the engine is running and the throttle is opened quickly a richer mixture is 
+;   required for a short period of time. This additional pulse width time is called 
+;   Throttle Opening Enrichment. Conversly, when the engine is in over run 
+;   conditions no fuel is required so the injectors can be turned off, subject to 
+;   permissives. This condtion is call Overrun Fuel Cut. 
+;*****************************************************************************************
+; - Calculate the cranking pulsewidth.
+;*****************************************************************************************
+
+    CRANK_PW_CALC       ; Macro in injcalcsBPEM.s
+    
 ;*****************************************************************************************
 ; - Do RPM calculations when there is a new input capture period.                           
 ;*****************************************************************************************
@@ -1076,8 +1231,14 @@ NoKPHcalc:
 ;   Check for no crank or stall condition.
 ;***************************************************************************************** 
 
-    brclr clock,ms1,NoMS1Routines ; If "ms1" bit of "clock" bit field is clear branch to
-                                  ; NoMS1Routines: 	
+    brclr clock,ms1,NoMS1Routines1 ; If "ms1" bit of "clock" bit field is clear branch 
+                                   ; to NoMS1Routines1:
+    bra  DO_MS1_ROUTINES           ; Branch to DO_MS1_ROUTINES:
+
+NoMS1Routines1:
+    job  NoMS1Routines             ; Long branch
+
+DO_MS1_ROUTINES:    
     MILLISEC_ROUTINES             ; (Macro in rti_BEEM488.s)
 	bclr clock,ms1                ; Clear "ms1" bit of "clock" bit field
 
@@ -1210,10 +1371,7 @@ IgnCalcsDone:
 	bra   RunMode                ; Branch to RunMode:(no need to test "run" bit)
 								  
 CrankMode:
-;    bset    engine,WUEon        ; Set "WUEon" bit of "engine" bit field
-;    bset    engine,ASEon        ; Set "ASEon" bit of "engine" bit field
-;    clr     ASEcnt              ; Clear the after-start enrichment counter variable
-	
+
 ;*****************************************************************************************
 ; Check if we are in flood clear or normal crank mode
 ;*****************************************************************************************
@@ -1243,18 +1401,6 @@ NoFloodClear:
 
     INJ_DEL_CALC_512    ; Macro in tim_BPEM.s
 	
-;*****************************************************************************************
-; - Interpolate injector deadband at current battery voltage
-;*****************************************************************************************
-
-    DEADBAND_CALCS   ; Macro in injcalcs_BPEM488.s
-	
-
-;*****************************************************************************************
-; - Look up the value for the cranking pulse width in 5.12uS resolution           
-;*****************************************************************************************
-
-    CRANK_COR_LU       ; Macro in injcalcsBPEM.s
     job  MainLoopEnd   ; Jump or branch to "MainLoopEnd:" (keep looping here until no 
 	                   ; longer in crank mode
 	
@@ -1266,112 +1412,13 @@ RunMode:
 
     INJ_DEL_CALC_256    ; Macro in tim_BPEM.s
 
-;*****************************************************************************************
-; The base value for injector pulse width calculations in mS to 0.1mS resolution is called 
-; "ReqFuel". It represents the pulse width reqired to achieve 14.7:1 Air/Fuel Ratio at  
-; 100% volumetric efficiency. The VE table contains percentage values to 0.1 percent 
-; resolultion and plots intake manifold pressure in KPA to 0.1KPA resolution against RPM.
-; These values are part of the injector pulse width calculations for a running engine.
-;*****************************************************************************************
-;*****************************************************************************************
-; - Look up current value in VE table (veCurr)(%x10)
-;*****************************************************************************************
 
-    VE_LU              ; Macro in injclacsBPEM.s
-	
-;*****************************************************************************************
-; The Air/Fuel Ratio of the fuel mixture affects how an engine will run. Generally 
-; speaking AFRs of less than ~7:1 are too rich to ignite. Ratios of greater than ~20:1 are 
-; too lean to ignite. Stoichiometric ratio is at ~14.7:1. This is the ratio at which all  
-; the fuel and all the oxygen are consumed and is best for emmisions concerns. Best power  
-; is obtained between ratios of ~12:1 and ~13:1. Best economy is obtained as lean as ~18:1 
-; in some engines. This controller runs in open loop so the AFR numbers are used as 
-; a tuning aid only.  
-;*****************************************************************************************
-;*****************************************************************************************
-; - Look up current value in AFR table (afrCurr)(AFRx10)
-;*****************************************************************************************
-
-    AFR_LU             ; Macro in injclacsBPEM.s
-	
-;*****************************************************************************************
-; ---------------------------- Warm Up Enrichment (WUEcor)--------------------------------
-;
-; Warm Up Enrichment is applied until the engine is up to full operating temperature.
-; "WUEcor" specifies how much fuel is added as a percentage. It is interpolated from the   
-; Warm Up Enrichment table which plots engine temperature in degrees F to 0.1 degree 
-; resoluion against percent to 0.1 percent resolution and is part of the calculations 
-; to determine pulse width when the engine is running.
-;
-;*****************************************************************************************
-;*****************************************************************************************
-; -------------------------- After Start Enrichment (ASEcor)------------------------------
-:
-; Immediately after the engine has started it is normal to need additional fuel for a  
-; short period of time. "ASEcor"specifies how much fuel is added as a percentage. It is   
-; interpolated from the After Start Enrichment table which plots engine temperature in 
-; degrees F to 0.1 degree resoluion against percent to 0.1 percent resolution and is added 
-; to "WUEcor" as part of the calculations to determine pulse width when the engine is 
-; running.
-;  
-;*****************************************************************************************
-;*****************************************************************************************
-; ----------------------- After Start Enrichment Taper (ASErev)---------------------------
-;
-; After Start Enrichment is applied for a specified number of engine revolutions after 
-; start up. This number is interpolated from the After Start Enrichment Taper table which 
-; plots engine temperature in degrees F to 0.1 degree resoluion against revolutions. 
-; The ASE starts with the value of "ASEcor" first and is linearly interpolated down to 
-; zero after "ASErev" crankshaft revolutions.
-;
-;*****************************************************************************************
-;*****************************************************************************************
-; - Determine if we require Warmup Enrichments and or After Start Enrichments
-;*****************************************************************************************
-
-    brset  engine,ASEon,CHECK_ASE   ; If "ASEon" bit of "engine" bit field is set, branch 
-	                                ; to CHECK_ASE:   
-    brclr  engine,WUEon,No_WUE_ASE1 ; If "WUEon" bit of "engine" bit field is clear
-                                    ; Branch to No_WUE_ASE1: (engine is warm and ASE is  
-									; not in progress so no enrichments are required)
-    bra  CHECK_ASE                  ; branch to CHECK_ASE:
-    
-No_WUE_ASE1:
-    job No_WUE_ASE                     ; Jump or branch to No_WUE_ASE (long branch)
-    
-CHECK_ASE:
-									   
-;*****************************************************************************************
-; - WUE and or ASE is in progress so do the WUE/ASE calculations
-;*****************************************************************************************
-
-    WUE_ASE_CALCS       ; Macro in injcalcsBPEM.s									   
-									   
-No_WUE_ASE:
-
-;*****************************************************************************************
-; - When the engine is running and the throttle is opened quickly a richer mixture is 
-;   required for a short period of time. This additional pulse width time is called 
-;   Throttle Opening Enrichment. Conversly, when the engine is in over run 
-;   conditions no fuel is required so the injectors can be turned off, subject to 
-;   permissives. This condtion is call Overrun Fuel Cut. 
-;*****************************************************************************************
 ;*****************************************************************************************
 ; - Determine if we are in steady state, TOE mode or OFC mode and do the calculations 
 ;   accordingly.
 ;*****************************************************************************************
 
     TOE_OFC_CALCS       ; Macro in injcalcsBPEM.s
-	
-;*****************************************************************************************
-; - Injector dead band is the time required for the injectors to open and close and must
-;   be included in the pulse width time. The amount of time will depend on battery voltge.
-;   Battery voltage correction for injector deadband is calculated as a linear function
-;   of battery voltage from 7.2 volts to 19.2 volts with 13.2 volts being the nominal 
-;   operating voltage where no correction is applied.
-;*****************************************************************************************
-
-    DEADBAND_CALCS       ; Macro in injcalcsBPEM.s
 	
 ;*****************************************************************************************
 ; - Calculate injector pulse width for a running engine "PW" (mS x 10)
@@ -1473,8 +1520,8 @@ barCorVals_F:      ; 18 bytes for barometric correction values (KpA x 10)(offset
 ;        790,  820,  850,  880,  910,  940,  970, 1000, 1030
     
 barCorDelta_F:     ; 18 bytes for barometric correction  (% x 10)(offset = 738)($02E2)
-    dw $0456,$0442,$042E,$0424,$0410,$0406,$03FC,$03E8,$03DE
-;       1110, 1090, 1070, 1060, 1040, 1030, 1020, 1000, 990
+    dw $0456,$0447,$0438,$0429,$041A,$040B,$03FC,$03ED,$03DE
+;       1110, 1095, 1080, 1065, 1050, 1035, 1020, 1005, 990
     
 dwellvolts_F:      ; 12 bytes for dwell battery correction (volts x 10)(offset = 756)($02F4)
     dw $003C,$0050,$0064,$0078,$008C,$00A0

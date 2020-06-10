@@ -463,7 +463,19 @@ DoRevCntr:
     beq   CAS10          ; If equal branch to CAS10: (Tenth CAS signal) 
 
 CAS1:
-    dec   ASErev           ; Decrement "ASErev"(countdown value for ASE taper)    
+
+;*****************************************************************************************
+; - if ASE is in progress, decrement the counter (ASEcnt)
+;*****************************************************************************************
+    brset engine,ASEon,DecASECnt ; If "ASEon" bit of "engine" bit field is set, branch to 
+                           ; DecASECnt:
+    bra  NoDecASECnt       ; Branch to NoDecASECnt:   
+
+DecASECnt:                           
+    decw   ASEcnt          ; Decrement "ASEcnt"(countdown value for ASE taper)
+                           ; (starts with the lookup value of "ASErev")
+
+NoDecASECnt:                           
     dec   RevCntr          ; Decrement "RevCntr"(now eight)
     bra   RevCntrDone      ; Branch to RevCntrDone:  
 

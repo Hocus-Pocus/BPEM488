@@ -296,12 +296,14 @@ DoStall:
                                 ; resolution, max period 335.5ms)(min RPM = ~85)
 								 
 ;*****************************************************************************************
-; - Set the "crank" bit and clear the "run" bit of the "engine" bit field in preparation 
-;   for cranking.
+; - Set up the "engine" bit field in preparation for cranking.
 ;*****************************************************************************************
 
    bset engine,crank   ; Set the "crank" bit of "engine" bit field
    bclr engine,run     ; Clear the "run" bit of "engine" bit field
+   bset engine,WUEon   ; Set "WUEon" bit of "engine" bit field
+   bset engine,ASEon   ; Set "ASEon" bit of "engine" bit field
+   clr   ASEcnt        ; Clear the after-start enrichment counter variable
    
 ;*****************************************************************************************
 ; - Set the "base512" bit and clear the "base256" bit of the "engine2" bit field in 
@@ -323,7 +325,25 @@ DoStall:
                         ; "Stallcnt" (stall counter)(offset = 998) 
     std  Stallcnt       ; Copy to "Stallcnt" (no crank or stall condition counter)
                         ; (1mS increments)
+                        
+;*****************************************************************************************
+; ----------------------- After Start Enrichment Taper (ASErev)---------------------------
+;
+; After Start Enrichment is applied for a specified number of engine revolutions after 
+; start up. This number is interpolated from the After Start Enrichment Taper table which 
+; plots engine temperature in degrees F to 0.1 degree resolution against revolutions. 
+; The ASE starts with the value of "ASEcor" first and is linearly interpolated down to 
+; zero after "ASErev" crankshaft revolutions.
+;
+;*****************************************************************************************
+;*****************************************************************************************
+; - Look up current value in Afterstart Enrichment Taper Table (ASErev) and update the 
+;   counter (ASEcnt)  
+;*****************************************************************************************
 
+    ASE_TAPER_LU       ; Macro in injcalcsBPEM.s
+    
+                        
 ;*****************************************************************************************
 ; - Initialize other variables -
 ;*****************************************************************************************
@@ -362,8 +382,8 @@ NoStall:
 ;*****************************************************************************************
 
     movw  TpsPctx10,TpsPctx10last   ; Copy value in "TpsPctx10" to "TpsPctx10last"
-                                     ;(current becomes last)
-
+                                    ;(current becomes last)
+                   
 #emac
 
 #macro MILLISEC1000_ROUTINES, 0
@@ -384,7 +404,7 @@ NoStall:
     ldd   FDt     ; "FDt"->Accu D (fuel delivery pulse width time total)
 	Std   FDsec   ; Copy to "FDsec" (fuel delivery pulse width time total per second)
 	clrw  FDt     ; Clear "FDt" (fuel delivery pulse width time total)
-
+       
 #emac
 
 ;*****************************************************************************************

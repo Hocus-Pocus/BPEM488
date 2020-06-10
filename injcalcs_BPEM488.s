@@ -168,7 +168,7 @@ PWcalc3:       ds 2 ; PW calculations result 3
 PWcalc4:       ds 2 ; PW calculations result 4
 PWcalc5:       ds 2 ; PW calculations result 5
 ASErev:        ds 2 ; Afterstart Enrichment Taper (revolutions)
-ASEcnt:        ds 2 ; Counter value for ASE taper
+;ASEcnt:        ds 2 ; Counter value for ASE taper
 PrimePWtk:     ds 2 ; Primer injector pulswidth timer ticks(uS x 5.12)
 CrankPWtk:     ds 2 ; Cranking injector pulswidth timer ticks(uS x 5.12)
 PWtk:          ds 2 ; Running injector pulsewidth timer ticks(uS x 2.56)
@@ -200,7 +200,7 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
    clrw PWcalc4       ; PW calculations result 4
    clrw PWcalc5       ; PW calculations result 5
    clrw ASErev        ; Afterstart Enrichment Taper (revolutions)
-   clrw ASEcnt        ; Counter value for ASE taper
+;   clrw ASEcnt        ; Counter value for ASE taper
    clrw PrimePWtk     ; Primer injector pulswidth timer ticks(uS x 5.12)
    clrw CrankPWtk     ; Cranking injector pulswidth timer ticks(uS x 5.12)
    clrw PWtk          ; Running injector pulsewidth timer ticks(uS x 2.56)
@@ -211,6 +211,132 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
    clr  AIOTcnt       ; Counter for AIOT totalizer pulse width
 
 #emac
+
+#macro DEADBAND_Z1_Z2, 0
+
+;*****************************************************************************************
+; - Injector dead band is the time required for the injectors to open and close and must
+;   be included in the pulse width time. The amount of time will depend on battery voltge.
+;   Battery voltage correction for injector deadband is calculated as a linear function
+;   of battery voltage from 7.2 volts to 19.2 volts with 13.2 volts being the nominal 
+;   operating voltage where no correction is applied.
+;*****************************************************************************************
+;*****************************************************************************************
+; - Calculate values at Z1 and Z2 to interpolate injector deadband at current battery  
+;   voltage. This is done before entering the main loop as will only change if the  
+;   configurable constants for injector dead time and battery voltage correction have 
+;   been changed. 
+;*****************************************************************************************
+;*****************************************************************************************
+;
+;  V1 = 72 (7.2 volts)
+;  V  = BatVx10 (current battery voltage x 10) 
+;  V2 = 192 (19.2volts) 
+;  Z1 = DdBndBase - (DdBBndCor * 6)  
+;  Z  = unknown (deadband)       
+;  Z2 = DdBndBase + (DdBBndCor * 6)                                                                      	
+;                                                                   	
+;    |                                                             	
+;  Z2+....................*                                                             	
+;    |                    :                                         	
+;   Z+...........*        :                 (V-V1)*(Z2-Z1)                            	
+;    |           :        :        Z = Z1 + --------------                               	
+;  Z1+...*       :        :                    (V2-V1)                                       	
+;    |   :       :        :                                          	
+;   -+---+-------+--------+-                                                                 	
+;    |   V1      V        V2                                                 	
+;
+;*****************************************************************************************
+;*****************************************************************************************
+; - Calculate values at Z1 and Z2
+; DdBndBase_F = 90 (.9 mSec)
+; DdBndCor_F = 18 (.18 mSec/V)
+;*****************************************************************************************
+
+	movb   #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy    #veBins_E    ; Load index register Y with address of first configurable 
+                        ; constant on buffer RAM page 1 (veBins_E)
+    ldd    $03CC,Y      ; Load Accu A with value in buffer RAM page 1 offset 972 
+                        ; Injector deadband at 13.2V (mSec*10)(DdBndBase_F)
+    std    tmp1w        ; Copy to "tmp1w" (Injector deadband at 13.2V (mSec * 100))
+	movb   #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy    #veBins_E    ; Load index register Y with address of first configurable 
+                        ; constant on buffer RAM page 1 (veBins_E)
+    ldd    $03CE,Y      ; Load Accu A with value in buffer RAM page 1 offset 974 
+                        ; Injector deadband voltage correction (mSec/V x 100)(DdBndCor_F)
+    std    tmp2w        ; Copy to "tmp2w"
+    ldy    #$06         ; Decimal 6-> Accu Y
+	emul                ; (D)*(Y)->Y:D "Injector deadband voltage correction" * 6
+	std    tmp3w        ;("Injector deadband voltage correction" * 6)-> tmp3w
+	addd   tmp1w        ; A:B)+((M:M+1)->A:B  (Injector deadband at 13.2V + (Injector deadband 
+	                    ; voltage correction * 6)
+	std   DdBndZ2       ; Copy result to "DdBndZ2"
+    ldd   tmp1w         ; (Injector deadband at 13.2V)-> Accu A
+    subd  tmp3w         ;  A:B)-((M:M+1)->A:B  ((Injector deadband at 13.2V) - 
+	                    ; (Injector deadband voltage correction * 6))
+    bpl   NotMinus      ; N bit = 0 so not a minus result, branch to NotMinus: 
+    clr   DdBndZ1       ; Result is minus so clear "DdBndZ1"
+    bra   WasMinus      ; Branch to WasMinus: (skip over)    
+    
+NotMinus:
+    staa  DdBndZ1       ; Copy result to "DdBndZ1"
+    
+WasMinus:
+
+#emac
+
+#macro DEADBAND_CALCS, 0
+
+;*****************************************************************************************
+; - Interpolate injector deadband at current battery voltage
+;*****************************************************************************************
+
+    ldd  #$0048      ; Decimal 72 (7.2 volts) -> Accu D
+    pshd             ; Push to stack (V1)
+    ldd  BatVx10     ; "BatVx10"(battery volts x 10) -> Accu D
+    pshd             ; Push to stack (V)
+    ldd  #$00C0      ; Decimal 192 (19.2 volts) -> Accu D
+    pshd             ; Push to stack (V2)
+;	ldd  DdBndZ2     ;((Injector deadband at 13.2V) + (Injector deadband voltage 
+	                 ; correction * 6)) -> Accu D 
+    ldd  #$00C6      ; 198
+    pshd             ; Push to stack (Z1)
+;	ldd  DdBndZ1     ;((Injector deadband at 13.2V) - (Injector deadband voltage 
+	                 ; correction * 6)) -> Accu D 
+    ldd  #$0000      ; 0
+    pshd             ; Push to stack (Z2)
+    
+;*****************************************************************************************        
+		
+		;    +--------+--------+       
+		;    |        Z2       |  SP+ 0
+		;    +--------+--------+       
+		;    |        Z1       |  SP+ 2
+		;    +--------+--------+       
+		;    |        V2       |  SP+ 4
+		;    +--------+--------+       
+		;    |        V        |  SP+ 6
+		;    +--------+--------+       
+		;    |        V1       |  SP+ 8
+		;    +--------+--------+
+
+;	              V      V1      V2      Z1    Z2
+    2D_IPOL	(6,SP), (8,SP), (4,SP), (2,SP), (0,SP) ; Go to 2D_IPOL Macro, interp_BEPM.s 
+
+;*****************************************************************************************        
+; - Free stack space (result in D)
+;*****************************************************************************************
+
+    leas  10,SP     ; Stack pointer -> bottom of stack    
+    std  tmp4w      ; Copy result to "tmp4w" (Injector deadband at current battery 
+	                ; voltage) (mSec x 100)
+    ldd  tmp4w      ; Result in "tmp4w" -> Accu D
+    ldx  #$000A     ; Decimal 10-> Accu X
+    idiv            ; (D)/(X)->Xrem->D ("tmp4w"/10="Deadband")(mSec*10)
+    stx  Deadband   ; Copy result to "Deadband"(mSec*10)  
+
+#emac
+
 
 #macro PRIME_PW_LU, 0 
 
@@ -288,6 +414,13 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 	                        ; module)
     std   Crankcor          ; Copy result to Cranking Pulsewidth Correction (% x 10)
     
+#emac
+
+#macro CRANK_PW_CALC,0
+
+;*****************************************************************************************
+; - Calculate the cranking pulsewidth.
+;*****************************************************************************************
 ;*****************************************************************************************
 ; - Multiply "ReqFuel"(mS x 10) by "Crankcor" (%) = (mS * 10)
 ;*****************************************************************************************
@@ -334,7 +467,7 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 	                 ; ((("ReqFuel" * "crankcor" )/100) * 10,000) / 512 = "CrankPWtk"
     sty   CrankPWtk  ; Copy result to "CrankPWtk" (Cranking pulse width in 5.12uS 
 	                 ; resolution)
-					 
+                     
 #emac
 
 #macro VE_LU, 0
@@ -387,7 +520,49 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 	
 #emac
 
-#macro WUE_ASE_CALCS, 0
+#macro BARO_COR_LU, 0
+
+;*****************************************************************************************
+; - Look up current value in Barometric Correction Table (barocor) 
+;*****************************************************************************************
+
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    movw #veBins_E,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
+                            ; -> page where the desired curve resides 
+    movw #$0168,CrvRowOfst  ; 360 -> Offset from the curve page to the curve row(barCorVals)
+	                        ; (actual offset is 720)
+    movw #$0171,CrvColOfst  ; 369 -> Offset from the curve page to the curve column(barCorDelta)
+	                        ; (actual offset is 738)
+    movw Barox10,CrvCmpVal  ; Barometric Pressure (KPAx10) -> Curve comparison value
+    movb #$08,CrvBinCnt     ; 8 -> number of bins in the curve row or column minus 1
+    jsr   CRV_LU_P   ; Jump to subroutine at CRV_LU_P:(located in interp_BEEM488.s module)
+    std   barocor    ; Copy result to Barometric correction (% x 10)
+    
+#emac
+    
+#macro MAT_COR_LU, 0
+    
+;*****************************************************************************************
+; - Look up current value in MAT Air Density Table (matcor)           
+;*****************************************************************************************
+
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    movw #veBins_E,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
+                            ;  ->page where the desired curve resides 
+    movw #$019A,CrvRowOfst  ; 410 -> Offset from the curve page to the curve row(matCorrTemps2)
+	                        ; (actual offset is 820)
+    movw #$01A3,CrvColOfst  ; 419 -> Offset from the curve page to the curve column(matCorrDelta2)
+	                        ; (actual offset is 838)
+    movw Matx10,CrvCmpVal   ; Manifold Air Temperature (Degrees F x 10) -> 
+                            ; Curve comparison value
+    movb #$08,CrvBinCnt     ; 8 -> number of bins in the curve row or column minus 1
+    jsr   CRV_LU_NP  ; Jump to subroutine at CRV_LU_NP:(located in interp_BEEM488.s module)
+    std   matcor     ; Copy result to Manifold Air Temperature Correction (% x 10)
+    
+#emac
+
+
+#macro WUE_COR_LU, 0
 
 ;*****************************************************************************************
 ; ---------------------------- Warm Up Enrichment (WUEcor)--------------------------------
@@ -398,7 +573,34 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ; resoluion against percent to 0.1 percent resolution and is part of the calculations 
 ; to determine pulse width when the engine is running.
 ;
-;*****************************************************************************************				 
+;*****************************************************************************************
+;*****************************************************************************************
+; - Look up current value in Warmup Enrichment Table (WUEcor) 
+;*****************************************************************************************
+
+    brclr  engine,WUEon,NO_WUE_LU ; If "WUEon" bit of "engine" bit field is clear, branch 
+                            ; to NO_WUE_LU: (Engine has reached operating temperature and 
+                            ; bit has been cleared) 
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    movw #veBins_E,CrvPgPtr ; Address of the first value in VE table(in RAM)(page pointer) 
+                            ; ->page where the desired curve resides 
+    movw #$0186,CrvRowOfst  ; 390 -> Offset from the curve page to the curve row
+	                        ; (tempTable1)(actual offset is 780
+    movw #$01D4,CrvColOfst  ; 468 -> Offset from the curve page to the curve column(
+	                        ; wueBins)(actual offset is 936)
+    movw Cltx10,CrvCmpVal   ; Engine Coolant Temperature (Degrees F x 10) -> 
+                            ; Curve comparison value
+    movb #$09,CrvBinCnt     ; 9 -> number of bins in the curve row or column minus 1
+    jsr   CRV_LU_NP         ; Jump to subroutine at CRV_LU_NP:(located in 
+	                        ; interp_BEEM488.s module)
+    std   WUEcor            ; Copy result to Warmup Enrichment Correction (% x 10)
+    
+NO_WUE_LU:
+
+#emac
+
+#macro ASE_COR_LU, 0
+
 ;*****************************************************************************************
 ; -------------------------- After Start Enrichment (ASEcor)------------------------------
 :
@@ -411,47 +613,12 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 ;  
 ;*****************************************************************************************
 ;*****************************************************************************************
-; ----------------------- After Start Enrichment Taper (ASErev)---------------------------
-;
-; After Start Enrichment is applied for a specified number of engine revolutions after 
-; start up. This number is interpolated from the After Start Enrichment Taper table which 
-; plots engine temperature in degrees F to 0.1 degree resoluion against revolutions. 
-; The ASE starts with the value of "ASEcor" first and is linearly interpolated down to 
-; zero after "ASErev" crankshaft revolutions.
-;
-;*****************************************************************************************
-;*****************************************************************************************
-; - Look up current value in Warmup Enrichment Table (WUEcor) 
-;*****************************************************************************************
-
-    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    movw #veBins_E,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
-                            ; ->page where the desired curve resides 
-    movw #$0186,CrvRowOfst  ; 390 -> Offset from the curve page to the curve row
-	                        ; (tempTable1)(actual offset is 780
-    movw #$01D4,CrvColOfst  ; 468 -> Offset from the curve page to the curve column(
-	                        ; wueBins)(actual offset is 936)
-    movw Cltx10,CrvCmpVal   ; Engine Coolant Temperature (Degrees F x 10) -> 
-                            ; Curve comparison value
-    movb #$09,CrvBinCnt     ; 9 -> number of bins in the curve row or column minus 1
-    jsr   CRV_LU_NP         ; Jump to subroutine at CRV_LU_NP:(located in 
-	                        ; interp_BEEM488.s module)
-    std   WUEcor            ; Copy result to Warmup Enrichment Correction (% x 10)
-    brclr engine,ASEon,WUEcheck1 ; If "ASEon" bit of "engine" bit field is clear,
-                                ; branch to WUEcheck1:(ASE is finished, see if we are
-								; still in warm up mode)
-                                
-    bra  N0_WUEcheck_LONG_BRANCH ; Branch to N0_WUEcheck_LONG_BRANCH:
-    
-WUEcheck1:
-    job   WUEcheck              ; Jump or branch to WUEcheck: (long branch)
-    
-N0_WUEcheck_LONG_BRANCH:
-
-;*****************************************************************************************
 ; - Look up current value in Afterstart Enrichment Percentage Table (ASEcor)   
 ;*****************************************************************************************
 
+    brclr  engine,ASEon,NO_ASE_LU ; If "ASEon" bit of "engine" bit field is clear, branch 
+                            ; to NO_ASE_LU: (Engine has finished ASE and bit has been 
+                            ; cleared) 
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     movw #veBins_E,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
                             ; ->page where the desired curve resides 
@@ -466,9 +633,26 @@ N0_WUEcheck_LONG_BRANCH:
 	                        ; interp_BEEM488.s module)
     std   ASEcor            ; Copy result to  Afterstart Enrichmnet Correction (% x 10)
     
+NO_ASE_LU:
+    
+#emac
+
+#macro ASE_TAPER_LU, 0
+
+;*****************************************************************************************
+; ----------------------- After Start Enrichment Taper (ASErev)---------------------------
+;
+; After Start Enrichment is applied for a specified number of engine revolutions after 
+; start up. This number is interpolated from the After Start Enrichment Taper table which 
+; plots engine temperature in degrees F to 0.1 degree resoluion against revolutions. 
+; The ASE starts with the value of "ASEcor" first and is linearly interpolated down to 
+; zero after "ASErev" crankshaft revolutions.
+;
+;*****************************************************************************************
 ;*****************************************************************************************
 ; - Look up current value in Afterstart Enrichment Taper Table (ASErev)   
 ;*****************************************************************************************
+
 
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     movw #veBins_E,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
@@ -483,13 +667,33 @@ N0_WUEcheck_LONG_BRANCH:
     jsr   CRV_LU_NP         ; Jump to subroutine at CRV_LU_NP:(located in 
 	                        ; interp_BEEM488.s module)
     std   ASErev            ; Copy result to Afterstart Enrichment Taper (revolutions)
+    std   ASEcnt            ; Copy result to Afterstart Enrichment Taper counter
     
+#emac		
+
+#macro WUE_ASE_CALCS, 0
+
 ;*****************************************************************************************
-; Interpolate "ASEcor" as "ASErev" is decremented. ASErev is decremented every revolution 
+; - Do the WUE and ASE calculations
+;*****************************************************************************************
+
+    brclr engine,ASEon,WUEcheck1 ; If "ASEon" bit of "engine" bit field is clear,
+                                ; branch to WUEcheck1:(ASE is finished, see if we are
+								; still in warm up mode)
+                                
+    bra  N0_WUEcheck_LONG_BRANCH ; Branch to N0_WUEcheck_LONG_BRANCH:
+    
+WUEcheck1:
+    job   WUEcheck              ; Jump or branch to WUEcheck: (long branch)
+    
+N0_WUEcheck_LONG_BRANCH:
+
+;*****************************************************************************************
+; Interpolate "ASEcor" as "ASEcnt" is decremented. ASEcnt is decremented every revolution 
 ; in the Crank Angle Sensor interrupt in the state_BEEM488 module  
 ;*****************************************************************************************
 
-    ldd  #$0000      ; Load double accumulator with zero (final value of "ASEcyc") 
+    ldd  #$0000      ; Load double accumulator with zero (final value of "ASErev") 
     pshd             ; Push to stack (V1)
     ldd  ASEcnt      ; Load double accumulator with "ASEcnt"
     pshd             ; Push to stack (V)
@@ -532,6 +736,7 @@ N0_WUEcheck_LONG_BRANCH:
    addd  ASEcor        ; (A:B)+(M:M+1)->A:B "WUEcor" + "ASEcor" = "WUEcor" (%*10)
    std   WUEandASEcor  ; Copy result to "WUEandASEcor" (%*10)
 
+
 ;*****************************************************************************************
 ; - Check to see if we are finished with ASE 
 ;*****************************************************************************************
@@ -542,6 +747,7 @@ N0_WUEcheck_LONG_BRANCH:
 
 ASEdone:
    bclr engine,ASEon  ; Clear "ASEon" bit of "engine" bit field 
+   clrw ASEcor        ; Clear "ASEcor" 
    
 ;*****************************************************************************************
 ; - Check to see if we are finished with WUE 
@@ -549,7 +755,8 @@ ASEdone:
 
 WUEcheck:
    ldd  WUEcor        ; "WUEcor" -> Accu D
-   beq  WUEdone       ; If "WUEcor" has been reduced to zero branch to WUEdone:
+   cpd  #$03E8        ; Decimal 1000 (100.0%) 
+   beq  WUEdone       ; If "WUEcor" has been reduced to 100.0 %, branch to WUEdone:
    bra  WUEandASEdone ; Branch to WUEandASEdone:
 
 WUEdone:
@@ -574,7 +781,7 @@ WUEandASEdone:        ; Finished with WUE and ASE
 
 TOE_OFC_CHK:
     ldx   TpsPctx10       ; Load index register X with value in "TpsPctx10"
-    cpx   TpsPctx10last   ; Compare with value in "TpsPctx10last"
+    cpx   TpsPctx10last   ; (X)-(M:M+1)Compare with value in "TpsPctx10last"
     bls   OFC_CHK         ; If "TpsPctx10" is equal to or less than "TpsPctx10last" branch to 
 	                      ; OFC_CHK:(Throttle is steady or closing so check for OFC permissives)
 						  
@@ -593,7 +800,7 @@ TOE_OFC_CHK:
     ldy   #veBins_E       ; Load index register Y with address of first configurable constant
                           ; on buffer RAM page 1 (veBins_E)
     ldx   $03D0,Y         ; Load Accu D with value in buffer RAM page 1 offset 976 (tpsThresh)
-                          ;(TPSdot threshold)(offset = 970)($03CA)   
+                          ;(TPSdot threshold)(offset = 976)($03D0)   
     cpx   TpsPctDOT       ; Compare "tpsThresh" with "TpsPctDOT"
     bhi   TOE_CHK_TIME    ; If "tpsThresh" is greater than "TpsPctDOT", branch to TOE_CHK_TIME: 
                           ; ("TpsPctDOT" below threshold so check if acceleration is done)
@@ -634,7 +841,7 @@ TOE_OFC_CHK:
 ;***********************************************************************************************
 
 TOE_CALC:
-    ldd  cltADC       ; "cltADC" -> D
+    ldd  cltAdc       ; "cltAdc" -> D
     cpd  #$0093       ; Compare "cltADC" with decimal 147(ADC @ 179.9F) 
     bls  RailColdAdd  ; If "cltADC" is lower or the same as 147, branch to RailColdAdd: 
     bra  DoColdAdd    ; Branch to DoColdAdd:
@@ -747,8 +954,9 @@ ColdMulDone:
 ; in rti_BEEM488.s)
 ;*****************************************************************************************
 
+
    ldx   TpsPctx10         ; "TpsPctx10" -> Accu X 
-   subx  TpsPctx10last     ; (X)-(M:M-1)=>X Subtract "TpsPctx10last" from "TpsPctx10"
+   subx  TpsPctx10last     ; (X)-(M:M+1)=>X Subtract "TpsPctx10last" from "TpsPctx10"
    stx   TpsPctDOT         ; Copy result to "TpsPctDOT"
     
 ;*****************************************************************************************
@@ -821,7 +1029,6 @@ ADD_COLDADD:
                       ; constant on buffer RAM page 1 (veBins_E)
     ldd   $03EC,Y     ; Load Accu D with value in buffer RAM page 1 (offset 1004)($03EC) 
                       ; ("reqFuel")
-;    tfr  X,D          ; "reqFuel" -> Accu D 	
     ldy  TOEpct       ; "TOEpct" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "reqFuel" * "TOEpct" 
 	ldx  #$0064       ; Decimal 100 -> Accu X 
@@ -966,129 +1173,6 @@ OFC_LOOP:
 
 #emac
 
-#macro DEADBAND_Z1_Z2, 0
-
-;*****************************************************************************************
-; - Injector dead band is the time required for the injectors to open and close and must
-;   be included in the pulse width time. The amount of time will depend on battery voltge.
-;   Battery voltage correction for injector deadband is calculated as a linear function
-;   of battery voltage from 7.2 volts to 19.2 volts with 13.2 volts being the nominal 
-;   operating voltage where no correction is applied.
-;*****************************************************************************************
-;*****************************************************************************************
-; - Calculate values at Z1 and Z2 to interpolate injector deadband at current battery  
-;   voltage. This is done before entering the main loop as will only change if the  
-;   configurable constants for injector dead time and battery voltage correction have 
-;   been changed. 
-;*****************************************************************************************
-;*****************************************************************************************
-;
-;  V1 = 72 (7.2 volts)
-;  V  = BatVx10 (current battery voltage x 10) 
-;  V2 = 192 (19.2volts) 
-;  Z1 = DdBndBase - (DdBBndCor * 6)  
-;  Z  = unknown (deadband)       
-;  Z2 = DdBndBase + (DdBBndCor * 6)                                                                      	
-;                                                                   	
-;    |                                                             	
-;  Z2+....................*                                                             	
-;    |                    :                                         	
-;   Z+...........*        :                 (V-V1)*(Z2-Z1)                            	
-;    |           :        :        Z = Z1 + --------------                               	
-;  Z1+...*       :        :                    (V2-V1)                                       	
-;    |   :       :        :                                          	
-;   -+---+-------+--------+-                                                                 	
-;    |   V1      V        V2                                                 	
-;
-;*****************************************************************************************
-;*****************************************************************************************
-; - Calculate values at Z1 and Z2
-; DdBndBase_F = 90 (.9 mSec)
-; DdBndCor_F = 18 (.18 mSec/V)
-;*****************************************************************************************
-
-	movb   #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy    #veBins_E    ; Load index register Y with address of first configurable 
-                        ; constant on buffer RAM page 1 (veBins_E)
-    ldd    $03CC,Y      ; Load Accu A with value in buffer RAM page 1 offset 972 
-                        ; Injector deadband at 13.2V (mSec*10)(DdBndBase_F)
-    std    tmp1w        ; Copy to "tmp1w" (Injector deadband at 13.2V (mSec * 100))
-	movb   #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy    #veBins_E    ; Load index register Y with address of first configurable 
-                        ; constant on buffer RAM page 1 (veBins_E)
-    ldd    $03CE,Y      ; Load Accu A with value in buffer RAM page 1 offset 974 
-                        ; Injector deadband voltage correction (mSec/V x 100)(DdBndCor_F)
-    std    tmp2w        ; Copy to "tmp2w"
-    ldy    #$06         ; Decimal 6-> Accu Y
-	emul                ; (D)*(Y)->Y:D "Injector deadband voltage correction" * 6
-	std    tmp3w        ;("Injector deadband voltage correction" * 6)-> tmp3w
-	addd   tmp1w        ; A:B)+((M:M+1)->A:B  (Injector deadband at 13.2V + (Injector deadband 
-	                    ; voltage correction * 6)
-	std   DdBndZ2       ; Copy result to "DdBndZ2"
-    ldd   tmp1w         ; (Injector deadband at 13.2V)-> Accu A
-    subd  tmp3w         ;  A:B)-((M:M+1)->A:B  ((Injector deadband at 13.2V) - 
-	                    ; (Injector deadband voltage correction * 6))
-    bpl   NotMinus      ; N bit = 0 so not a minus result, branch to NotMinus: 
-    clr   DdBndZ1       ; Result is minus so clear "DdBndZ1"
-    bra   WasMinus      ; Branch to WasMinus: (skip over)    
-    
-NotMinus:
-    staa  DdBndZ1       ; Copy result to "DdBndZ1"
-    
-WasMinus:
-
-#emac
-
-#macro DEADBAND_CALCS, 0
-
-;*****************************************************************************************
-; - Interpolate injector deadband at current battery voltage
-;*****************************************************************************************
-
-    ldd  #$0048      ; Decimal 72 (7.2 volts) -> Accu D
-    pshd             ; Push to stack (V1)
-    ldd  BatVx10     ; "BatVx10"(battery volts x 10) -> Accu D
-    pshd             ; Push to stack (V)
-    ldd  #$00C0      ; Decimal 192 (19.2 volts) -> Accu D
-    pshd             ; Push to stack (V2)
-	ldd  DdBndZ2     ;((Injector deadband at 13.2V) + (Injector deadband voltage 
-	                 ; correction * 6)) -> Accu D 
-    pshd             ; Push to stack (Z1)
-	ldd  DdBndZ1     ;((Injector deadband at 13.2V) - (Injector deadband voltage 
-	                 ; correction * 6)) -> Accu D 
-    pshd             ; Push to stack (Z2)
-    
-;*****************************************************************************************        
-		
-		;    +--------+--------+       
-		;    |        Z2       |  SP+ 0
-		;    +--------+--------+       
-		;    |        Z1       |  SP+ 2
-		;    +--------+--------+       
-		;    |        V2       |  SP+ 4
-		;    +--------+--------+       
-		;    |        V        |  SP+ 6
-		;    +--------+--------+       
-		;    |        V1       |  SP+ 8
-		;    +--------+--------+
-
-;	              V      V1      V2      Z1    Z2
-    2D_IPOL	(6,SP), (8,SP), (4,SP), (2,SP), (0,SP) ; Go to 2D_IPOL Macro, interp_BEPM.s 
-
-;*****************************************************************************************        
-; - Free stack space (result in D)
-;*****************************************************************************************
-
-    leas  10,SP     ; Stack pointer -> bottom of stack    
-    std  tmp4w      ; Copy result to "tmp4w" (Injector deadband at current battery 
-	                ; voltage) (mSec x 100)
-    ldd  tmp4w      ; Result in "tmp4w" -> Accu D
-    ldx  #$000A     ; Decimal 10-> Accu X
-    idiv            ; (D)/(X)->Xrem->D ("tmp4w"/10="Deadband")(mSec*10)
-    stx  Deadband   ; Copy result to "Deadband"(mSec*10)  
-
-#emac
-
 #macro RUN_PW_CALCS, 0
 
 ;*****************************************************************************************
@@ -1128,38 +1212,6 @@ WasMinus:
 
 ;*****************************************************************************************
 
-;*****************************************************************************************
-; - Look up current value in Barometric Correction Table (barocor) 
-;*****************************************************************************************
-
-    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    movw #veBins_E,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
-                            ; -> page where the desired curve resides 
-    movw #$0168,CrvRowOfst  ; 360 -> Offset from the curve page to the curve row(barCorVals)
-	                        ; (actual offset is 720)
-    movw #$0171,CrvColOfst  ; 369 -> Offset from the curve page to the curve column(barCorDelta)
-	                        ; (actual offset is 738)
-    movw Barox10,CrvCmpVal  ; Barometric Pressure (KPAx10) -> Curve comparison value
-    movb #$08,CrvBinCnt     ; 8 -> number of bins in the curve row or column minus 1
-    jsr   CRV_LU_P   ; Jump to subroutine at CRV_LU_P:(located in interp_BEEM488.s module)
-    std   barocor    ; Copy result to Barometric correction (% x 10)
-    
-;*****************************************************************************************
-; - Look up current value in MAT Air Density Table (matcor)           
-;*****************************************************************************************
-
-    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    movw #veBins_E,CrvPgPtr   ; Address of the first value in VE table(in RAM)(page pointer) 
-                            ;  ->page where the desired curve resides 
-    movw #$019A,CrvRowOfst  ; 410 -> Offset from the curve page to the curve row(matCorrTemps2)
-	                        ; (actual offset is 820)
-    movw #$01A3,CrvColOfst  ; 419 -> Offset from the curve page to the curve column(matCorrDelta2)
-	                        ; (actual offset is 838)
-    movw Matx10,CrvCmpVal   ; Manifold Air Temperature (Degrees F x 10) -> 
-                            ; Curve comparison value
-    movb #$08,CrvBinCnt     ; 8 -> number of bins in the curve row or column minus 1
-    jsr   CRV_LU_NP  ; Jump to subroutine at CRV_LU_NP:(located in interp_BEEM488.s module)
-    std   matcor     ; Copy result to Manifold Air Temperature Correction (% x 10)
 
 ;*****************************************************************************************
 ; - Calculate total corrections before Throttle Opening Enrichment and deadband.
@@ -1169,33 +1221,43 @@ WasMinus:
     ldy  matcor       ; "matcor" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "barocor" * "matcor" 
 	ldx  #$03E8       ; Decimal 1000 -> Accu X 
+;	ldx  #$2710       ; Decimal 10000 -> Accu X 
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("barocor"*"matcor")/1000="PWcalc1"
 	sty  PWcalc1      ; Result -> "PWcalc1" 
+
     ldd  Mapx10       ; "Mapx10" -> Accu D (% x 10)
     ldy  Ftrmx10      ; "Ftrmx10" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "Mapx10" * "Ftrmx10" 
-	ldx  #$03E8       ; Decimal 1000 -> Accu X 
+	ldx  #$03E8       ; Decimal 1000 -> Accu X
+;	ldx  #$2710       ; Decimal 10000 -> Accu X     
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("Mapx10"*"Ftrmx10")/1000="PWcalc2"
 	sty  PWcalc2      ; Result -> "PWcalc2"
+
     ldd  PWcalc1      ; "PWcalc1" -> Accu D (% x 10)
     ldy  PWcalc2      ; "PWcalc2" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "PWcalc1" * "PWcalc2" 
-	ldx  #$03E8       ; Decimal 1000 -> Accu X 
+	ldx  #$03E8       ; Decimal 1000 -> Accu X
+;	ldx  #$2710       ; Decimal 10000 -> Accu X     
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("PWcalc1"*"PWcalc2")/1000="PWcalc3"
 	sty  PWcalc3      ; Result -> "PWcalc3"
+    sty  TestValw
     ldd  WUEandASEcor ; "WUEandASEcor" -> Accu D (% x 10)
     ldy  veCurr       ; "veCurr" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "WUEandASEcor" * "veCurr" 
-	ldx  #$03E8       ; Decimal 1000 -> Accu X 
+	ldx  #$03E8       ; Decimal 1000 -> Accu X
+;	ldx  #$2710       ; Decimal 10000 -> Accu X     
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("WUEandASEcor"*"veCurr")/1000="PWcalc4"
 	sty  PWcalc4      ; Result -> "PWcalc4"
+    sty  TestValw
     ldd  PWcalc3      ; "PWcalc3" -> Accu D (% x 10)
     ldy  PWcalc4      ; "PWcalc4" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "PWcalc3" * "PWcalc4" 
-	ldx  #$03E8       ; Decimal 1000 -> Accu X 
+	ldx  #$03E8       ; Decimal 1000 -> Accu X
+;	ldx  #$2710       ; Decimal 10000 -> Accu X     
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("PWcalc3"*"PWcalc4")/1000="PWcalc5"
 	sty  PWcalc5      ; Result -> "PWcalc5"(total corrections before Throttle Opening 
 	                  ; Enrichment and deadband)
+
 
 ;*****************************************************************************************
 ; - Calculate injector pulse width before Throttle Opening Enrichment pulse width and 
@@ -1209,10 +1271,12 @@ WasMinus:
     ldx   $03EC,Y     ; Load Accu X with value in buffer RAM page 1 (offset 1004)($03EC) 
                       ; ("reqFuel")
     tfr  X,Y          ; "reqFuel" -> Accu Y 	
-    emul              ; (D)*(Y)->Y:D "PWcalc5" * "matcor" 
-	ldx  #$03E8       ; Decimal 1000 -> Accu X 
+    emul              ; (D)*(Y)->Y:D "PWcalc5" * "reqfuel" 
+	ldx  #$03E8       ; Decimal 1000 -> Accu X
+;	ldx  #$2710       ; Decimal 10000 -> Accu X     
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("PWcalc5"*"reqFuel")/1000="PWlessTOE"
 	sty  PWlessTOE    ; Result -> "PWlessTOE" (mS x 10)
+    sty  TestValw
 	
 ;*****************************************************************************************
 ; - Add the Throttle Opening Enricment pulse width and store as "FDpw"(fuel delivery 
