@@ -107,10 +107,12 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;PW:           ds 2 ; Running engine injector pulsewidth (mS x 10)
 ;FD:           ds 2 ; Fuel Delivery pulse width (mS)
 ;FDsec:        ds 2 ; Fuel delivery pulse width total over 1 second (mS)
+;OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter
+;TOEtimCnt:    ds 1 ; Throttle Opening Enrichment time counter
 ;InjDelDegx10: ds 2 ; Injection delay from trigger to start of injection (deg x 10)
 ;InjPrFlo:     ds 2 ; Pair of injectors flow rate (L/hr x 100)
 ;CASprd256:    ds 2 ; Crankshaft Angle Sensor period (2.56uS time base
-;DutyCyclex10: ds 1 ; Injector duty cycle in run mode (% x 10)
+;DutyCyclex10: ds 2 ; Injector duty cycle in run mode (% x 10)
 
 ;*****************************************************************************************
 ; - "engine" equates
@@ -158,7 +160,7 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 
 TpsPctx10last: ds 2 ; Throttle Position Sensor percent last (%x10)(updated every 100Msec)
-OFCdel:        ds 1 ; Overrun Fuel Cut delay duration (decremented every 100 mS)
+;OFCdel:        ds 1 ; Overrun Fuel Cut delay duration (decremented every 100 mS)
 TOEtim:        ds 1 ; Throttle Opening Enrichment duration (decremented every 100 mS)
 DdBndZ1:       ds 2 ; Deadband interpolation Z1 value
 DdBndZ2:       ds 2 ; Deadband interpolation Z2 value
@@ -190,7 +192,7 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 #macro CLR_INJ_VARS, 0
 
    clrw TpsPctx10last ; Throttle Position Sensor percent last (%x10)(updated every 100Msec)
-   clr  OFCdel        ; Overrun Fuel Cut delay duration (decremented every 100 mS)
+;   clr  OFCdel        ; Overrun Fuel Cut delay duration (decremented every 100 mS)
    clr  TOEtim        ; Throttle Opening Enrichment duration (decremented every 100 mS)
    clrw  DdBndZ1       ; Deadband interpolation Z1 value
    clrw  DdBndZ2       ; Deadband interpolation Z2 value
@@ -1129,9 +1131,9 @@ OFC_CHK:
 	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E       ; Load index register Y with address of first configurable 
                         ; constant on buffer RAM page 1 (veBins)
-    ldaa   $03E0,Y      ; Load Accu A with value in buffer RAM page 1 offset 992 
+    ldd   $03E0,Y       ; Load Accu D with value in buffer RAM page 1 offset 992 
                         ; (OFCdel_F) (Overrun Fuel Cut delay time)
-    staa  OFCdel        ; Copy to "OFCdel" (Overrun Fuel Cut delay duration)(decremented 
+    stab  OFCDelCnt     ; Copy to "OFCDelCnt" (Overrun Fuel Cut delay counter)(decremented 
  	                    ; every 100mS in rti_BPEM488.s)
 	bset  engine,OFCdelon ; Set "OFCdelon" bit of "engine" bit field 
     bra   OFC_LOOP      ; Branch to OFC_LOOP: (fall through) 
@@ -1142,8 +1144,8 @@ OFC_CHK:
 ;*****************************************************************************************
 	
 OFC_DELAY:
-    ldaa OFCdel     ; "OFCdel" -> Accu A 
-	beq  SET_OFC    ; If "OFCdel" = zero branch to SET_OFC:   
+    ldaa OFCdelCnt     ; "OFCdelCnt" -> Accu A 
+	beq  SET_OFC       ; If "OFCdelCnt" = zero branch to SET_OFC:   
     bra  OFC_LOOP   ; (Branch to OFC_LOOP: (Timer not timed out so fall through)
 	
 ;*****************************************************************************************
@@ -1217,47 +1219,46 @@ OFC_LOOP:
 ; - Calculate total corrections before Throttle Opening Enrichment and deadband.
 ;*****************************************************************************************
 
+    brset engine,OFCon,NoPWrunCalcs1 ; if "OFCon" bit of "engine" bit field is set branch 
+                                     ; to NoPWrunCalcs1: (In overrun fuel cut mode so 
+                                     ; fall through)
+    bra  PWrunCalcs    ; Branch to PWrunCalcs: 
+    
+NoPWrunCalcs1:
+    job  NoPWrunCalcs  ; Jump or branch to NoPWrunCalcs: (long branch)
+    
+PWrunCalcs:    
     ldd  barocor      ; "barocor" -> Accu D (% x 10)
     ldy  matcor       ; "matcor" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "barocor" * "matcor" 
 	ldx  #$03E8       ; Decimal 1000 -> Accu X 
-;	ldx  #$2710       ; Decimal 10000 -> Accu X 
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("barocor"*"matcor")/1000="PWcalc1"
 	sty  PWcalc1      ; Result -> "PWcalc1" 
-
     ldd  Mapx10       ; "Mapx10" -> Accu D (% x 10)
     ldy  Ftrmx10      ; "Ftrmx10" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "Mapx10" * "Ftrmx10" 
 	ldx  #$03E8       ; Decimal 1000 -> Accu X
-;	ldx  #$2710       ; Decimal 10000 -> Accu X     
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("Mapx10"*"Ftrmx10")/1000="PWcalc2"
 	sty  PWcalc2      ; Result -> "PWcalc2"
-
     ldd  PWcalc1      ; "PWcalc1" -> Accu D (% x 10)
     ldy  PWcalc2      ; "PWcalc2" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "PWcalc1" * "PWcalc2" 
 	ldx  #$03E8       ; Decimal 1000 -> Accu X
-;	ldx  #$2710       ; Decimal 10000 -> Accu X     
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("PWcalc1"*"PWcalc2")/1000="PWcalc3"
 	sty  PWcalc3      ; Result -> "PWcalc3"
-    sty  TestValw
     ldd  WUEandASEcor ; "WUEandASEcor" -> Accu D (% x 10)
     ldy  veCurr       ; "veCurr" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "WUEandASEcor" * "veCurr" 
 	ldx  #$03E8       ; Decimal 1000 -> Accu X
-;	ldx  #$2710       ; Decimal 10000 -> Accu X     
-	ediv              ;(Y:D)/)X)->Y;Rem->D ("WUEandASEcor"*"veCurr")/1000="PWcalc4"
+ 	ediv              ;(Y:D)/)X)->Y;Rem->D ("WUEandASEcor"*"veCurr")/1000="PWcalc4"
 	sty  PWcalc4      ; Result -> "PWcalc4"
-    sty  TestValw
     ldd  PWcalc3      ; "PWcalc3" -> Accu D (% x 10)
     ldy  PWcalc4      ; "PWcalc4" -> Accu D (% x 10)  	
     emul              ; (D)*(Y)->Y:D "PWcalc3" * "PWcalc4" 
 	ldx  #$03E8       ; Decimal 1000 -> Accu X
-;	ldx  #$2710       ; Decimal 10000 -> Accu X     
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("PWcalc3"*"PWcalc4")/1000="PWcalc5"
 	sty  PWcalc5      ; Result -> "PWcalc5"(total corrections before Throttle Opening 
 	                  ; Enrichment and deadband)
-
 
 ;*****************************************************************************************
 ; - Calculate injector pulse width before Throttle Opening Enrichment pulse width and 
@@ -1273,10 +1274,9 @@ OFC_LOOP:
     tfr  X,Y          ; "reqFuel" -> Accu Y 	
     emul              ; (D)*(Y)->Y:D "PWcalc5" * "reqfuel" 
 	ldx  #$03E8       ; Decimal 1000 -> Accu X
-;	ldx  #$2710       ; Decimal 10000 -> Accu X     
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("PWcalc5"*"reqFuel")/1000="PWlessTOE"
 	sty  PWlessTOE    ; Result -> "PWlessTOE" (mS x 10)
-    sty  TestValw
+
 	
 ;*****************************************************************************************
 ; - Add the Throttle Opening Enricment pulse width and store as "FDpw"(fuel delivery 
@@ -1330,16 +1330,24 @@ OFC_LOOP:
 ; - Calculate injector duty cycle
 ;*****************************************************************************************
 
-    ldd  PWtk          ; "PWtk" -> Accu D
-	ldy  #$2710        ; Load index register Y with decimal 10000 (for integer math)
-	emul               ;(D)x(Y)=Y:D "PWtk" * 10,000
-	ldx  CASprd256     ; "CASprd256"-> Accu X 
-    ediv               ;(Y:D)/(X)=Y;Rem->D ("PWtk"*10,000)/"CASprd256"
-	tfr  X,D           ; Result-> Accu D
-	ldx  #$0064        ; Decimal 100 -> Accu X
-    idiv               ; (D)/(X)->(X)rem(D) (("PWtk"*10,000)/"CASprd256")/100
-	                   ; ="DutyCyclex10"
-    stx  DutyCyclex10  ; Copy result to "DutyCyclex10" (Injector duty cycle x 10) 
+    ldd  PWtk           ; "PWtk"->Accu D 
+    ldy  #$000A         ; Decimal 10-> Accu Y (for integer math)       
+	emul                ;(D)x(Y)=Y:D "PWtk"*10
+    ldx  CASprd256      ; "CASprd256"-> Accu X (running period for 72 degrees rotation)
+    ediv                ;(Y:D)/(X)=Y;Rem->D ("PWtk"*10)/"CASprd256"
+    sty  DutyCyclex10   ; Copy result to "DutyCyclex10" (Injector duty cycle x 10)
+    bra  PWrunCalcsDone ; Branch to PWrunCalcsDone: 
+
+NoPWrunCalcs:
+    clrw  PWlessTOE     ; Clear "PWlessTOE" Injector PW before "TOEpw"+"Deadband"(mS x 10)
+    clrw  TOEpw         ; Clear "TOEpw" Throttle Opening Enrichment adder (mS x 100)
+    clrw  FDpw          ; Clear "FDpw" Fuel Delivery pulse width (PW - Deadband)(mS x 10)
+    clrw  FD            ; Clear "FD" Fuel Delivery pulse width (mS)
+    clrw  PW            ; Clear "PW" Running engine injector pulsewidth (mS x 10)
+    clrw  PWtk          ; Clear "PWtk" Running injector pulsewidth timer ticks(uS x 2.56)
+    clrw  DutyCyclex10  ; Clear "DutyCyclex10" Injector duty cycle in run mode (% x 10)    
+
+PWrunCalcsDone:    
 	                 
 #emac
 					 

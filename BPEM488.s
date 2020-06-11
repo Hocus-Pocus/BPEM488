@@ -264,7 +264,8 @@ FDpw:         ds 2 ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)(offset=
 PW:           ds 2 ; Running engine injector pulsewidth (mS x 10)(offset=108)
 FD:           ds 2 ; Fuel Delivery pulse width (mS)(offset=110)
 FDsec:        ds 2 ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
-Place114:     ds 2 ; Place holder(offset=114)
+OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter(offset=114)
+TOEtimCnt:    ds 1 ; Throttle Opening Enrichment time counter(offset=115)
 Place115:     ds 2 ; Place holder(offset=116)
 
 ;*****************************************************************************************
@@ -636,7 +637,8 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
    clrw PW           ; Running engine injector pulsewidth (mS x 10)(offset=108)
    clrw FD           ; Fuel Delivery pulse width (mS)(offset=110)
    clrw FDsec        ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
-   clrw Place114     ; Place holder(offset=114)
+   clr  OFCdelCnt    ; Overrun Fuel Cut Delay counter (offset=114)
+   clr  TOEtimCnt    ; Throttle Opening Enrichment time counter(offset=115)
    clrw Place115     ; Place holder(offset=116)
 
 ;*****************************************************************************************
@@ -1607,7 +1609,7 @@ OFCmap_F:          ; 2 bytes for Overrun Fuel Cut maximum manifold pressure perm
     dw $00FA       ; 250 = 25.0KPA
 	
 OFCdel_F:          ; 2 bytes for Overrun Fuel Cut delay time (Sec x 10)(offset = 992)($03E0)
-    dw $0032         ; 50 = 5.0Sec
+    dw $0014       ; 20 = 2.0Sec
 	
 crankingRPM_F:     ; 2 bytes for crank/run transition (RPM)(offset = 994)($03E2)
     dw $015E       ; 350

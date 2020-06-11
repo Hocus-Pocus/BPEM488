@@ -278,22 +278,50 @@ AIOT_CHK_DONE:
 ;*****************************************************************************************
 
 DoStall:
-    FUEL_PUMP_AND_ASD_OFF       ; Shut fuel pump and ASD relay off(macro in gpio_BEEM.s)
-    clrw RPM                    ; Clear "RPM" (engine RPM)
-    clr  State                  ; Clear "State" (Cam-Crank state machine current state )
-    clr  engine                 ; Clear all flags in "engine" bit field
-    clr  engine2                ; Clear all flags in "engine2" bit field
-    clr  ICflgs                 ; Clear all flags in "ICflgs" bit field
-	clr  StateStatus            ; Clear "StateStatus" bit field
-    clrw CASprd512              ; Clear Crankshaft Angle Sensor period (5.12uS time base
-    clrw CASprd256              ; Clear Crankshaft Angle Sensor period (2.56uS time base
-    clrw Degx10tk512            ; Clear Time to rotate crankshaft 1 degree (5.12uS x 10) 
-    clrw Degx10tk256            ; Clear Time to rotate crankshaft 1 degree (2.56uS x 10)     	
-    bset StateStatus,SynchLost  ; Set "SynchLost" bit of "StateStatus" bit field (bit1)
-    movb #$FF,ECT_PTPSR         ; Load ECT_PTPSR with %11111111 (prescale 256, 5.12us  
-                                ; resolution, max period 335.5ms)
-    movb #$FF,TIM_PTPSR         ; Load TIM_PTPSR with %11111111 (prescale 256, 5.12us 
-                                ; resolution, max period 335.5ms)(min RPM = ~85)
+   FUEL_PUMP_AND_ASD_OFF ; Shut fuel pump and ASD relay off(macro in gpio_BEEM.s)
+   clrw RPM          ; Clear "RPM" (engine RPM)
+   clr  State        ; Clear "State" (Cam-Crank state machine current state )
+   clr  engine       ; Clear all flags in "engine" bit field
+   clr  engine2      ; Clear all flags in "engine2" bit field
+   clr  ICflgs       ; Clear all flags in "ICflgs" bit field
+   clr  StateStatus  ; Clear "StateStatus" bit field
+   clrw CASprd512    ; Clear Crankshaft Angle Sensor period (5.12uS time base
+   clrw CASprd256    ; Clear Crankshaft Angle Sensor period (2.56uS time base
+   clrw Degx10tk512  ; Clear Time to rotate crankshaft 1 degree (5.12uS x 10) 
+   clrw Degx10tk256  ; Clear Time to rotate crankshaft 1 degree (2.56uS x 10)
+   clrw DwellCor     ; Coil dwell voltage correction (%*10)
+   clrw DwellFin     ; ("Dwell" * "DwellCor") (mS*10)
+   clrw STandItrmx10 ; stCurr and Itmx10 (degrees*10)
+   clrw ASEcnt       ; Counter for "ASErev"
+   clrw AFRcurr      ; Current value in AFR table (AFR x 100)
+   clrw VEcurr       ; Current value in VE table (% x 10) 
+   clrw barocor      ; Barometric Pressure Correction (% x 10)
+   clrw matcor       ; Manifold Air Temperature Correction (% x 10)
+   clrw WUEcor       ; Warmup Enrichment Correction (% x 10)
+   clrw ASEcor       ; Afterstart Enrichmnet Correction (% x 10)
+   clrw WUEandASEcor ; the sum of WUEcor and ASEcor (% x 10)
+   clrw Crankcor     ; Cranking pulsewidth temperature correction (% x 10)
+   clrw TpsPctDOT    ; TPS difference over time (%/Sec)(update every 100mSec)
+   clr  TpsDOTcor    ; Throttle Opening Enrichment table value(%)
+   clr  ColdAddpct   ; Throttle Opening Enrichment cold adder (%)
+   clr  ColdMulpct   ; Throttle Opening Enrichment cold multiplier (%)
+   clr  TOEpct       ; Throttle Opening Enrichment (%)
+   clrw TOEpw        ; Throttle Opening Enrichment adder (mS x 100)
+   clrw PWlessTOE    ; Injector pulse width before "TOEpw" and "Deadband" (mS x 10)
+   clrw Deadband     ; injector deadband at current battery voltage mS*100
+   clrw PrimePW      ; Primer injector pulswidth (mS x 10)
+   clrw CrankPW      ; Cranking injector pulswidth (mS x 10)
+   clrw FDpw         ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)
+   clrw PW           ; Running engine injector pulsewidth (mS x 10)
+   clrw FD           ; Fuel Delivery pulse width (mS)
+   clrw FDsec        ; Fuel delivery pulse width total over 1 second (mS)
+   clr  OFCdelCnt    ; Overrun Fuel Cut Delay counter 
+   clr  TOEtimCnt    ; Throttle Opening Enrichment time counter   
+   bset StateStatus,SynchLost ; Set "SynchLost" bit of "StateStatus" bit field (bit1)
+   movb #$FF,ECT_PTPSR        ; Load ECT_PTPSR with %11111111 (prescale 256, 5.12us  
+                              ; resolution, max period 335.5ms)
+   movb #$FF,TIM_PTPSR        ; Load TIM_PTPSR with %11111111 (prescale 256, 5.12us 
+                              ; resolution, max period 335.5ms)(min RPM = ~85)
 								 
 ;*****************************************************************************************
 ; - Set up the "engine" bit field in preparation for cranking.
@@ -365,15 +393,19 @@ NoStall:
 #macro MILLISEC100_ROUTINES, 0
 
 ;*****************************************************************************************
-; - Decrement "OFCdel" Overrun Fuel Cut delay duration (decremented every 100 mS)
+; - Decrement "OFCdelCnt" Overrun Fuel Cut delay counter (decremented every 100 mS)
 ;*****************************************************************************************
-	dec  OFCdel    ; Decrement Overrun Fuel Cut delay duration
-    
+	brclr  engine,OFCdelon,NoOFCdelDec ; If "OFCdelon" bit of "engine" bit field is clear 
+                                       ; branch to NoOFCdelDec:
+	dec  OFCdelCnt                     ; Decrement Overrun Fuel Cut delay duration counter
+
+NoOFCdelDec:
+
 ;*****************************************************************************************
 ; - Decrement "TOEtim" Throttle Opening Enrichment duration (decremented every 100 mS)
 ;*****************************************************************************************
 
-    dec  TOEtim    ; Decrement Throttle Opening Enrichment duration
+;    dec  TOEtim    ; Decrement Throttle Opening Enrichment duration
 	
 ;*****************************************************************************************
 ; - "TPSdot" is throttle position percent rate of change in 100mS. Save current TPS  
