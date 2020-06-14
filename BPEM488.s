@@ -265,8 +265,8 @@ PW:           ds 2 ; Running engine injector pulsewidth (mS x 10)(offset=108)
 FD:           ds 2 ; Fuel Delivery pulse width (mS)(offset=110)
 FDsec:        ds 2 ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
 OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter(offset=114)
-TOEtimCnt:    ds 1 ; Throttle Opening Enrichment time counter(offset=115)
-Place115:     ds 2 ; Place holder(offset=116)
+TOEdurCnt:    ds 1 ; Throttle Opening Enrichment duration counter(offset=115)
+FDt:          ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)(offset=116)
 
 ;*****************************************************************************************
 ;*****************************************************************************************
@@ -346,7 +346,8 @@ base256        equ $02 ; %00000010, bit 1, 0 = 2.56uS time base off(White),
                                          ; 1 = 2.56uS time base on(Grn)
 AudAlrm        equ $04 ; %00000100, bit 2, 0 = Audible Alarm on(Grn),
                                          ; 1 = Audible Alarm off(Red) 
-eng2Bit3       equ $08 ; %00001000, bit 3, 0 = , 1 = 
+TOEduron       equ $08 ; %00001000, bit 3, 0 = TOE timer not counting down(Grn),
+                                         ; 1 = TOE timer counting down(Red) 
 eng2Bit4       equ $10 ; %00010000, bit 4, 0 = , 1 = 
 eng2Bit5       equ $20 ; %00100000, bit 5, 0 = , 1 = 
 eng2Bit6       equ $40 ; %01000000, bit 6, 0 = , 1 = 
@@ -568,7 +569,8 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
 ;*****************************************************************************************
 ; - Clear all real time variables - 
 ;*****************************************************************************************
-
+   clr  SecH         ; RTI seconds count Hi byte (offset=0)
+   clr  SecL         ; RTI seconds count Lo byte (offset=1)
    clrw cltAdc       ; RV15 10 bit ADC AN00 Engine Coolant Temperature ADC(offset=2) 
    clrw Cltx10       ; Engine Coolant Temperature (Degrees F x 10)(offset=4)
    clrw matAdc       ; RV14 10 bit ADC AN01 Manifold Air Temperature ADC(offset=6) 
@@ -638,8 +640,8 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
    clrw FD           ; Fuel Delivery pulse width (mS)(offset=110)
    clrw FDsec        ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
    clr  OFCdelCnt    ; Overrun Fuel Cut Delay counter (offset=114)
-   clr  TOEtimCnt    ; Throttle Opening Enrichment time counter(offset=115)
-   clrw Place115     ; Place holder(offset=116)
+   clr  TOEdurCnt    ; Throttle Opening Enrichment duration counter(offset=115)
+   clrw FDt          ; Fuel Delivery pulse width total(mS) (for FDsec calcs)
 
 ;*****************************************************************************************
 ;*****************************************************************************************
@@ -1009,6 +1011,63 @@ MainLoop:
 ;    movw #TestVal,TestVal ; Load "TestVal" with the address of "TestVal" ($1050 decimal 4176)
 ;
 ;*****************************************************************************************
+;**********************************************************************
+; - De-Bug LED   FUEL PUMP!!!!                                        *
+;     bset  PORTB, PB0   ; Set bit0, Port B (LED9, board 1 to 28)     *
+;**********************************************************************
+;**********************************************************************
+; - De-Bug LED   ASD RELAY!!!!                                        *
+;     bset  PORTB, PB1   ; Set Bit1, Port B (LED23, board 1 to 28)    * 
+;**********************************************************************
+;**********************************************************************
+; - De-Bug LED                                                        * in use inj calcs
+;     bset  PORTB, PB2   ; Set Bit1, Port B (LED4, board 1 to 28)     *
+;**********************************************************************
+;**********************************************************************
+; - De-Bug LED                                                        *
+;     bset  PORTB, PB4   ; Set bit0, Port B (LED10, board 1 to 28)    *
+;**********************************************************************
+;**********************************************************************
+; - De-Bug LED                                                        *
+;     bset  PORTK, PK1   ; Set Bit1, Port K (LED6, board 1 to 28)     *
+;**********************************************************************
+;**********************************************************************
+; - De-Bug LED                                                        *
+;     bset  PORTK, PK5   ; Set Bit5, Port K (LED3, board 1 to 28)     *
+;**********************************************************************
+;**********************************************************************
+; - De-Bug LED                                                        *
+;     bset PORTK, PK4    ; Set bit4 Port K (LED19, board 1 to 28)     *
+;********************************************************************** 
+;**********************************************************************
+; - De-Bug LED
+;**********************************************************************
+;      bset  PORTK, PK3   ; Set Bit3 (LED2, board 1 to 28)            *
+;**********************************************************************   
+;**********************************************************************
+; - De-Bug LED
+;**********************************************************************
+;;    ldaa  PORTB   ; Load ACC A with value in Port B
+;;    eora  #$08    ; Exlusive or with $00001000
+;;    staa   PORTB  ; Copy to Port B (toggle Bit3, LED20, board 1 to 28) in use inj calcs
+;     bset  PORTB, PB3   ; Set Bit3, LED20, board 1 to 28)    
+;**********************************************************************
+;**********************************************************************
+; - De-Bug LED
+;**********************************************************************
+; - De-Bug LED
+;     ldaa  PORTK        ; Load ACC A with value in Port K            *
+;     eora  #$01         ; Exclusive or with $00000001                *
+;     staa   PORTK       ; Copy to Port K (toggle Bit0)               * 
+;                        ; LED22, board 1 to 28)                      *
+;**********************************************************************   
+;**********************************************************************
+; - De-Bug LED
+;     ldaa  PORTK        ; Load ACC A with value in Port K            *
+;     eora  #$80         ; Exclusive or with $10000000                *
+;     staa   PORTK       ; Copy to Port K (toggle Bit7)               * 
+                        ; LED2, board 87 to 112)                      *
+;**********************************************************************     
 ;*****************************************************************************************
 ; - Update Ports A, B, E, K, J, P and T status bits
 ;*****************************************************************************************
@@ -1074,24 +1133,95 @@ MainLoop:
     CHECK_ALARMS    ; Macro in adc0BPEM488.s
     
 ;*****************************************************************************************
-; - Injector dead band is the time required for the injectors to open and close and must
-;   be included in the pulse width time. The amount of time will depend on battery voltge.
-;   Battery voltage correction for injector deadband is calculated as a linear function
-;   of battery voltage from 7.2 volts to 19.2 volts with 13.2 volts being the nominal 
-;   operating voltage where no correction is applied.
-;*****************************************************************************************
-;*****************************************************************************************
-; - Interpolate injector deadband at current battery voltage
+; - Do RPM calculations when there is a new input capture period.                           
 ;*****************************************************************************************
 
-    DEADBAND_CALCS   ; Macro in injcalcs_BPEM488.s
+   brclr ICflgs,RPMcalc,NoRPMcalc ; If "RPMcalc" bit of "ICflgs" is clear, 
+                                  ; branch to "NoRPMcalc:"(bit is set in State_BPEM.s 
+								  ; and cleared in ect_BPEM.s)
+								   
+    CALC_RPM   ; (Macro in ect_BEEM488.s)
+	
+NoRPMcalc
 	
 ;*****************************************************************************************
-; - Look up current value in Cranking Pulsewidth Correction Table (Crankcor)          
+; - Do KPH calculations when there is a new input capture period.                           
 ;*****************************************************************************************
 
-    CRANK_COR_LU       ; Macro in injcalcsBPEM.s
-    
+    brclr ICflgs,KPHcalc,NoKPHcalc ; If "KPHcalc" bit of "ICflgs" is clear,
+                                   ; branch to "NoKPHcalc:"(bit is set and cleared in 
+								   ; ect_BPEM.s)
+
+    CALC_KPH   ; (Macro in ect_BEEM488.s)
+	
+NoKPHcalc:
+
+;*****************************************************************************************
+; ----------------------- Ignition Calculations Section ----------------------------------
+;*****************************************************************************************
+;*****************************************************************************************
+;
+; - Ignition timing in degrees to 0.1 degree resolution is selected from the 3D 
+;   lookup table "ST" which plots manifold pressure against RPM. A potentiometer on the 
+;   dash board allows a manual trim of the "ST" values of from 0 to 20 degrees advance 
+;   and from 0 to 20 degrees retard. The ignition system is what is called "waste spark", 
+;   which pairs cylinders on a single coil. The spark is delivered to both cylinders at 
+;   the same time. One cylinder recieves the spark at the appropriate time for ignition. 
+;   The other recieves it when the exhaust valve is open. Hence the name "waste spark".
+;   On this 10 cylinder engine there are 5 coils, each controlled by its own hardware 
+;   timer. The cylinders are paired 1&6, 10&5, 9&8, 4&7, 3&2
+;   In an ignition event the timer is first loaded with the output compare value in 
+;   "Delaytk". At the compare interrupt the coil is energised and the timer is loaded
+;   with the output compare value in "DwllFintk". At the compare interrupt the coil is 
+;   de-energized to fire the spark. The delay in timer ticks will depend on the timer base 
+;   rate of either 5.12 uS for cranking or 2.56uS for running.
+;
+;*****************************************************************************************
+;*****************************************************************************************
+; - Look up current value in ST table (STcurr) (degrees*10)
+;*****************************************************************************************
+
+    ST_LU    ; Macro in injcalcs_BPEM.s
+
+;*****************************************************************************************
+; - Look up current value in Dwell Battery Adjustment Table (dwellcor)(% x 10)    
+;*****************************************************************************************
+
+    DWELL_COR_LU    ; Macro in injcalcs_BPEM.s
+
+;*****************************************************************************************
+; The determination of whether the engine is cranking or running is made in the 
+; State_BPEM488.s module within the Crank Angle Sensor interrupt. It is here that the 
+; "crank" and "run" bits of the "engine" bit field are set or cleared.
+;*****************************************************************************************
+
+    brset engine,crank,CrankTime ; If "crank" bit of "engine" bit field is set branch 
+	                             ; to CrankTime:
+	bra   RunTime                ; Branch to RunTime:(no need to test "run" bit)
+	
+CrankTime:
+	
+;*****************************************************************************************
+; - Do ignition calculations for a 5.12uS time base.   
+;*****************************************************************************************
+
+    IGN_CALCS_512      ; Macro in igncalcsBPEM488.s
+	bra  IgnCalcsDone  ; Branch to IgnCalcsDone: 
+
+RunTime:
+
+;*****************************************************************************************
+; - Do ignition calculations for a 2.56uS time base.   
+;*****************************************************************************************
+
+    IGN_CALCS_256    ; Macro in igncalcsBPEM488.s
+	
+IgnCalcsDone:
+
+;*****************************************************************************************
+; ---------------------- End Of Ignition Calculations Section ----------------------------
+;*****************************************************************************************
+
 ;*****************************************************************************************
 ; The base value for injector pulse width calculations in mS to 0.1mS resolution is called 
 ; "ReqFuel". It represents the pulse width reqired to achieve 14.7:1 Air/Fuel Ratio at  
@@ -1119,6 +1249,19 @@ MainLoop:
 ;*****************************************************************************************
 
     AFR_LU       ; Macro in injcalcsBPEM.s
+    	
+;*****************************************************************************************
+; - Injector dead band is the time required for the injectors to open and close and must
+;   be included in the pulse width time. The amount of time will depend on battery voltge.
+;   Battery voltage correction for injector deadband is calculated as a linear function
+;   of battery voltage from 7.2 volts to 19.2 volts with 13.2 volts being the nominal 
+;   operating voltage where no correction is applied.
+;*****************************************************************************************
+;*****************************************************************************************
+; - Interpolate injector deadband at current battery voltage
+;*****************************************************************************************
+
+    DEADBAND_CALCS   ; Macro in injcalcs_BPEM488.s
     
 ;*****************************************************************************************
 ; - Look up current value in Barometric Correction Table (barocor) 
@@ -1131,6 +1274,137 @@ MainLoop:
 ;*****************************************************************************************
 
     MAT_COR_LU       ; Macro in injcalcsBPEM.s
+    
+;*****************************************************************************************
+; - Every mS:
+;   Decrement "AIOTcnt" (AIOT pulse width counter)
+;   Decrement "Stallcnt" (stall counter) 
+;   Check for no crank or stall condition.
+;***************************************************************************************** 
+
+    brclr clock,ms1,NoMS1Routines1 ; If "ms1" bit of "clock" bit field is clear branch 
+                                   ; to NoMS1Routines1:
+    bra  DO_MS1_ROUTINES           ; Branch to DO_MS1_ROUTINES:
+
+NoMS1Routines1:
+    job  NoMS1Routines             ; Long branch
+
+DO_MS1_ROUTINES:    
+    MILLISEC_ROUTINES             ; (Macro in rti_BEEM488.s)
+	bclr clock,ms1                ; Clear "ms1" bit of "clock" bit field
+
+NoMS1Routines:	 
+	
+;*****************************************************************************************
+; - Every 100 mS:
+;   Decrement "OFCdelcmp" (counter for Overrun Fuel Cut delay calculations)
+;   Decrement "TOEtimcmp" (counter for Throttle Opening Enrichment calculations)
+;   Save current TPS percent reading "TpsPctx10" as "TpsPctx10last" to compute "tpsDOT"  
+;   in acceleration  enrichment section. 
+;*****************************************************************************************
+
+    brclr clock,ms100,NoMS100Routines ; If "ms100" bit of "clock" bit field is clear  
+                                      ; branch to NoMS100Routines: 
+    MILLISEC100_ROUTINES              ; (Macro in rti_BEEM488.s)
+	bclr clock,ms100                  ; Clear "ms100" bit of "clock" bit field
+	
+NoMS100Routines:
+	
+;*****************************************************************************************
+; - Every 1000mS:
+;   Save the current fuel delivery total ("FDt") as "FDsec" so it can be used by Tuner 
+;   Studio and Shadow Dash for fuel burn calculations
+;*****************************************************************************************
+
+    brclr clock,ms1000,NoMS1000Routines ; If "ms1000" bit of "clock" bit field is clear  
+                                        ; branch to NoMS1000Routines: 
+    MILLISEC1000_ROUTINES               ; (Macro in rti_BEEM488.s)
+	bclr clock,ms1000                   ; Clear "ms1000" bit of "clock" bit field
+	
+NoMS1000Routines:
+
+;*****************************************************************************************
+; ------------------------ Injector Calculations Section ---------------------------------
+;*****************************************************************************************
+;*****************************************************************************************
+; - The fuel injectors are wired in pairs arranged in the firing order 1&10, 9&4, 3&6, 5&8
+;   7&2. This arrangement allows a "semi sequential" injection strategy with only 5 
+;   injector drivers. The cylinder pairs are 54 degrees apart in crankshaft rotation so 
+;   the injector pulse for the trailing cylinder will lag the leading cylinder by 54 
+;   degrees. The benefits of injector timing is an open question but its effect is most 
+;   felt at idle when the injection pulse can be timed to an opeing intake valve. At 
+;   higher speeds and loads the effect is less becasue the pulse width is longer than the
+;   opening time of the valve. The engine has 10 trigger points on the crankshaft so 
+;   there is lots of choice where to refernce the start of the pulse from. I have chosen 
+;   to use the point when the intake valve on the leading cylinder is just starting to 
+;   open. Actual injector pulse start time can be delayed from this point by the value in
+;   "InjDelDegx10". The delay in timer ticks will depend on the timer base rate of either
+;   5.12 uS for cranking or 2.56uS for running.   
+;*****************************************************************************************
+;*****************************************************************************************
+; The determination of whether the engine is cranking or running is made in the 
+; State_BPEM488.s module within the Crank Angle Sensor interrupt. It is here that the 
+; "crank" and "run" bits of the "engine" bit field are set or cleared.
+;*****************************************************************************************
+
+    brset engine,crank,CrankMode ; If "crank" bit of "engine" bit field is set branch 
+	                             ; to CrankMode:
+	bra   RunMode                ; Branch to RunMode:(no need to test "run" bit)
+								  
+CrankMode:
+
+;*****************************************************************************************
+; Check if we are in flood clear or normal crank mode
+;*****************************************************************************************
+
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy   #veBins_E     ; Load index register Y with address of first configurable 
+                        ; constant on buffer RAM page 1 (veBins_E)
+    ldx   $03E4,Y       ; Load Accu X with value in buffer RAM page 1 offset 996
+                        ; "FloodClear" (Flood Clear threshold)   
+    cpx   TpsPctx10     ; Compare "FloodClear" with "TpsPctx10"
+    bhi   NoFloodClear  ; If "FloodClear" is greater than "TpsPctx10", branch to 
+	                    ; NoFloodClear: ("TpsPctx10" below threshold so interpolate 
+					    ; the cranking pulse width)
+	bset  engine,FldClr ; Set "FldClr" bit of "engine" bit field 
+    clrw  CrankPWtk     ; Clear Cranking injector pulswidth timer ticks(uS x 5.12)
+    clrw  CrankPW       ; Cranking injector pulswidth (mS x 10)
+    clrw  FDpw          ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)
+    clrw  FD            ; Fuel Delivery pulse width (mS)
+    job   MainLoopEnd   ; Jump or branch to "MainLoop" (keep looping here until no 
+	                    ; longer in flood clear mode)
+
+NoFloodClear:
+	bclr  engine,FldClr ; Clear "FldClr" bit of "engine" bit field 
+	
+;*****************************************************************************************
+; - Calculate the delay time to start injection in 5.12uS resoluion.
+;*****************************************************************************************
+
+    INJ_DEL_CALC_512    ; Macro in tim_BPEM.s
+    
+;*****************************************************************************************
+; - Look up current value in Cranking Pulsewidth Correction Table (Crankcor)          
+;*****************************************************************************************
+
+    CRANK_COR_LU       ; Macro in injcalcsBPEM.s
+    
+;*****************************************************************************************
+; - Calculate the cranking pulsewidth.
+;*****************************************************************************************
+
+    CRANK_PW_CALC       ; Macro in injcalcsBPEM.s
+    
+    job  MainLoopEnd   ; Jump or branch to "MainLoopEnd:" (keep looping here until no 
+	                   ; longer in crank mode
+	
+RunMode:
+
+;*****************************************************************************************
+; - Calculate the delay time to start injection in 2.56uS resoluion.
+;*****************************************************************************************
+
+    INJ_DEL_CALC_256    ; Macro in tim_BPEM.s
     
 ;*****************************************************************************************
 ;*****************************************************************************************
@@ -1197,225 +1471,6 @@ NO_WUE_ASE:
 ;   conditions no fuel is required so the injectors can be turned off, subject to 
 ;   permissives. This condtion is call Overrun Fuel Cut. 
 ;*****************************************************************************************
-; - Calculate the cranking pulsewidth.
-;*****************************************************************************************
-
-    CRANK_PW_CALC       ; Macro in injcalcsBPEM.s
-    
-;*****************************************************************************************
-; - Do RPM calculations when there is a new input capture period.                           
-;*****************************************************************************************
-
-   brclr ICflgs,RPMcalc,NoRPMcalc ; If "RPMcalc" bit of "ICflgs" is clear, 
-                                  ; branch to "NoRPMcalc:"(bit is set in State_BPEM.s 
-								  ; and cleared in ect_BPEM.s)
-								   
-    CALC_RPM   ; (Macro in ect_BEEM488.s)
-	
-NoRPMcalc
-	
-;*****************************************************************************************
-; - Do KPH calculations when there is a new input capture period.                           
-;*****************************************************************************************
-
-    brclr ICflgs,KPHcalc,NoKPHcalc ; If "KPHcalc" bit of "ICflgs" is clear,
-                                   ; branch to "NoKPHcalc:"(bit is set and cleared in 
-								   ; ect_BPEM.s)
-
-    CALC_KPH   ; (Macro in ect_BEEM488.s)
-	
-NoKPHcalc:
-	
-;*****************************************************************************************
-; - Every mS:
-;   Decrement "AIOTcnt" (AIOT pulse width counter)
-;   Decrement "Stallcnt" (stall counter) 
-;   Check for no crank or stall condition.
-;***************************************************************************************** 
-
-    brclr clock,ms1,NoMS1Routines1 ; If "ms1" bit of "clock" bit field is clear branch 
-                                   ; to NoMS1Routines1:
-    bra  DO_MS1_ROUTINES           ; Branch to DO_MS1_ROUTINES:
-
-NoMS1Routines1:
-    job  NoMS1Routines             ; Long branch
-
-DO_MS1_ROUTINES:    
-    MILLISEC_ROUTINES             ; (Macro in rti_BEEM488.s)
-	bclr clock,ms1                ; Clear "ms1" bit of "clock" bit field
-
-NoMS1Routines:	 
-	
-;*****************************************************************************************
-; - Every 100 mS:
-;   Decrement "OFCdelcmp" (counter for Overrun Fuel Cut delay calculations)
-;   Decrement "TOEtimcmp" (counter for Throttle Opening Enrichment calculations)
-;   Save current TPS percent reading "TpsPctx10" as "TpsPctx10last" to compute "tpsDOT"  
-;   in acceleration  enrichment section. 
-;*****************************************************************************************
-
-    brclr clock,ms100,NoMS100Routines ; If "ms100" bit of "clock" bit field is clear  
-                                      ; branch to NoMS100Routines: 
-    MILLISEC100_ROUTINES              ; (Macro in rti_BEEM488.s)
-	bclr clock,ms100                  ; Clear "ms100" bit of "clock" bit field
-	
-NoMS100Routines:
-	
-;*****************************************************************************************
-; - Every 1000mS:
-;   Save the current fuel delivery total ("FDt") as "FDsec" so it can be used by Tuner 
-;   Studio and Shadow Dash for fuel burn calculations
-;*****************************************************************************************
-
-    brclr clock,ms1000,NoMS1000Routines ; If "ms1000" bit of "clock" bit field is clear  
-                                        ; branch to NoMS1000Routines: 
-    MILLISEC1000_ROUTINES               ; (Macro in rti_BEEM488.s)
-	bclr clock,ms1000                   ; Clear "ms1000" bit of "clock" bit field
-	
-NoMS1000Routines:
-	
-;*****************************************************************************************
-; ----------------------- Ignition Calculations Section ----------------------------------
-;*****************************************************************************************
-
-;*****************************************************************************************
-;
-; - Ignition timing in degrees to 0.1 degree resolution is selected from the 3D 
-;   lookup table "ST" which plots manifold pressure against RPM. A potentiometer on the 
-;   dash board allows a manual trim of the "ST" values of from 0 to 20 degrees advance 
-;   and from 0 to 20 degrees retard. The ignition system is what is called "waste spark", 
-;   which pairs cylinders on a single coil. The spark is delivered to both cylinders at 
-;   the same time. One cylinder recieves the spark at the appropriate time for ignition. 
-;   The other recieves it when the exhaust valve is open. Hence the name "waste spark".
-;   On this 10 cylinder engine there are 5 coils, each controlled by its own hardware 
-;   timer. The cylinders are paired 1&6, 10&5, 9&8, 4&7, 3&2
-;   In an ignition event the timer is first loaded with the output compare value in 
-;   "Delaytk". At the compare interrupt the coil is energised and the timer is loaded
-;   with the output compare value in "DwllFintk". At the compare interrupt the coil is 
-;   de-energized to fire the spark. The delay in timer ticks will depend on the timer base 
-;   rate of either 5.12 uS for cranking or 2.56uS for running.
-;
-;*****************************************************************************************
-
-;*****************************************************************************************
-; - Look up current value in ST table (STcurr) (degrees*10)
-;*****************************************************************************************
-
-    ST_LU    ; Macro in injcalcs_BPEM.s
-
-;*****************************************************************************************
-; - Look up current value in Dwell Battery Adjustment Table (dwellcor)(% x 10)    
-;*****************************************************************************************
-
-    DWELL_COR_LU    ; Macro in injcalcs_BPEM.s
-
-;*****************************************************************************************
-; The determination of whether the engine is cranking or running is made in the 
-; State_BPEM488.s module within the Crank Angle Sensor interrupt. It is here that the 
-; "crank" and "run" bits of the "engine" bit field are set or cleared.
-;*****************************************************************************************
-
-    brset engine,crank,CrankTime ; If "crank" bit of "engine" bit field is set branch 
-	                             ; to CrankTime:
-	bra   RunTime                ; Branch to RunTime:(no need to test "run" bit)
-	
-CrankTime:
-	
-;*****************************************************************************************
-; - Do ignition calculations for a 5.12uS time base.   
-;*****************************************************************************************
-
-    IGN_CALCS_512      ; Macro in igncalcsBPEM488.s
-	bra  IgnCalcsDone  ; Branch to IgnCalcsDone: 
-
-RunTime:
-
-;*****************************************************************************************
-; - Do ignition calculations for a 2.56uS time base.   
-;*****************************************************************************************
-
-    IGN_CALCS_256    ; Macro in igncalcsBPEM488.s
-	
-IgnCalcsDone:
-
-;*****************************************************************************************
-; ---------------------- End Of Ignition Calculations Section ----------------------------
-;*****************************************************************************************	
-
-;*****************************************************************************************
-; ------------------------ Injector Calculations Section ---------------------------------
-;*****************************************************************************************
-
-;*****************************************************************************************
-; - The fuel injectors are wired in pairs arranged in the firing order 1&10, 9&4, 3&6, 5&8
-;   7&2. This arrangement allows a "semi sequential" injection strategy with only 5 
-;   injector drivers. The cylinder pairs are 54 degrees apart in crankshaft rotation so 
-;   the injector pulse for the trailing cylinder will lag the leading cylinder by 54 
-;   degrees. The benefits of injector timing is an open question but its effect is most 
-;   felt at idle when the injection pulse can be timed to an opeing intake valve. At 
-;   higher speeds and loads the effect is less becasue the pulse width is longer than the
-;   opening time of the valve. The engine has 10 trigger points on the crankshaft so 
-;   there is lots of choice where to refernce the start of the pulse from. I have chosen 
-;   to use the point when the intake valve on the leading cylinder is just starting to 
-;   open. Actual injector pulse start time can be delayed from this point by the value in
-;   "InjDelDegx10". The delay in timer ticks will depend on the timer base rate of either
-;   5.12 uS for cranking or 2.56uS for running.   
-;*****************************************************************************************
-
-;*****************************************************************************************
-; The determination of whether the engine is cranking or running is made in the 
-; State_BPEM488.s module within the Crank Angle Sensor interrupt. It is here that the 
-; "crank" and "run" bits of the "engine" bit field are set or cleared.
-;*****************************************************************************************
-
-    brset engine,crank,CrankMode ; If "crank" bit of "engine" bit field is set branch 
-	                             ; to CrankMode:
-	bra   RunMode                ; Branch to RunMode:(no need to test "run" bit)
-								  
-CrankMode:
-
-;*****************************************************************************************
-; Check if we are in flood clear or normal crank mode
-;*****************************************************************************************
-
-    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #veBins_E     ; Load index register Y with address of first configurable 
-                        ; constant on buffer RAM page 1 (veBins_E)
-    ldx   $03E4,Y       ; Load Accu X with value in buffer RAM page 1 offset 996
-                        ; "FloodClear" (Flood Clear threshold)   
-    cpx   TpsPctx10     ; Compare "FloodClear" with "TpsPctx10"
-    bhi   NoFloodClear  ; If "FloodClear" is greater than "TpsPctx10", branch to 
-	                    ; NoFloodClear: ("TpsPctx10" below threshold so interpolate 
-					    ; the cranking pulse width)
-	bset  engine,FldClr ; Set "FldClr" bit of "engine" bit field 
-    clrw  CrankPWtk     ; Clear Cranking injector pulswidth timer ticks(uS x 5.12)
-	clrw  FDpw          ; Fuel delivery pulsewidth (PW - dead time) 
-	                    ; (mS x 1000)(116)
-    job  MainLoopEnd    ; Jump or branch to "MainLoop" (keep looping here until no 
-	                    ; longer in flood clear mode
-
-NoFloodClear:
-	bclr  engine,FldClr ; Clear "FldClr" bit of "engine" bit field 
-	
-;*****************************************************************************************
-; - Calculate the delay time to start injection in 5.12uS resoluion.
-;*****************************************************************************************
-
-    INJ_DEL_CALC_512    ; Macro in tim_BPEM.s
-	
-    job  MainLoopEnd   ; Jump or branch to "MainLoopEnd:" (keep looping here until no 
-	                   ; longer in crank mode
-	
-RunMode:
-
-;*****************************************************************************************
-; - Calculate the delay time to start injection in 2.56uS resoluion.
-;*****************************************************************************************
-
-    INJ_DEL_CALC_256    ; Macro in tim_BPEM.s
-
-
-;*****************************************************************************************
 ; - Determine if we are in steady state, TOE mode or OFC mode and do the calculations 
 ;   accordingly.
 ;*****************************************************************************************
@@ -1437,15 +1492,12 @@ RunMode:
 ;*****************************************************************************************
 
 MainLoopEnd:
-
 	incw LoopCntr  ; Increment "LoopCntr"(counter for "LoopTime") 
-
     job  MainLoop  ; Jump or branch to "MainLoop" (end of main loop, start again)
 
 ;*****************************************************************************************
 ; --------------------------------- End of Main Loop ------------------------------------- 
 ;*****************************************************************************************
-
 
 BPEM488_CODE_END		EQU	*     ; * Represents the current value of the paged 
                                   ; program counter		
@@ -1575,8 +1627,8 @@ TOEbins_F:         ; 8 bytes for Throttle Opening Enrichment adder (%)(offset = 
 ;         20,   25,   30,   35
 
 TOErates_F:        ; 8 bytes for Throttle Opening Enrichment rate (TpsPctDOT x 10)(offset = 964)($03C4)
-    dw $01F4,$03E8,$09C4,$1388
-;        500, 1000, 2500, 5000
+    dw $0032,$0064,$00FA,$01F4
+;         50,  100,  250,  500
 
 DdBndBase_F:       ; 2 bytes for injector deadband at 13.2V (mSec * 100)(offset = 972)($03CC)
     dw $005A       ; 90 = .9mS
@@ -1584,12 +1636,12 @@ DdBndBase_F:       ; 2 bytes for injector deadband at 13.2V (mSec * 100)(offset 
 DdBndCor_F:        ; 2 bytes for injector deadband voltage correction (mSec/V x 100)(offset = 974)($03CE)
     dw $0012       ; 18 = .18mS/V
                 	
-tpsThresh_F:       ; 2 bytes for Throttle Opening Enrichment threshold (TpsPctx10/100mS)(offset = 976)($03D0)
-    dw $01C2       ; 450 = 45% per Sec
+tpsThresh_F:       ; 2 bytes for Throttle Opening Enrichment threshold (%/Sec)(offset = 976)($03D0)
+    dw $002D       ; 45 = 45% per Sec
     
 TOEtime_F:         ; 2 bytes for Throttle Opening Enrich time in 100mS increments(mSx10)(offset = 978)($03D2)
-    dw $0014       ; 20 = 2mS
-    
+    dw $0005       ; 5 = 0.5 Sec
+
 ColdAdd_F:         ; 2 bytes for Throttle Opening Enrichment cold temperature adder at -40F (%)(offset = 980)($03D4)
     dw $0014       ; 20%
     

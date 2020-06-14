@@ -692,23 +692,17 @@ ItrimDone:
     ldy  #veBins_E   ; Load index register Y with address of first configurable constant
                      ; on buffer RAM page 1 (veBins)
     ldd  $03E8,Y     ; Load Accu D with value in buffer RAM page 1 offset 1000 (tpsMin)
-    ldy  #$000A      ; Load index register Y with decimal 10
-    emul             ; Multiply (D)x(Y)=>Y:D  (multiply "tpsMin" by 10) 
     pshd             ; Push to stack (V1)
     ldd  tpsADC      ; Load double accumulator with "tpsADCAdc"
-    ldy  #$000A      ; Load index register Y with decimal 10
-    emul             ; Multiply (D)x(Y)=>Y:D  (multiply "tpsADC" by 10) 
     pshd             ; Push to stack (V)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy  #veBins_E   ; Load index register Y with address of first configurable constant
                      ; on buffer RAM page 1 (vebins)
     ldd  $03EA,Y     ; Load Accu D with value in buffer RAM page 1 offset 1002 (tpsMax)
-    ldy  #$000A      ; Load index register Y with decimal 10
-    emul             ; Multiply (D)x(Y)=>Y:D  (multiply "tpsMax" by 10)
     pshd             ; Push to stack (V2)    
     ldd  #$0000      ; Load double accumulator with decimal 0 (Low range %) ( x 10)
     pshd             ; Push to stack (Z1)
-    ldd  #$03E8      ; Load double accumulator with decimal 100 (High range %) ( x 10)
+    ldd  #$03E8      ; Load double accumulator with decimal 1000 (High range %) ( x 10)
     pshd             ; Push to stack (Z2)
 
 ;*****************************************************************************************        
@@ -741,7 +735,6 @@ ItrimDone:
 ;   ( All variables are multiplied by 10 for greater precision)
 ;*****************************************************************************************
 
-    
     ldd  #$0000      ; Load double accumulator with decimal 0 (0 volt ADC) ( x 10)
     pshd             ; Push to stack (V1)
     ldd  egoAdc      ; Load double accumulator with "egoAdc"

@@ -263,8 +263,11 @@ AIOT_CHK_DONE:
 ;   Decrement "Stallcnt" (no crank or stall condition counter)(1mS increments)			
 ;*****************************************************************************************
 
-   decw Stallcnt   ; Decrement "Stallcnt" (no crank or stall condition counter)
-                   ; (1mS increments)
+   ldd Stallcnt        ; "Stallcnt" -> Accu D
+   beq  NoStallcntDec  ; If zero branch to NoStallcntDec:     
+   decw Stallcnt       ; Decrement "Stallcnt" (no crank or stall condition counter)
+                       
+NoStallcntDec:
 
 ;*****************************************************************************************
 ;   Check for no crank or stall condition. 
@@ -316,7 +319,7 @@ DoStall:
    clrw FD           ; Fuel Delivery pulse width (mS)
    clrw FDsec        ; Fuel delivery pulse width total over 1 second (mS)
    clr  OFCdelCnt    ; Overrun Fuel Cut Delay counter 
-   clr  TOEtimCnt    ; Throttle Opening Enrichment time counter   
+   clr  TOEdurCnt    ; Throttle Opening Enrichment duration counter   
    bset StateStatus,SynchLost ; Set "SynchLost" bit of "StateStatus" bit field (bit1)
    movb #$FF,ECT_PTPSR        ; Load ECT_PTPSR with %11111111 (prescale 256, 5.12us  
                               ; resolution, max period 335.5ms)
@@ -393,19 +396,23 @@ NoStall:
 #macro MILLISEC100_ROUTINES, 0
 
 ;*****************************************************************************************
-; - Decrement "OFCdelCnt" Overrun Fuel Cut delay counter (decremented every 100 mS)
+; - Decrement "OFCdelCnt" Overrun Fuel Cut delay counter 
 ;*****************************************************************************************
-	brclr  engine,OFCdelon,NoOFCdelDec ; If "OFCdelon" bit of "engine" bit field is clear 
-                                       ; branch to NoOFCdelDec:
-	dec  OFCdelCnt                     ; Decrement Overrun Fuel Cut delay duration counter
+    ldaa OFCdelCnt    ; "OFCdelCnt" -> Accu A
+    beq  NoOFCdelDec  ; If zero branch to NoOFCdelDec:     
+	dec  OFCdelCnt    ; Decrement Overrun Fuel Cut delay duration counter
 
 NoOFCdelDec:
 
 ;*****************************************************************************************
-; - Decrement "TOEtim" Throttle Opening Enrichment duration (decremented every 100 mS)
+; - Decrement "TOEdurCnt" Throttle Opening Enrichment duration counter
 ;*****************************************************************************************
 
-;    dec  TOEtim    ; Decrement Throttle Opening Enrichment duration
+    ldaa TOEdurCnt    ; "TOEdurCnt" -> Accu A
+    beq  NoTOEdurDec  ; If zero branch to NoTOEdurDec:     
+    dec  TOEdurCnt    ; Decrement Throttle Opening Enrichment duration counter
+    
+NoTOEdurDec:
 	
 ;*****************************************************************************************
 ; - "TPSdot" is throttle position percent rate of change in 100mS. Save current TPS  
@@ -488,6 +495,8 @@ DomS:
     ldaa mS            ; Load accu A with value in mS counter
     cmpa #$64          ; Compare it with decimal 100
     beq  Do100mS       ; IF Z bit of CCR is set, branch to Do100mS: (mS=100)
+    cmpa #$C8          ; Compare it with decimal 200
+    beq  Do100mS       ; IF Z bit of CCR is set, branch to Do100mS: (mS=200)
     cmpa #$FA          ; Compare it with decimal 250
     beq  Do250mS       ; IF Z bit of CCR is set, branch to Do250mS: (mS=250)
     bne  RTI_ISR_DONE  ; If not equal branch to RTI_ISR_DONE:
@@ -548,15 +557,6 @@ DoSec:
 ;*****************************************************************************************
 
 IncSec:
-
-;*****************************************************************************************
-; - Flash LED2 on board 1 to 28 every second just to show that the timer is working
-;*****************************************************************************************
-;    ldaa  PORTB        ; Load ACC A with value in Port B
-;    eora  #$08         ; Exlusive or with $00001000
-;    staa   PORTB       ; Copy to Port B (toggle Bit3, LED20, board 1 to 28)
-;*****************************************************************************************
-	
     clr  mSx250        ; Clear 250 mSec counter
     inc  secL          ; Increment "Seconds" Lo byte 
     bne  RTI_ISR_DONE  ; If the Z bit of CCR is clear, branch to RTI_ISR_DONE:
@@ -587,8 +587,6 @@ RTI_TABS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 RTI_TABS_END		EQU	*     ; * Represents the current value of the paged 
                               ; program counter	
 RTI_TABS_END_LIN	EQU	@     ; @ Represents the current value of the linear 
-                              ; program counter	
-
-
+                              ; program counter
 
 

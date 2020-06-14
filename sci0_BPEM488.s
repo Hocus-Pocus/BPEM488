@@ -343,22 +343,12 @@ RcvData:                 ; "rxmode" = 7
     beq  RcvDataLSB     ; If equal branch to RcvDataLSB:
      
 RcvDataMSB:
-;**********************************************************************
-; - De-Bug LED   FUEL PUMP!!!!                                        *
-;     bset  PORTB, PB0   ; Set bit0, Port B (LED9, board 1 to 28)     *
-;**********************************************************************
-
     ldaa  SCI0DRL       ; Load Accu A with value in "SCI0DRL"(data byte)
     staa  dataMSB       ; Copy to "dataMSB"
     inc   rxmode        ; Increment "rxmode"(continue to next mode)
     rti                 ; Return from subroutine 
 
 RcvDataLSB:             ; "rxmode" = 8
-;**********************************************************************
-; - De-Bug LED                                                        *
-;     bset  PORTB, PB1   ; Set Bit1, Port B (LED23, board 1 to 28)    * 
-;**********************************************************************
-
     ldab  SCI0DRL       ; Load Accu B with value in "SCI0DRL"(data byte)
     stab  dataLSB       ; Copy to "dataLSB"
     ldaa  pageID        ; Load accu A with value in "pageID"
@@ -379,11 +369,6 @@ StorePg1:
     beq  StorePg1Bt     ; If equal branch to StorePg1Bt:
      
 StorePg1Wd:
-;**********************************************************************
-; - De-Bug LED                                                        *
-;     bset  PORTB, PB2   ; Set Bit1, Port B (LED4, board 1 to 28)     *
-;**********************************************************************
-
     ldx   rxoffsetMSB  ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
     ldd   dataMSB      ; Load double accu D with value in "dataMSB:dataLSB"
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
@@ -391,11 +376,6 @@ StorePg1Wd:
     bra   StoreDone    ; Branch to StoreDone:
 
 StorePg1Bt:
-;**********************************************************************
-; - De-Bug LED                                                        *
-;     bset  PORTB, PB4   ; Set bit0, Port B (LED10, board 1 to 28)    *
-;**********************************************************************
-
     ldx   rxoffsetMSB  ; Load index register X with value in "rxoffsetMSB:rxoffsetLSB"
     ldaa  dataLSB      ; Load accu A with value in "dataLSB"
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
@@ -479,11 +459,6 @@ CheckTxCmnd:
     bra   RcvSCIDone ; Branch to "RcvSCIDone:"
      
 ModeC1:
-;**********************************************************************
-; - De-Bug LED                                                        *
-;     bset  PORTK, PK1   ; Set Bit1, Port K (LED6, board 1 to 28)     *
-;**********************************************************************
-
 ;*****************************************************************************************
 ; - Load "rxmode" and "txcmnd" with appropriate values to get ready 
 ;   to receive additional command information
@@ -538,11 +513,6 @@ StartPg3:
     bra   DoTx          ; Branch to "DoTx:" (start transmission)
             
 ModeW1:
-;**********************************************************************
-; - De-Bug LED                                                        *
-;     bset  PORTK, PK5   ; Set Bit5, Port K (LED3, board 1 to 28)     *
-;**********************************************************************
-
 ;*****************************************************************************************
 ; - Load "rxmode" and "txcmnd" with appropriate values to get ready 
 ;   to receive additional command information
@@ -554,11 +524,6 @@ ModeW1:
     rti                 ; Return from interrupt
      
 ModeB1:
-;**********************************************************************
-; - De-Bug LED                                                        *
-;     bset PORTK, PK4    ; Set bit4 Port K (LED19, board 1 to 28)     *
-;********************************************************************** 
-
 ;*****************************************************************************************
 ; - Load "rxmode" and "txcmnd" with appropriate values to get ready 
 ;   to receive additional command information
@@ -576,12 +541,6 @@ ModeB2
     rti                 ; Return from interrupt
             
 ModeH:
-;**********************************************************************
-; - De-Bug LED
-;**********************************************************************
-;      bset  PORTK, PK3   ; Set Bit3 (LED2, board 1 to 28)            *
-;**********************************************************************                                
-                                
     ldaa  Signature        ; Load accu A with value at "Signature"
     staa  SCI0DRL          ; Copy to SCI0DRL (first byte to send)
     movw  #$0000,txcnt     ; Clear "txcnt"
@@ -590,23 +549,6 @@ ModeH:
     bra   DoTx             ; Branch to "DoTx:" (start transmission)
 
 ModeO:
-;**********************************************************************
-; - De-Bug LED
-;**********************************************************************
-; - De-Bug LED
-;     ldaa  PORTK        ; Load ACC A with value in Port K            *
-;     eora  #$01         ; Exclusive or with $00000001                *
-;     staa   PORTK       ; Copy to Port K (toggle Bit0)               * 
-;                        ; LED22, board 1 to 28)                      *
-;**********************************************************************   
-;**********************************************************************
-; - De-Bug LED
-;     ldaa  PORTK        ; Load ACC A with value in Port K            *
-;     eora  #$80         ; Exclusive or with $10000000                *
-;     staa   PORTK       ; Copy to Port K (toggle Bit7)               * 
-                        ; LED2, board 87 to 112)                      *
-;**********************************************************************     
-
     ldaa  secH             ; Load accu A with value at "secH"
     staa  SCI0DRL          ; Copy to SCI0DRL (first byte to send)
     movw  #$0000,txcnt     ; Clear "txcnt"

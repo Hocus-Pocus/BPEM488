@@ -85,6 +85,7 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;TpsPctx10:    ds 2 ; Throttle Position Sensor % of travel(%x10)(update every 100mSec)   
 ;RPM:          ds 2 ; Crankshaft Revolutions Per Minute 
 ;reqFuel:      ds 2 ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)
+;ASEcnt:       ds 2 ; Counter for "ASErev"
 ;AFRcurr:      ds 2 ; Current value in AFR table (AFR x 100) 
 ;VEcurr:       ds 2 ; Current value in VE table (% x 10) 
 ;barocor:      ds 2 ; Barometric Pressure Correction (% x 10)
@@ -113,6 +114,8 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;InjPrFlo:     ds 2 ; Pair of injectors flow rate (L/hr x 100)
 ;CASprd256:    ds 2 ; Crankshaft Angle Sensor period (2.56uS time base
 ;DutyCyclex10: ds 2 ; Injector duty cycle in run mode (% x 10)
+;engine:       ds 1  ; Engine status bit field
+;engine2:      ds 1  ; Engine2 status bit field
 
 ;*****************************************************************************************
 ; - "engine" equates
@@ -135,6 +138,24 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;FldClr       equ $80  ; %10000000, bit 7, 0 = not in flood clear mode(Grn),
                                         ; 1 = Flood clear mode(Red)
 										
+;*****************************************************************************************
+;*****************************************************************************************
+; "engine2" equates
+;*****************************************************************************************
+
+;base512        equ $01 ; %00000001, bit 0, 0 = 5.12uS time base off(White),
+                                         ; 1 = 5.12uS time base on(Grn)
+;base256        equ $02 ; %00000010, bit 1, 0 = 2.56uS time base off(White),
+                                         ; 1 = 2.56uS time base on(Grn)
+;AudAlrm        equ $04 ; %00000100, bit 2, 0 = Audible Alarm on(Grn),
+                                         ; 1 = Audible Alarm off(Red) 
+;TOEduron       equ $08 ; %00001000, bit 3, 0 = TOE timer not counting down(Grn),
+                                         ; 1 = TOE timer counting down(Red) 
+;eng2Bit4       equ $10 ; %00010000, bit 4, 0 = , 1 = 
+;eng2Bit5       equ $20 ; %00100000, bit 5, 0 = , 1 = 
+;eng2Bit6       equ $40 ; %01000000, bit 6, 0 = , 1 = 
+;eng2Bit7       equ $80 ; %10000000, bit 7, 0 = , 1 =
+
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - These configurable constants are located in BPEM488.s in page 1 starting with the 
@@ -160,8 +181,6 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 
 TpsPctx10last: ds 2 ; Throttle Position Sensor percent last (%x10)(updated every 100Msec)
-;OFCdel:        ds 1 ; Overrun Fuel Cut delay duration (decremented every 100 mS)
-TOEtim:        ds 1 ; Throttle Opening Enrichment duration (decremented every 100 mS)
 DdBndZ1:       ds 2 ; Deadband interpolation Z1 value
 DdBndZ2:       ds 2 ; Deadband interpolation Z2 value
 PWcalc1:       ds 2 ; PW calculations result 1
@@ -170,13 +189,12 @@ PWcalc3:       ds 2 ; PW calculations result 3
 PWcalc4:       ds 2 ; PW calculations result 4
 PWcalc5:       ds 2 ; PW calculations result 5
 ASErev:        ds 2 ; Afterstart Enrichment Taper (revolutions)
-;ASEcnt:        ds 2 ; Counter value for ASE taper
 PrimePWtk:     ds 2 ; Primer injector pulswidth timer ticks(uS x 5.12)
 CrankPWtk:     ds 2 ; Cranking injector pulswidth timer ticks(uS x 5.12)
 PWtk:          ds 2 ; Running injector pulsewidth timer ticks(uS x 2.56)
 InjOCadd1:     ds 2 ; First injector output compare adder (5.12uS res or 2.56uS res)
 InjOCadd2:     ds 2 ; Second injector output compare adder (5.12uS res or 2.56uS res)
-FDt:           ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)
+;FDt:           ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)
 FDcnt:         ds 2 ; Fuel delivery pulse width total(ms)(for totalizer pulse on rollover)
 AIOTcnt:       ds 1 ; Counter for AIOT totalizer pulse width
 
@@ -192,23 +210,20 @@ INJCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 #macro CLR_INJ_VARS, 0
 
    clrw TpsPctx10last ; Throttle Position Sensor percent last (%x10)(updated every 100Msec)
-;   clr  OFCdel        ; Overrun Fuel Cut delay duration (decremented every 100 mS)
-   clr  TOEtim        ; Throttle Opening Enrichment duration (decremented every 100 mS)
-   clrw  DdBndZ1       ; Deadband interpolation Z1 value
-   clrw  DdBndZ2       ; Deadband interpolation Z2 value
+   clrw DdBndZ1       ; Deadband interpolation Z1 value
+   clrw DdBndZ2       ; Deadband interpolation Z2 value
    clrw PWcalc1       ; PW calculations result 1
    clrw PWcalc2       ; PW calculations result 2
    clrw PWcalc3       ; PW calculations result 3
    clrw PWcalc4       ; PW calculations result 4
    clrw PWcalc5       ; PW calculations result 5
    clrw ASErev        ; Afterstart Enrichment Taper (revolutions)
-;   clrw ASEcnt        ; Counter value for ASE taper
+   clrw ASEcnt        ; Counter for "ASErev"
    clrw PrimePWtk     ; Primer injector pulswidth timer ticks(uS x 5.12)
    clrw CrankPWtk     ; Cranking injector pulswidth timer ticks(uS x 5.12)
    clrw PWtk          ; Running injector pulsewidth timer ticks(uS x 2.56)
    clrw InjOCadd1     ; First injector output compare adder (5.12uS res or 2.56uS res)
    clrw InjOCadd2     ; Second injector output compare adder (5.12uS res or 2.56uS res)
-   clrw FDt           ; Fuel Delivery pulse width total(mS) (for FDsec calcs)
    clrw FDcnt         ; Fuel delivery pulse width total(ms)(for totalizer pulse on rollover)
    clr  AIOTcnt       ; Counter for AIOT totalizer pulse width
 
@@ -563,7 +578,6 @@ WasMinus:
     
 #emac
 
-
 #macro WUE_COR_LU, 0
 
 ;*****************************************************************************************
@@ -792,9 +806,9 @@ TOE_OFC_CHK:
 ;   percent difference over time in seconds "TpsPctx10" - "TpsPctx10last" = "TpsPctDOT"
 ;***********************************************************************************************
 
-    subx  TpsPctx10last   ; (X)-(M:M-1)=>X Subtract "TpsPctx10last" from "tTpsPctx10"
+    subx  TpsPctx10last   ; (X)-(M:M-1)=>X Subtract "TpsPctx10last" from "TpsPctx10"
     stx   TpsPctDOT       ; Copy result to "TpsPctDOT"
-	
+ 
 ;***********************************************************************************************
 ; - The throttle is opening. Check to see if it is opening at a rate greater than the threshold
 ;***********************************************************************************************
@@ -802,7 +816,7 @@ TOE_OFC_CHK:
     ldy   #veBins_E       ; Load index register Y with address of first configurable constant
                           ; on buffer RAM page 1 (veBins_E)
     ldx   $03D0,Y         ; Load Accu D with value in buffer RAM page 1 offset 976 (tpsThresh)
-                          ;(TPSdot threshold)(offset = 976)($03D0)   
+                          ;(TPSdot threshold)(offset = 976)($03D0)
     cpx   TpsPctDOT       ; Compare "tpsThresh" with "TpsPctDOT"
     bhi   TOE_CHK_TIME    ; If "tpsThresh" is greater than "TpsPctDOT", branch to TOE_CHK_TIME: 
                           ; ("TpsPctDOT" below threshold so check if acceleration is done)
@@ -814,7 +828,7 @@ TOE_OFC_CHK:
 						  
     brset engine,TOEon,TOE_CALC ; If "TOEon" bit of "engine" bit field 
                           ; is set, branch to TOE_CALC: (TOE in progress)
-						  
+                          
 ;***********************************************************************************************
 ;- The throttle is opening at a rate greater than the threshold and TOE is not in progress  
 ;  so prepare to add in the enrichement.
@@ -823,17 +837,18 @@ TOE_OFC_CHK:
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E       ; Load index register Y with address of first configurable constant
                         ; on buffer RAM page 1 (veBins_E)
-    ldd   $01DE,Y       ; Load Accu D with value in buffer RAM page 1 offset 478 (First element 
+    ldd  $03BC,Y        ; Load Accu D with value in buffer RAM page 1 (offset 956) (First element 
                         ; of "TOEbins" table)(Start with first element, will determine actual  
-                        ; next time around)(actual offset is 956)
-    std   TOEpct        ; Copy to Throttle Opening Enrichment percent(used in later calculations)
+                        ; next time around)
+    stab   TOEpct       ; Copy to Throttle Opening Enrichment percent(used in later calculations)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy   #veBins_E     ; Load index register Y with address of first configurable constant
                         ; on buffer RAM page 1 (veBins_E)
     ldd   $03D2,Y       ; Load Accu D with value in buffer RAM page 1 offset 978 (TOEtime_F)
-    std   TOEtim        ; Copy to "TOEtim" (Throttle Opening Enrichment duration 
+    stab  TOEdurCnt     ; Copy to "TOEdurCnt" (Throttle Opening Enrichment duration 
 	                    ; (decremented every 100 mS))
     bset  engine,TOEon  ; Set "TOEon" bit of "engine" variable (in TOE mode)
+    bset  engine2,TOEduron  ; Set "TOEduron" bit of "engine2" variable (TOE duration)
     bclr  engine,OFCon  ; Clear "OFCon" bit of "engine" variable (not in OFC mode)
     job   OFC_LOOP      ; Jump or branch to OFC_LOOP:(fall through)
      
@@ -849,8 +864,8 @@ TOE_CALC:
     bra  DoColdAdd    ; Branch to DoColdAdd:
 	
 RailColdAdd:
-   clr   ColdAddpct   ; Clear "ColdAddpct" (no cold adder)
-   bra   ColdAddDone  ; Branch to ColdAddDone: (skip over)
+    clr   ColdAddpct   ; Clear "ColdAddpct" (no cold adder)
+    bra   ColdAddDone  ; Branch to ColdAddDone: (skip over)
    
 DoColdAdd:   
     ldd  #$0093      ; Load double accumulator with decimal 147 (ADC @ 179.9F) 
@@ -890,7 +905,12 @@ DoColdAdd:
 ;*****************************************************************************************
 
     leas  10,SP       ; Stack pointer -> bottom of stack    
-    stab  ColdAddpct  ; Copy result to "ColdAddpct" (%)(bins are byte values) 
+    stab  ColdAddpct  ; Copy result to "ColdAddpct" (%)(bins are byte values)
+
+;**********************************************************************
+; - De-Bug LED                                                        * in use inj calcs
+     bset  PORTB, PB2   ; Set Bit1, Port B (LED4, board 1 to 28)     *
+;**********************************************************************    
 
 ColdAddDone:
     
@@ -956,10 +976,9 @@ ColdMulDone:
 ; in rti_BEEM488.s)
 ;*****************************************************************************************
 
-
    ldx   TpsPctx10         ; "TpsPctx10" -> Accu X 
    subx  TpsPctx10last     ; (X)-(M:M+1)=>X Subtract "TpsPctx10last" from "TpsPctx10"
-   stx   TpsPctDOT         ; Copy result to "TpsPctDOT"
+   stx   TpsPctDOT         ; Copy result to "TpsPctDOT" (%/Sec)
     
 ;*****************************************************************************************
 ; - Look up current value in Throttle Opening Enrichment Table (TpsDOTcor)(%)(byte value) 
@@ -969,24 +988,18 @@ ColdMulDone:
     movw #veBins_E,CrvPgPtr    ; Address of the first value in VE table(in RAM)(page pointer) 
                              ; ->page where the desired curve resides 
     movw #$01E2,CrvRowOfst   ; 482 -> Offset from the curve page to the curve row
-	                         ; (TOERates_F)(actual offset is 964)
+	                         ; (TOERates_F)(actual offset is 964)($03C4)
     movw #$01DE,CrvColOfst   ; 478 -> Offset from the curve page to the curve column
-	                         ; (TOEBins_F)(actual offset is 956)
+	                         ; (TOEBins_F)(actual offset is 956)($03BC)
     movw TpsPctDOT,CrvCmpVal ; TPS% difference over time (%/Sec)(update every 100mSec)  
                              ; -> Curve comparison value
     movb #$03,CrvBinCnt      ; 3 -> number of bins in the curve row or column minus 1
-    jsr   CRV_LU_P           ; Jump to subroutine at CRV_LU_P:(located in interp_BEEM488.s module)
-    stab  TpsDOTcor          ; Copy result to TpsDOTcor (%)(TOE bins use word values)
-    
+    jsr  CRV_LU_P            ; Jump to subroutine at CRV_LU_P:(located in interp_BEEM488.s module)
+    stab TpsDOTcor           ; Copy result to TpsDOTcor (%)(byte value)
+
 ;*****************************************************************************************
 ; - Multiply "TpsDOTcor" by "ColdMulpct" and divide by 100 
 ;*****************************************************************************************
-
-;    ldd   TpsDOTcor   ;  "TpsDOTcor" -> Accu D (%)
-;	ldy   ColdMulpct  ; "ColdMulpct" -> Accu Y (%)
-;	emul              ;(D)x(Y)=Y:D ("TpsDOTcor" * "ColdMulpct" )
-;	ldx   #$0064      ; Decimal 100 -> Accu X
-;    ediv              ;(Y:D)/(X)=Y;Rem->D(("TpsDOTcor" * "ColdMulpct")/100)(%)
 
     ldaa  TpsDOTcor      ; "TpsDOTcor" -> A (%)
     ldab  ColdMulpct     ; "ColdMulpct" -> B (%)
@@ -1018,7 +1031,7 @@ ADD_COLDADD:
     blo   TOE_CHK_TIME   ; If (A) is less than (M), branch to TOE_CHK_TIME: (result 
                          ; < "TOEpct" so use this value for "TOEpct" and check if 
 						 ; acceleration is done)
-    ldaa  tmp5b           ; "tmp5b" -> A(("TpsDOTcor" * ColdMulpct)/100) + "ColdAddpct")
+    ldaa  tmp5b          ; "tmp5b" -> A(("TpsDOTcor" * ColdMulpct)/100) + "ColdAddpct")
     staa  TOEpct         ; Copy result to "TOEpct"(result is higher than current
                          ; so update TOEpct with the higher value)
 
@@ -1030,13 +1043,13 @@ ADD_COLDADD:
     ldy   #veBins_E   ; Load index register Y with address of first configurable 
                       ; constant on buffer RAM page 1 (veBins_E)
     ldd   $03EC,Y     ; Load Accu D with value in buffer RAM page 1 (offset 1004)($03EC) 
-                      ; ("reqFuel")
-    ldy  TOEpct       ; "TOEpct" -> Accu D (% x 10)  	
-    emul              ; (D)*(Y)->Y:D "reqFuel" * "TOEpct" 
-	ldx  #$0064       ; Decimal 100 -> Accu X 
-	ediv              ;(Y:D)/)X)->Y;Rem->D ("ReqFuel"*"TOEpct")/1000="TOEpw"
-	sty  TOEpw        ; Result -> "TOEpw" TOE adder (mS x 100)						 
-	
+                      ; ("reqFuel" in Accu B)
+    ldaa  TOEpct      ; "TOEpct" -> Accu D (%)  	
+    mul               ;(A)x(B)->A:B (reqFuel" x "TOEpct")
+ 	ldx  #$0064       ; Decimal 100 -> Accu X    
+    idiv              ;(D)/(X)->X:rem->D (reqFuel" x "TOEpct")/10
+    stx  TOEpw        ; Result -> "TOEpw" TOE adder (mS x 10)
+                      
 ;*****************************************************************************************
 ; - Check to see if Throttle Opening Enrichment is done.
 ;*****************************************************************************************
@@ -1044,8 +1057,8 @@ ADD_COLDADD:
  TOE_CHK_TIME:
     brset  engine,OFCon,RESET_TOE ; If Overrun Fuel Cut bit of "Engine" bit field is set,
                                   ; branch to RESET_TOE:
-     ldaa  TOEtim       ; "TOEtim" -> Accu A 
-	 beq   RESET_TOE    ; If "TOEtim" = zero branch to RESET_TOE:(timer has timed out) 
+     ldaa  TOEdurCnt    ; "TOEdurCnt" -> Accu A 
+	 beq   RESET_TOE    ; If "TOEdurCnt" = zero branch to RESET_TOE:(timer has timed out) 
 	 bra   TOE_LOOP     ; Branch to "TOE_LOOP:(Timer hasn't timed out yet)
 
 ;*****************************************************************************************
@@ -1054,9 +1067,17 @@ ADD_COLDADD:
 ;*****************************************************************************************
 
 RESET_TOE:
-    clr    TOEpct       ; Clear Throttle Opening Enrichment % (0% enrich)
-    bclr   engine,TOEon ; Clear "TOEon" bit of "engine" bit field
-	
+
+    bclr  engine,TOEon      ; Clear "TOEon" bit of "engine" bit field
+    bclr  engine2,TOEduron  ; Clear "TOEduron" bit of "engine2" variable (TOE duration)
+    clr   TOEpct            ; Clear Throttle Opening Enrichment (%) 
+    clr   ColdAddpct        ; Clear Throttle Opening Enrichment cold adder (%)
+    clr   ColdMulpct        ; Clear Throttle Opening Enrichment cold multiplier (%)
+    clr   TpsDOTcor         ; Clear Throttle Opening Enrichment table value(%)
+    clr   TOEdurCnt         ; Clear Throttle Opening Enrichment duration counter
+    clrw  TOEpw             ; Clear Throttle Opening Enrichment adder (mS x 100)
+    clrw  PWlessTOE         ; Clear Injector pulse width before "TOEpw" and "Deadband" (mS x 10)
+
 TOE_LOOP:
     job  OFC_LOOP       ; Jump or branch to OFC_LOOP:(Finished with TOE, not in OFC so 
 	                    ; fall through)
@@ -1213,8 +1234,6 @@ OFC_LOOP:
 ; "FDpw" + "Deadband" = "PW"  (0.1mS resolution) 
 
 ;*****************************************************************************************
-
-
 ;*****************************************************************************************
 ; - Calculate total corrections before Throttle Opening Enrichment and deadband.
 ;*****************************************************************************************
