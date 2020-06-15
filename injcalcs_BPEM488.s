@@ -85,35 +85,34 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;TpsPctx10:    ds 2 ; Throttle Position Sensor % of travel(%x10)(update every 100mSec)   
 ;RPM:          ds 2 ; Crankshaft Revolutions Per Minute 
 ;reqFuel:      ds 2 ; Pulse width for 14.7 AFR @ 100% VE (mS x 10)
-;ASEcnt:       ds 2 ; Counter for "ASErev"
-;AFRcurr:      ds 2 ; Current value in AFR table (AFR x 100) 
-;VEcurr:       ds 2 ; Current value in VE table (% x 10) 
-;barocor:      ds 2 ; Barometric Pressure Correction (% x 10)
-;matcor:       ds 2 ; Manifold Air Temperature Correction (% x 10) 
-;WUEcor:       ds 2 ; Warmup Enrichment Correction (% x 10)(
-;ASEcor:       ds 2 ; Afterstart Enrichmnet Correction (% x 10)
-;WUEandASEcor  ds 2 ; the sum of WUEcor and ASEcor (% x 10)
-;Crankcor:     ds 2 ; Cranking pulsewidth temperature correction (% x 10)
-;TpsPctDOT:    ds 2 ; TPS difference over time (%/Sec)(update every 100mSec)
-;TpsDOTcor:    ds 1 ; Throttle Opening Enrichment table value(%)
-;ColdAddpct:   ds 1 ; Throttle Opening Enrichment cold adder (%) 
-;ColdMulpct:   ds 1 ; Throttle Opening Enrichment cold multiplier (%)  
-;TOEpct:       ds 1 ; Throttle Opening Enrichment (%)
-;TOEpw:        ds 2 ; Throttle Opening Enrichment adder (mS x 100)
-;PWlessTOE:    ds 2 ; Injector pulse width before "TOEpw" and "Deadband" (mS x 10)
-;Deadband:     ds 2 ; injector deadband at current battery voltage mS*100 
-;PrimePW:      ds 2 ; Primer injector pulswidth (mS x 10)
-;CrankPW:      ds 2 ; Cranking injector pulswidth (mS x 10)
-;FDpw:         ds 2 ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)
-;PW:           ds 2 ; Running engine injector pulsewidth (mS x 10)
-;FD:           ds 2 ; Fuel Delivery pulse width (mS)
-;FDsec:        ds 2 ; Fuel delivery pulse width total over 1 second (mS)
-;OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter
-;TOEtimCnt:    ds 1 ; Throttle Opening Enrichment time counter
-;InjDelDegx10: ds 2 ; Injection delay from trigger to start of injection (deg x 10)
-;InjPrFlo:     ds 2 ; Pair of injectors flow rate (L/hr x 100)
-;CASprd256:    ds 2 ; Crankshaft Angle Sensor period (2.56uS time base
-;DutyCyclex10: ds 2 ; Injector duty cycle in run mode (% x 10)
+;ASEcnt:       ds 2 ; Counter for "ASErev"(offset=72)
+;AFRcurr:      ds 2 ; Current value in AFR table (AFR x 100)(offset=74) 
+;VEcurr:       ds 2 ; Current value in VE table (% x 10)(offset=76) 
+;barocor:      ds 2 ; Barometric Pressure Correction (% x 10)(offset=78)
+;matcor:       ds 2 ; Manifold Air Temperature Correction (% x 10)(offset=80) 
+;WUEcor:       ds 2 ; Warmup Enrichment Correction (% x 10)(offset=82)
+;ASEcor:       ds 2 ; Afterstart Enrichmnet Correction (% x 10)(offset=84)
+;WUEandASEcor: ds 2 ; the sum of WUEcor and ASEcor (% x 10)(offset=86)
+;Crankcor:     ds 2 ; Cranking pulsewidth temperature correction (% x 10)(offset=88)
+;TpsPctDOT:    ds 2 ; TPS difference over time (%/Sec)(update every 100mSec)(offset=90)
+;TpsDOTcor:    ds 1 ; Throttle Opening Enrichment table value(%)(offset=92)
+;ColdAddpct:   ds 1 ; Throttle Opening Enrichment cold adder (%)(offset=93) 
+;ColdMulpct:   ds 1 ; Throttle Opening Enrichment cold multiplier (%)(offset=94)  
+;TOEpct:       ds 1 ; Throttle Opening Enrichment (%)(offset=95)
+;TOEpw:        ds 2 ; Throttle Opening Enrichment adder (mS x 100)(offset=96)
+;PWlessTOE:    ds 2 ; Injector pulse width before "TOEpw" and "Deadband" (mS x 10)(offset=98)
+;Deadband:     ds 2 ; injector deadband at current battery voltage mS*100(offset=100) 
+;PrimePW:      ds 2 ; Primer injector pulswidth (mS x 10)(offset=102)
+;CrankPW:      ds 2 ; Cranking injector pulswidth (mS x 10)(offset=104)
+;FDpw:         ds 2 ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)(offset=106)
+;PW:           ds 2 ; Running engine injector pulsewidth (mS x 10)(offset=108)
+;FDsec:        ds 2 ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
+;OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter(offset=114)
+;TOEdurCnt:    ds 1 ; Throttle Opening Enrichment duration counter(offset=115)
+;FDt:          ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)(offset=116)
+;CASprd512:    ds 2 ; Crankshaft Angle Sensor period (5.12uS time base(offset=62)
+;CASprd256:    ds 2 ; Crankshaft Angle Sensor period (2.56uS time base(offset=64) 
+;DutyCyclex10: ds 2  ; Injector duty cycle in run mode (% x 10)(offset=142)
 ;engine:       ds 1  ; Engine status bit field
 ;engine2:      ds 1  ; Engine2 status bit field
 
@@ -194,7 +193,6 @@ CrankPWtk:     ds 2 ; Cranking injector pulswidth timer ticks(uS x 5.12)
 PWtk:          ds 2 ; Running injector pulsewidth timer ticks(uS x 2.56)
 InjOCadd1:     ds 2 ; First injector output compare adder (5.12uS res or 2.56uS res)
 InjOCadd2:     ds 2 ; Second injector output compare adder (5.12uS res or 2.56uS res)
-;FDt:           ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)
 FDcnt:         ds 2 ; Fuel delivery pulse width total(ms)(for totalizer pulse on rollover)
 AIOTcnt:       ds 1 ; Counter for AIOT totalizer pulse width
 
@@ -314,13 +312,11 @@ WasMinus:
     pshd             ; Push to stack (V)
     ldd  #$00C0      ; Decimal 192 (19.2 volts) -> Accu D
     pshd             ; Push to stack (V2)
-;	ldd  DdBndZ2     ;((Injector deadband at 13.2V) + (Injector deadband voltage 
+	ldd  DdBndZ2     ;((Injector deadband at 13.2V) + (Injector deadband voltage 
 	                 ; correction * 6)) -> Accu D 
-    ldd  #$00C6      ; 198
     pshd             ; Push to stack (Z1)
-;	ldd  DdBndZ1     ;((Injector deadband at 13.2V) - (Injector deadband voltage 
+	ldd  DdBndZ1     ;((Injector deadband at 13.2V) - (Injector deadband voltage 
 	                 ; correction * 6)) -> Accu D 
-    ldd  #$0000      ; 0
     pshd             ; Push to stack (Z2)
     
 ;*****************************************************************************************        
@@ -385,10 +381,6 @@ WasMinus:
 	std  FDpw               ; Result -> "FDpw" (fuel delivery pulsewidth (mS x 10) 
 	addd Deadband           ; (A:B)+(M:M+1)->A:B ("FDpw"+"Deadband"="PrimePW"
 	std  PrimePW            ; Result -> "PrimePW" (primer injector pulsewidth) (mS x 10)
-	ldd  FDpw               ; "FDpw"->Accu D (mS x 10)
-	ldx  #$000A             ; Decimal 10->Accu X
-	idiv                    ; (D)/(X)->Xrem->D ("FDpw"/10="FD")(mS)
-	stx  FD                 ; Copy reslut to "FD"(mS)(Fuel burn calcs have to be in mS)
 	
 ;*****************************************************************************************
 ; - Convert to timer ticks in 5.12uS resolution           
@@ -401,6 +393,7 @@ WasMinus:
     ediv             ;(Y:D)/(X)=Y;Rem->D "PrimePW" * 10,000 / 512 = "CrankPWtk" 
     sty   PrimePWtk  ; Copy result to "PrimePWtk" (Priming pulse width in 5.12uS 
 	                 ; resolution)
+    sty   InjOCadd2  ; Second injector output compare adder (5.12uS res)
 					 
 #emac
 
@@ -464,15 +457,7 @@ WasMinus:
     ldd  FDpw        ; "FDpw"-> Accu D	
 	addd Deadband    ; (A:B)+(M:M+1)->A:B ("FDpw"+"Deadband"="CrankPW"
 	std  CrankPW     ; Result -> "CrankPW" (cranking injector pulsewidth) (mS x 10)
-	
-;*****************************************************************************************
-; - Divide "FDpw" by 10 and store as "FD" (Fuel burn calcs have to be in mS)
-;*****************************************************************************************
-	ldd  FDpw        ; "FDpw"->Accu D (mS x 10)
-	ldx  #$000A      ; Decimal 10->Accu X
-	idiv             ; (D)/(X)->Xrem->D ("FDpw"/10="FD")(mS)
-	stx  FD          ; Copy reslut to "FD"(mS)(Fuel burn calcs have to be in mS)
-	
+		
 ;*****************************************************************************************
 ; - Convert the result to timer ticks in 5.12uS resolution
 ;*****************************************************************************************
@@ -484,6 +469,7 @@ WasMinus:
 	                 ; ((("ReqFuel" * "crankcor" )/100) * 10,000) / 512 = "CrankPWtk"
     sty   CrankPWtk  ; Copy result to "CrankPWtk" (Cranking pulse width in 5.12uS 
 	                 ; resolution)
+    sty   InjOCadd2  ; Second injector output compare adder (5.12uS res)
                      
 #emac
 
@@ -1295,8 +1281,7 @@ PWrunCalcs:
 	ldx  #$03E8       ; Decimal 1000 -> Accu X
 	ediv              ;(Y:D)/)X)->Y;Rem->D ("PWcalc5"*"reqFuel")/1000="PWlessTOE"
 	sty  PWlessTOE    ; Result -> "PWlessTOE" (mS x 10)
-
-	
+    
 ;*****************************************************************************************
 ; - Add the Throttle Opening Enricment pulse width and store as "FDpw"(fuel delivery 
 ;   pulse width)(mS x 10) 
@@ -1314,15 +1299,6 @@ PWrunCalcs:
 	std  PW          ; Result -> "PW" (final injector pulsewidth) (mS x 10)
 	
 ;*****************************************************************************************
-; - Divide "FDpw" by 10 and store as "FD" (Fuel burn calcs have to be in mS)
-;*****************************************************************************************
-
-	ldd  FDpw        ; "FDpw"->Accu D (mS x 10)
-	ldx  #$000A      ; Decimal 10->Accu X
-	idiv             ; (D)/(X)->Xrem->D ("FDpw"/10="FD")(mS)
-	stx  FD          ; Copy reslut to "FD"(mS)(Fuel burn cals have to be in mS)
-
-;*****************************************************************************************
 ; - Convert "PW" to timer ticks in 2.56uS resolution.
 ;*****************************************************************************************
 
@@ -1333,6 +1309,7 @@ PWrunCalcs:
     ediv             ;(Y:D)/(X)=Y;Rem->D "PW" * 10,000 / 256 = "PWtk" 
     sty   PWtk       ; Copy result to "PWtk" (Running engine injector pulsewidth) 
 	                 ; (uS x 2.56)
+    sty   InjOCadd2  ; Second injector output compare adder (2.56uS res)
 					 
 ;*****************************************************************************************
 ; - Injector duty cycle percentage is the time the injector takes to inject the fuel  
@@ -1361,9 +1338,10 @@ NoPWrunCalcs:
     clrw  PWlessTOE     ; Clear "PWlessTOE" Injector PW before "TOEpw"+"Deadband"(mS x 10)
     clrw  TOEpw         ; Clear "TOEpw" Throttle Opening Enrichment adder (mS x 100)
     clrw  FDpw          ; Clear "FDpw" Fuel Delivery pulse width (PW - Deadband)(mS x 10)
-    clrw  FD            ; Clear "FD" Fuel Delivery pulse width (mS)
     clrw  PW            ; Clear "PW" Running engine injector pulsewidth (mS x 10)
     clrw  PWtk          ; Clear "PWtk" Running injector pulsewidth timer ticks(uS x 2.56)
+    movw  #$0002,InjOCadd1     ; First injector output compare adder (5.12uS res or 2.56uS res)
+    movw  #$0002,InjOCadd2     ; Second injector output compare adder (5.12uS res or 2.56uS res)
     clrw  DutyCyclex10  ; Clear "DutyCyclex10" Injector duty cycle in run mode (% x 10)    
 
 PWrunCalcsDone:    

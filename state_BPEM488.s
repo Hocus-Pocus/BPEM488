@@ -609,6 +609,7 @@ Notch_CT3_T2:
 ;*****************************************************************************************
 
     FIRE_IGN1                 ; macro in Tim_BPEM488.s
+    
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT3_T3:
@@ -631,6 +632,35 @@ Notch_CT3_T4:
 ;*****************************************************************************************
 
     FIRE_INJ3                 ; Macro in Tim_BPEM488.s
+    
+;***********************************************************************************************
+; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
+;   Shadow Dash to calculate current fuel burn.
+;***********************************************************************************************
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
+    std  FDt            ; Copy result to "FDT" (update "FDt")
+	
+;***********************************************************************************************
+; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
+;   to the totalizer(open collector output)
+;***********************************************************************************************
+
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
+    bcs  Totalizer3R     ; If the cary bit of CCR is set, branch to Totalizer3R: ("FDcnt"
+	                    ;  rollover, pulse the totalizer)
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bra  TotalizerDone3R ; Branch to TotalizerDone3R:
+
+Totalizer3R:
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
+	ldaa #$03           ; Decimal 3->Accu A (3 mS)
+    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
+	                    ; decremented every mS)
+	
+TotalizerDone3R:
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT4_T5:
@@ -670,6 +700,35 @@ Notch_CT4_T8:
 ;*****************************************************************************************
 
     FIRE_INJ4                 ; Macro in Tim_BPEM488.s
+    
+;***********************************************************************************************
+; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
+;   Shadow Dash to calculate current fuel burn.
+;***********************************************************************************************
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
+    std  FDt            ; Copy result to "FDT" (update "FDt")
+	
+;***********************************************************************************************
+; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
+;   to the totalizer(open collector output)
+;***********************************************************************************************
+
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
+    bcs  Totalizer4R     ; If the cary bit of CCR is set, branch to Totalizer4R: ("FDcnt"
+	                    ;  rollover, pulse the totalizer)
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bra  TotalizerDone4R ; Branch to TotalizerDone4R:
+
+Totalizer4R:
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
+	ldaa #$03           ; Decimal 3->Accu A (3 mS)
+    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
+	                    ; decremented every mS)
+	
+TotalizerDone4R:
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
     
 Notch_CT4_T9:
@@ -709,6 +768,36 @@ Notch_CT4_T2:
 ;*****************************************************************************************
 
     FIRE_INJ5                 ; Macro in Tim_BPEM488.s
+    
+;***********************************************************************************************
+; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
+;   Shadow Dash to calculate current fuel burn.
+;***********************************************************************************************
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
+    std  FDt            ; Copy result to "FDT" (update "FDt")
+	
+;***********************************************************************************************
+; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
+;   to the totalizer(open collector output)
+;***********************************************************************************************
+
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
+    bcs  Totalizer5R    ; If the cary bit of CCR is set, branch to Totalizer5R: ("FDcnt"
+	                    ;  rollover, pulse the totalizer)
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bra  TotalizerDone5R ; Branch to TotalizerDone5R:
+
+Totalizer5R:
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
+	ldaa #$03           ; Decimal 3->Accu A (3 mS)
+    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
+	                    ; decremented every mS)
+	
+TotalizerDone5R:
+
     jmp   StateHandlersDone   ; Jump to StateHandlersDone:
     
 Notch_CT4_T3:
@@ -748,6 +837,36 @@ Notch_CT1_T6:
 ;*****************************************************************************************
 
     FIRE_INJ1                 ; Macro in Tim_BPEM488.s
+    
+;***********************************************************************************************
+; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
+;   Shadow Dash to calculate current fuel burn.
+;***********************************************************************************************
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
+    std  FDt            ; Copy result to "FDT" (update "FDt")
+	
+;***********************************************************************************************
+; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
+;   to the totalizer(open collector output)
+;***********************************************************************************************
+
+    ldd  FDt             ; Fuel Delivery pulse width total(mS)-> Accu D
+	addd FDcnt           ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
+    bcs  Totalizer1R     ; If the cary bit of CCR is set, branch to Totalizer1R: ("FDcnt"
+	                     ;  rollover, pulse the totalizer)
+	std  FDcnt           ; Copy the result to "FDcnt" (update "FDcnt")
+    bra  TotalizerDone1R ; Branch to TotalizerDone1R:
+
+Totalizer1R:
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
+	ldaa #$03           ; Decimal 3->Accu A (3 mS)
+    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
+	                    ; decremented every mS)
+	
+TotalizerDone1R:
+    
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
     
 Notch_CT1_T7:
@@ -787,6 +906,43 @@ Notch_CT1_T10:
 ;*****************************************************************************************
 
     FIRE_INJ2                 ; Macro in Tim_BPEM488.s
+    
+;***********************************************************************************************
+; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
+;   Shadow Dash to calculate current fuel burn.
+;***********************************************************************************************
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
+    std  FDt            ; Copy result to "FDT" (update "FDt")
+	
+;***********************************************************************************************
+; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
+;   to the totalizer(open collector output)
+;***********************************************************************************************
+
+    ldd  FDt             ; Fuel Delivery pulse width total(mS)-> Accu D
+	addd FDcnt           ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
+    bcs  Totalizer2R     ; If the cary bit of CCR is set, branch to Totalizer2R: ("FDcnt"
+	                     ;  rollover, pulse the totalizer)
+	std  FDcnt           ; Copy the result to "FDcnt" (update "FDcnt")
+    bra  TotalizerDone2R ; Branch to TotalizerDone2R:
+
+Totalizer2R:
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
+	ldaa #$03           ; Decimal 3->Accu A (3 mS)
+    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
+	                    ; decremented every mS)
+                        
+;**********************************************************************
+; - De-Bug LED
+     ldaa  PORTK        ; Load ACC A with value in Port K            *
+     eora  #$80         ; Exclusive or with $10000000                * in use state
+     staa   PORTK       ; Copy to Port K (toggle Bit7)               * 
+                        ; LED2, board 87 to 112)                      *
+;**********************************************************************     
+	
+TotalizerDone2R:
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 StateHandlersDone:

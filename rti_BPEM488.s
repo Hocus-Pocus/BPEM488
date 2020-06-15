@@ -316,7 +316,6 @@ DoStall:
    clrw CrankPW      ; Cranking injector pulswidth (mS x 10)
    clrw FDpw         ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)
    clrw PW           ; Running engine injector pulsewidth (mS x 10)
-   clrw FD           ; Fuel Delivery pulse width (mS)
    clrw FDsec        ; Fuel delivery pulse width total over 1 second (mS)
    clr  OFCdelCnt    ; Overrun Fuel Cut Delay counter 
    clr  TOEdurCnt    ; Throttle Opening Enrichment duration counter   

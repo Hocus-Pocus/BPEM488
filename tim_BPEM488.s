@@ -86,8 +86,9 @@ TIM_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ; - Non RS232 variables - (declared in injcalcs_BPEM488.s)                                                                         
 ;*****************************************************************************************
 
-;InjOCadd1      ds 2 ; First injector output compare adder (5.12uS res or 2.56uS res)
-;InjOCadd2      ds 2 ; Second injector output compare adder (5.12uS res or 2.56uS res)
+;InjOCadd1:     ds 2 ; First injector output compare adder (5.12uS res or 2.56uS res)
+;InjOCadd2:     ds 2 ; Second injector output compare adder (5.12uS res or 2.56uS res)
+;FDpw:          ds 2 ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)
 ;FDt:           ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)
 ;FDcnt:         ds 2 ; Fuel delivery pulse width total(ms)(for totalizer pulse on rollover)
 ;AIOTcnt:       ds 1 ; Counter for AIOT totalizer pulse width
@@ -445,37 +446,7 @@ TIM_TC3_ISR:
     addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
     std  TIM_TC3H          ; Copy result to Timer IC/OC register 3 (Start OC operation)
                            ; (Should result in LED on for ~3 to ~25 mS)
-						   
-;***********************************************************************************************
-; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
-;   Shadow Dash to calculate current fuel burn.
-;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
-    addd FD             ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
-	
-;***********************************************************************************************
-; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
-;   to the totalizer(open collector output)
-;***********************************************************************************************
-
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
-	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
-    bcs  Totalizer1     ; If the cary bit of CCR is set, branch to Totalizer1: ("FDcnt"
-	                    ;  rollover, pulse the totalizer)
-	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
-    bra  TotalizerDone1 ; Branch to TotalizerDone1:
-
-Totalizer1:
-	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
-    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
-	ldaa #$03           ; Decimal 3->Accu A (3 mS)
-    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
-	                    ; decremented every mS)
-	
-TotalizerDone1:
-
-    rti                 ; Return from Interrupt
+    rti                    ; Return from Interrupt
 
 TIM_TC4_ISR:
 ;*****************************************************************************************
@@ -491,35 +462,6 @@ TIM_TC4_ISR:
     addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
     std  TIM_TC4H          ; Copy result to Timer IC/OC register 4(Start OC operation)
                            ; (Should result in LED on for ~3 to ~25 mS)
-                           
-;***********************************************************************************************
-; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
-;   Shadow Dash to calculate current fuel burn.
-;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
-    addd FD             ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
-	
-;***********************************************************************************************
-; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
-;   to the totalizer(open collector output)
-;***********************************************************************************************
-
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
-	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
-    bcs  Totalizer2     ; If the cary bit of CCR is set, branch to Totalizer1: ("FDcnt"
-	                    ;  rollover, pulse the totalizer)
-	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
-    bra  TotalizerDone2 ; Branch to TotalizerDone2:
-
-Totalizer2:
-	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
-    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
-	ldaa #$03           ; Decimal 3->Accu A (3 mS)
-    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
-	                    ; decremented every mS)
-	
-TotalizerDone2:
     rti                    ; Return from Interrupt
 
     
@@ -537,34 +479,6 @@ TIM_TC5_ISR:
     addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
     std  TIM_TC5H          ; Copy result to Timer IC/OC register 5(Start OC operation)
                            ; (Should result in LED on for ~3 to ~25 mS)
-;***********************************************************************************************
-; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
-;   Shadow Dash to calculate current fuel burn.
-;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
-    addd FD             ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
-	
-;***********************************************************************************************
-; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
-;   to the totalizer(open collector output)
-;***********************************************************************************************
-
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
-	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
-    bcs  Totalizer3     ; If the cary bit of CCR is set, branch to Totalizer1: ("FDcnt"
-	                    ;  rollover, pulse the totalizer)
-	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
-    bra  TotalizerDone3 ; Branch to TotalizerDone3:
-
-Totalizer3:
-	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
-    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
-	ldaa #$03           ; Decimal 3->Accu A (3 mS)
-    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
-	                    ; decremented every mS)
-	
-TotalizerDone3:
     rti                    ; Return from Interrupt
 
 TIM_TC6_ISR:
@@ -581,34 +495,6 @@ TIM_TC6_ISR:
     addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
     std  TIM_TC6H          ; Copy result to Timer IC/OC register 6(Start OC operation)
                            ; (Should result in LED on for ~3 to ~25 mS)
-;***********************************************************************************************
-; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
-;   Shadow Dash to calculate current fuel burn.
-;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
-    addd FD             ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
-	
-;***********************************************************************************************
-; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
-;   to the totalizer(open collector output)
-;***********************************************************************************************
-
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
-	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
-    bcs  Totalizer4     ; If the cary bit of CCR is set, branch to Totalizer1: ("FDcnt"
-	                    ;  rollover, pulse the totalizer)
-	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
-    bra  TotalizerDone4 ; Branch to TotalizerDone4:
-
-Totalizer4:
-	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
-    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
-	ldaa #$03           ; Decimal 3->Accu A (3 mS)
-    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
-	                    ; decremented every mS)
-	
-TotalizerDone4:
     rti                    ; Return from Interrupt
     
 TIM_TC7_ISR:
@@ -625,34 +511,6 @@ TIM_TC7_ISR:
     addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
     std  TIM_TC7H          ; Copy result to Timer IC/OC register(Start OC operation)
                            ; (Should result in LED on for ~3 to ~25 mS)
-;***********************************************************************************************
-; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
-;   Shadow Dash to calculate current fuel burn.
-;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
-    addd FD             ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
-	
-;***********************************************************************************************
-; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
-;   to the totalizer(open collector output)
-;***********************************************************************************************
-
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
-	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
-    bcs  Totalizer5     ; If the cary bit of CCR is set, branch to Totalizer1: ("FDcnt"
-	                    ;  rollover, pulse the totalizer)
-	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
-    bra  TotalizerDone5 ; Branch to TotalizerDone5:
-
-Totalizer5:
-	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
-    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
-	ldaa #$03           ; Decimal 3->Accu A (3 mS)
-    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
-	                    ; decremented every mS)
-	
-TotalizerDone5:
     rti                    ; Return from Interrupt
 
 TIM_CODE_END		EQU	*     ; * Represents the current value of the paged 

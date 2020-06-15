@@ -89,17 +89,6 @@ BPEM488_SHARED_VARS_START       EQU *   ; * Represents the current value of the 
 BPEM488_SHARED_VARS_START_LIN   EQU @   ; @ Represents the current value of the linear 
                                         ; program counter
                               
-;BPEM488_SHARED_VARS_START_XG    EQU (BPEM488_SHARED_VARS_START_LIN & $FFFF)
-
-;; - XGATE Variables -
-
-;		ORG   MMAP_XGATE_RAM_START_XG, MMAP_XGATE_RAM_START_LIN   ; $8000, $0F_8000
-        
-;BPEM488_XGATE_VARS_START_XG    EQU *   ; * Represents the current value of the paged 
-                                       ; program counter
-;BPEM488_XGATE_VARS_START_LIN   EQU @   ; @ Represents the current value of the linear 
-                                       ; program counter
-
 		ORG   MMAP_FLASH_FD_START, MMAP_FLASH_FD_START_LIN   ; $4000, $7F_4000
         
 ;*****************************************************************************************
@@ -151,25 +140,10 @@ BASE_TABS_START_LIN   EQU BPEM488_TABS_END_LIN
 ;*		FILL	$FF, 8-(*&7)	
        ALIGN 7,$FF          ; This is the better option
        
-;; - XGATE Code -
+; - XGATE Code -
 
 		ORG   MMAP_XG_FLASH_START_XG, MMAP_XG_FLASH_START_LIN   ; $0800, $78_0800 
         
-;BPEM488_XGATE_CODE_START_XG    EQU *   ; * Represents the current value of the paged 
-                                       ; program counter
-;BPEM488_XGATE_CODE_START_LIN   EQU @   ; @ Represents the current value of the linear 
-                                       ; program counter
-
-;		ORG   BPEM488_XGATE_CODE_END_XG, BPEM488_XGATE_CODE_END_LIN   
-        
-;; - XGATE Tables -
-
-;BPEM488_XGATE_TABS_START_XG    EQU *   ; * Represents the current value of the paged 
-                                       ; program counter
-;BPEM488_XGATE_TABS_START_LIN   EQU @   ; @ Represents the current value of the linear 
-                                       ; program counter
-
-;		ORG   BPEM488_XGATE_TABS_END_XG, BPEM488_XGATE_TABS_END_LIN 
 
        ALIGN 7,$FF        
 
@@ -262,7 +236,7 @@ PrimePW:      ds 2 ; Primer injector pulswidth (mS x 10)(offset=102)
 CrankPW:      ds 2 ; Cranking injector pulswidth (mS x 10)(offset=104)
 FDpw:         ds 2 ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)(offset=106)
 PW:           ds 2 ; Running engine injector pulsewidth (mS x 10)(offset=108)
-FD:           ds 2 ; Fuel Delivery pulse width (mS)(offset=110)
+Place110:     ds 2 ; Place holder(offset=110)
 FDsec:        ds 2 ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
 OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter(offset=114)
 TOEdurCnt:    ds 1 ; Throttle Opening Enrichment duration counter(offset=115)
@@ -637,7 +611,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
    clrw CrankPW      ; Cranking injector pulswidth (mS x 10)(offset=104)
    clrw FDpw         ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)(offset=106)
    clrw PW           ; Running engine injector pulsewidth (mS x 10)(offset=108)
-   clrw FD           ; Fuel Delivery pulse width (mS)(offset=110)
+   clrw Place110     ; Place holder(offset=110)
    clrw FDsec        ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
    clr  OFCdelCnt    ; Overrun Fuel Cut Delay counter (offset=114)
    clr  TOEdurCnt    ; Throttle Opening Enrichment duration counter(offset=115)
@@ -849,7 +823,7 @@ PA6Done:
 ;   been changed. 
 ;*****************************************************************************************
 
-;    DEADBAND_Z1_Z2   ; Macro in injcalcs_BPEM488.s
+    DEADBAND_Z1_Z2   ; Macro in injcalcs_BPEM488.s
     
 ;*****************************************************************************************
 ; - Injector dead band is the time required for the injectors to open and close and must
@@ -916,30 +890,175 @@ PA6Done:
 
     FIRE_INJ1               ; Macro in tim_BEEM488.s
     
+;***********************************************************************************************
+; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
+;   Shadow Dash to calculate current fuel burn.
+;***********************************************************************************************
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
+    std  FDt            ; Copy result to "FDT" (update "FDt")
+	
+;***********************************************************************************************
+; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
+;   to the totalizer(open collector output)
+;***********************************************************************************************
+
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
+    bcs  Totalizer1     ; If the cary bit of CCR is set, branch to Totalizer1: ("FDcnt"
+	                    ;  rollover, pulse the totalizer)
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bra  TotalizerDone1 ; Branch to TotalizerDone1:
+
+Totalizer1:
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
+	ldaa #$03           ; Decimal 3->Accu A (3 mS)
+    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
+	                    ; decremented every mS)
+	
+TotalizerDone1:
+    
 ;*****************************************************************************************
 ; - Pulse Inj2 (Cylinders 9&4) with value in "primePWtk"
 ;*****************************************************************************************
 
     FIRE_INJ2               ; Macro in tim_BEEM488.s
     
+;***********************************************************************************************
+; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
+;   Shadow Dash to calculate current fuel burn.
+;***********************************************************************************************
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
+    std  FDt            ; Copy result to "FDT" (update "FDt")
+	
+;***********************************************************************************************
+; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
+;   to the totalizer(open collector output)
+;***********************************************************************************************
+
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
+    bcs  Totalizer2     ; If the cary bit of CCR is set, branch to Totalizer2: ("FDcnt"
+	                    ;  rollover, pulse the totalizer)
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bra  TotalizerDone2 ; Branch to TotalizerDone2:
+
+Totalizer2:
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
+	ldaa #$03           ; Decimal 3->Accu A (3 mS)
+    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
+	                    ; decremented every mS)
+	
+TotalizerDone2:
+
 ;*****************************************************************************************
 ; - Pulse Inj3 (Cylinders 3&6) with value in "primePWtk"
 ;*****************************************************************************************
 
     FIRE_INJ3               ; Macro in tim_BEEM488.s
-                                                
+    
+;***********************************************************************************************
+; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
+;   Shadow Dash to calculate current fuel burn.
+;***********************************************************************************************
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
+    std  FDt            ; Copy result to "FDT" (update "FDt")
+	
+;***********************************************************************************************
+; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
+;   to the totalizer(open collector output)
+;***********************************************************************************************
+
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
+    bcs  Totalizer3     ; If the cary bit of CCR is set, branch to Totalizer3: ("FDcnt"
+	                    ;  rollover, pulse the totalizer)
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bra  TotalizerDone3 ; Branch to TotalizerDone3:
+
+Totalizer3:
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
+	ldaa #$03           ; Decimal 3->Accu A (3 mS)
+    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
+	                    ; decremented every mS)
+	
+TotalizerDone3:
+
 ;*****************************************************************************************
 ; - Pulse Inj4 (Cylinders 5&8) with value in "primePWtk"
 ;*****************************************************************************************
 
     FIRE_INJ4               ; Macro in tim_BEEM488.s
     
+;***********************************************************************************************
+; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
+;   Shadow Dash to calculate current fuel burn.
+;***********************************************************************************************
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
+    std  FDt            ; Copy result to "FDT" (update "FDt")
+	
+;***********************************************************************************************
+; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
+;   to the totalizer(open collector output)
+;***********************************************************************************************
+
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
+    bcs  Totalizer4     ; If the cary bit of CCR is set, branch to Totalizer4: ("FDcnt"
+	                    ;  rollover, pulse the totalizer)
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bra  TotalizerDone4 ; Branch to TotalizerDone4:
+
+Totalizer4:
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
+	ldaa #$03           ; Decimal 3->Accu A (3 mS)
+    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
+	                    ; decremented every mS)
+	
+TotalizerDone4:
+
 ;*****************************************************************************************
 ; - Pulse Inj5 (Cylinders 7&2) with value in "primePWtk"
 ;*****************************************************************************************
 
     FIRE_INJ5               ; Macro in tim_BEEM488.s
+    
+;***********************************************************************************************
+; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
+;   Shadow Dash to calculate current fuel burn.
+;***********************************************************************************************
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
+    std  FDt            ; Copy result to "FDT" (update "FDt")
 	
+;***********************************************************************************************
+; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
+;   to the totalizer(open collector output)
+;***********************************************************************************************
+
+    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
+    bcs  Totalizer5     ; If the cary bit of CCR is set, branch to Totalizer5: ("FDcnt"
+	                    ;  rollover, pulse the totalizer)
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bra  TotalizerDone5 ; Branch to TotalizerDone5:
+
+Totalizer5:
+	std  FDcnt          ; Copy the result to "FDcnt" (update "FDcnt")
+    bset PORTB,AIOT     ; Set "AIOT" pin on Port B (PB6)(start totalizer pulse)
+	ldaa #$03           ; Decimal 3->Accu A (3 mS)
+    staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
+	                    ; decremented every mS)
+	
+TotalizerDone5:
+
 ;*****************************************************************************************
 ; - Set up the "engine" bit field in preparation for cranking.
 ;*****************************************************************************************
@@ -948,7 +1067,7 @@ PA6Done:
    bclr engine,run     ; Clear the "run" bit of "engine" bit field
    bset engine,WUEon   ; Set "WUEon" bit of "engine" bit field
    bset engine,ASEon   ; Set "ASEon" bit of "engine" bit field
-   clr   ASEcnt        ; Clear the after-start enrichment counter variable
+   clr  ASEcnt         ; Clear the after-start enrichment counter variable
    
 ;*****************************************************************************************
 ; - Set the "base512" bit and clear the "base256" bit of the "engine2" bit field in 
@@ -995,7 +1114,7 @@ PA6Done:
 ;*****************************************************************************************
 
 MainLoop:
-
+  
 ;*****************************************************************************************
 ; Coding experiments
 ;*****************************************************************************************
@@ -1064,7 +1183,7 @@ MainLoop:
 ;**********************************************************************
 ; - De-Bug LED
 ;     ldaa  PORTK        ; Load ACC A with value in Port K            *
-;     eora  #$80         ; Exclusive or with $10000000                *
+;     eora  #$80         ; Exclusive or with $10000000                * in use state
 ;     staa   PORTK       ; Copy to Port K (toggle Bit7)               * 
                         ; LED2, board 87 to 112)                      *
 ;**********************************************************************     
@@ -1370,7 +1489,6 @@ CrankMode:
     clrw  CrankPWtk     ; Clear Cranking injector pulswidth timer ticks(uS x 5.12)
     clrw  CrankPW       ; Cranking injector pulswidth (mS x 10)
     clrw  FDpw          ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)
-    clrw  FD            ; Fuel Delivery pulse width (mS)
     job   MainLoopEnd   ; Jump or branch to "MainLoop" (keep looping here until no 
 	                    ; longer in flood clear mode)
 
