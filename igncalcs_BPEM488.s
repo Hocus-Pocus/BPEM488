@@ -284,7 +284,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 	ldx  #$0064       ; Decimal 100 -> Accu X
 	ediv              ;(Y:D)/(X)=Y;Rem->D (("STandItrmx10" * Degx10tk512)/100 
 	                  ; = "Spantk"
-	std  Spantk       ; Copy result to "Spantk"
+	sty  Spantk       ; Copy result to "Spantk"
                       
 ;******************************************************************************************
 ; - Multiply dwell time (mS*10) by the correction and divide by 1000 (%*10)("DwellFin")
@@ -335,7 +335,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 	ldx  #$0064       ; Decimal 100 -> Accu X
 	ediv              ;(Y:D)/(X)=Y;Rem->D (("STandItrmx10" * Degx10tk512)/100 
 	                  ; = "Spantk"
-	std  STandItrmtk  ; Copy result to "STandItrmtk"		
+	sty  STandItrmtk  ; Copy result to "STandItrmtk"		
 
 ;*****************************************************************************************
 ; - Add "STandItrmtk" and "DwellFintk" = "Advancetk"  
@@ -369,7 +369,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 	ldx  #$0064       ; Decimal 100 -> Accu X
 	ediv              ;(Y:D)/(X)=Y;Rem->D (("STandItrmx10" * Degx10tk256)/100 
 	                  ; = "Spantk"
-	std  Spantk       ; Copy result to "Spantk"
+	sty  Spantk       ; Copy result to "Spantk"
                       
 ;******************************************************************************************
 ; - Multiply dwell time (mS*10) by the correction and divide by 1000 (%*10)("DwellFin")
@@ -420,7 +420,7 @@ IGNCALCS_VARS_END_LIN	EQU	@ ; @ Represents the current value of the linear
 	ldx  #$0064       ; Decimal 100 -> Accu X
 	ediv              ;(Y:D)/(X)=Y;Rem->D (("STandItrmx10" * Degx10tk256)/100 
 	                  ; = "Spantk"
-	std  STandItrmtk  ; Copy result to "STandItrmtk"		
+	sty  STandItrmtk  ; Copy result to "STandItrmtk"		
 
 ;*****************************************************************************************
 ; - Add "STandItrmtk" and "DwellFintk" = "Advancetk"  

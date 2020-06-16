@@ -193,7 +193,7 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 	ldx  #$0064       ; Decimal 100 -> Accu X
 	ediv              ;(Y:D)/(X)=Y;Rem->D ((InjDelDegx10" * Degx10tk512)/100 
 	                  ; = "InjOCadd1"
-	std  InjOCadd1    ; Copy result to "InjOCadd1"
+	sty  InjOCadd1    ; Copy result to "InjOCadd1"
 	
 #emac
 
@@ -215,7 +215,7 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 	ldx  #$0064       ; Decimal 100 -> Accu X
 	ediv              ;(Y:D)/(X)=Y;Rem->D ((InjDelDegx10" * Degx10tk256)/100 
 	                  ; = "InjOCadd1"
-	std  InjOCadd1    ; Copy result to "InjOCadd1"
+	sty  InjOCadd1    ; Copy result to "InjOCadd1"
 	
 #emac
 

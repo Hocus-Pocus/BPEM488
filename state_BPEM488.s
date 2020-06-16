@@ -631,7 +631,11 @@ Notch_CT3_T4:
 ;   width for injectors 3&6.    
 ;*****************************************************************************************
 
-    FIRE_INJ3                 ; Macro in Tim_BPEM488.s
+    brset engine,FldClr,INJ3FldClr ; If "FldClr" bit of "engine" bit field is set branch 
+                                   ; to INJ3FldClr:
+    FIRE_INJ3                      ; Macro in Tim_BPEM488.s
+    
+INJ3FldClr:
     
 ;***********************************************************************************************
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
@@ -699,7 +703,11 @@ Notch_CT4_T8:
 ;   width for injectors 5&8.    
 ;*****************************************************************************************
 
+    brset engine,FldClr,INJ4FldClr ; If "FldClr" bit of "engine" bit field is set branch 
+                                   ; to INJ4FldClr:
     FIRE_INJ4                 ; Macro in Tim_BPEM488.s
+    
+INJ4FldClr:
     
 ;***********************************************************************************************
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
@@ -767,7 +775,11 @@ Notch_CT4_T2:
 ;   open. Start the pulse width for injectors 7&2.    
 ;*****************************************************************************************
 
+    brset engine,FldClr,INJ5FldClr ; If "FldClr" bit of "engine" bit field is set branch 
+                                   ; to INJ5FldClr:
     FIRE_INJ5                 ; Macro in Tim_BPEM488.s
+    
+INJ5FldClr:
     
 ;***********************************************************************************************
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
@@ -836,7 +848,12 @@ Notch_CT1_T6:
 ;   width for injectors 1&10.    
 ;*****************************************************************************************
 
+
+    brset engine,FldClr,INJ1FldClr ; If "FldClr" bit of "engine" bit field is set branch 
+                                   ; to INJ1FldClr:
     FIRE_INJ1                 ; Macro in Tim_BPEM488.s
+    
+INJ1FldClr:
     
 ;***********************************************************************************************
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
@@ -905,7 +922,12 @@ Notch_CT1_T10:
 ;   width for injectors 9&4.    
 ;*****************************************************************************************
 
+
+    brset engine,FldClr,INJ2FldClr ; If "FldClr" bit of "engine" bit field is set branch 
+                                   ; to INJ2FldClr:
     FIRE_INJ2                 ; Macro in Tim_BPEM488.s
+    
+INJ2FldClr:
     
 ;***********************************************************************************************
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 

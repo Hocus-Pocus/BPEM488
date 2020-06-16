@@ -1767,7 +1767,7 @@ ColdMul_F:         ; 2 bytes for Throttle Opening Enrichment multiplyer at -40F 
     dw $0082         ; 130% 
 	
 InjDelDegx10_F:    ; 2 bytes for Injection delay from trigger to start of injection (deg x 10) (offset = 984)($03D8)
-    dw $0001       ; 1 = 0.1 degree	
+    dw $0002       ; 2 = 0.2 degree	
 	
 OFCtps_F:          ; 2 bytes for Overrun Fuel Cut min TpS%x10(offset = 986)($03DA)
     dw $0014       ; 20 = 2%
@@ -1782,7 +1782,7 @@ OFCdel_F:          ; 2 bytes for Overrun Fuel Cut delay time (Sec x 10)(offset =
     dw $0014       ; 20 = 2.0Sec
 	
 crankingRPM_F:     ; 2 bytes for crank/run transition (RPM)(offset = 994)($03E2)
-    dw $015E       ; 350
+    dw $012C       ; 300
     
 floodClear_F:      ; 2 bytes for TPS position for flood clear (% x 10)(offset = 996)($03E4)
     dw $0384       ; 900
