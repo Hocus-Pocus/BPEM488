@@ -439,9 +439,9 @@ NoTOEdurDec:
 ;   Studio and Shadow Dash for fuel burn calculations
 ;*****************************************************************************************
 
-    ldd   FDt     ; "FDt"->Accu D (fuel delivery pulse width time total)
+    ldd   FDt     ; "FDt"->Accu D (fuel delivery pulse width time total)(mS x 10)
 	Std   FDsec   ; Copy to "FDsec" (fuel delivery pulse width time total per second)
-	clrw  FDt     ; Clear "FDt" (fuel delivery pulse width time total)
+	clrw  FDt     ; Clear "FDt" (fuel delivery pulse width time total)(mS x 10)
        
 #emac
 

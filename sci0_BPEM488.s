@@ -552,7 +552,7 @@ ModeO:
     ldaa  secH             ; Load accu A with value at "secH"
     staa  SCI0DRL          ; Copy to SCI0DRL (first byte to send)
     movw  #$0000,txcnt     ; Clear "txcnt"
-    movw  #$0093,txgoalMSB ; Load "txgoalMSB:txgoalLSB" with decimal 147(number of bytes to send) REAL TIME VARIABLES HERE!!!!!!!!
+    movw  #$0095,txgoalMSB ; Load "txgoalMSB:txgoalLSB" with decimal 149(number of bytes to send) REAL TIME VARIABLES HERE!!!!!!!!
     movb  #$02,txmode      ; Load "txmode" with decimal 2
 			
 DoTx:

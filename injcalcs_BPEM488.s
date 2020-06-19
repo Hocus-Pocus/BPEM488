@@ -1347,6 +1347,63 @@ NoPWrunCalcs:
 PWrunCalcsDone:    
 	                 
 #emac
+
+#macro FUEL_BURN_CALCS, 0
+
+;*****************************************************************************************
+; - Look up the injector flow rate for 2 injectors (CC/Min)                                                                            *  
+;*****************************************************************************************
+
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy   #veBins_E   ; Load index register Y with address of first configurable 
+                      ; constant on buffer RAM page 1 (veBins_E)
+    ldx   $03F0,Y     ; Load Accu X with value in buffer RAM page 1 (offset 1008)($03F0) 
+                      ; ("InjPrFlo_F")
+    tfr  X,Y          ; "InjPrFlo_F"-> Accu Y
+                      
+;*****************************************************************************************
+; - Calculate current fuel burn in Litres per Hour: (Injector open time over 1 second  
+;   x 60 = Injector open time for 1 minute. Injector open time for 1 minute x injector  
+;   flow rate per minute = injector flow for 1 minute. Injector flow for 1 minute x 60  
+;   = injector flow per hour. For integer math:
+;    ((("FDsec"/10)*6)*InjPrFlo_F)/10,000= "LpH"(Litres per hour x 10)                                                                                    
+;*****************************************************************************************
+
+    ldd  FDsec       ; "FDsec"->Accu D (Fuel delivery pulse width total for 1 Sec (mS*10) 
+    ldx  #$000A      ; Decimal 10 -> Accu X
+    idiv             ;(D)/(X)->Xrem->D "FDsec"/10
+    tfr  X,D         ; Result-> Accu D
+    emul             ; (D)*(Y)->Y:D ("FDsec"/10)*"InjPrFlo_F"
+    ldx  #$2710      ; Decimal 10,000-> Accu X   
+	ediv             ;(Y:D)/)X)->Y;Rem->D (("FDsec"/10)*"InjPrFlo_F")/10,000="LpH"
+    sty  LpH         ; Copy result to "LpH" (Litres per hour x 10)
+
+;*****************************************************************************************
+; - Calculate current fuel burn in Kilometers per Litre                                                                           
+;*****************************************************************************************
+
+    ldd  KPH         ; "KPH" -> Accu D
+    ldy  #$000A      ; Decimal 10 -> Accy Y
+    emul             ; (D)*(Y)->Y:D "KPH"*10
+    ldx  LpH         ; "LpH"-> Accu X  
+	ediv             ;(Y:D)/)X)->Y;Rem->D ("KPH"*10)/LpH = KmpL
+    sty  KmpL        ; Result -> "KmpL"
+
+;*****************************************************************************************
+; - Convert fuel burn in Kilometers per Litre to Miles per Gallon Imperial                                                                           
+;*****************************************************************************************
+
+    ldd  KmpL        ; "KmpL" -> Accu D
+    ldy  #$0064      ; Decimal 100 -> Accy Y
+    emul             ; (D)*(Y)->Y:D "KmpL"*100
+    tfr  D,Y         ; Result Lo word-> Accu Y   
+    ldd  #$011A      ; Decimal 282-> Accu D (2.82 is conversion factor)
+    emul             ; (D)*(Y)->Y:D ("KmpL"*100)*282
+    ldx  #$2700      ; Decimal 10,000 -> Accu X    
+	ediv             ;(Y:D)/)X)->Y;Rem->D (("KmpL"*100)*282)/10,000= "MpG"
+    sty   MpG        ; Result -> "MpG"
+
+#emac
 					 
 ;*****************************************************************************************
 ;* - Code -                                                                              *  

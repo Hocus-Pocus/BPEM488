@@ -393,11 +393,33 @@ CASprdDone:
 	
     brset  engine,run,CASprdOK ; If "run" bit of "engine" bit field is set branch to 
 	                      ; CASDone:
-    ldd   CASprd512       ; "CASprd512"-> Accu D (CAS period in 5.12uS resolution)   						  
-	cpd   #$1E84          ; Compare with decimal 7812 ("CASprdtk" for 300 RPM @5.12uS 
-	                      ; time base)
-	bhi   StillCranking   ; Period is greater than that for 300 RPM so engine is still
-	                      ; cranking. Branch to StillCranking:
+                          
+;*****************************************************************************************
+; - Look up the cranking RPM limit ("crankingRPM_F")
+;*****************************************************************************************
+                          
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy   #veBins_E   ; Load index register Y with address of first configurable 
+                      ; constant on buffer RAM page 1 (veBins_E)
+    ldx   $03E2,Y     ; Load Accu X with value in buffer RAM page 1 (offset 994)($03E2)
+                      ; ("crankingRPM_F", cranking RPM limit)
+
+;*****************************************************************************************
+; - Convert to crank angle sensor period ticks in 5.12uS resolution
+;*****************************************************************************************
+
+    ldd  #$C346           ; Load accu D with Lo word of  10 cyl RPMk (5.12uS clock tick)
+    ldy  #$0023           ; Load accu Y with Hi word of 10 cyl RPMk (5.12uS clock tick)
+    ediv                  ; Extended divide (Y:D)/(X)=>Y;Rem=>D "RPMk" / "crankingRPM_F"
+                          ; = crank angle sensor period in 5.12uS resolution
+                          
+;*****************************************************************************************
+; - Compare the limit period with the current period
+;*****************************************************************************************
+
+    cpy   CASprd512       ; Compare cranking RPM limit period to "CASprd512"
+	blo   StillCranking   ; Period is greater than that for "crankingRPM_F" so engine is 
+	                      ; still cranking. Branch to StillCranking:
     bra   SwitchToRun     ; Branch to SwitchToRun: 
 	
 SwitchToRun:
@@ -641,16 +663,16 @@ INJ3FldClr:
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
 ;   Shadow Dash to calculate current fuel burn.
 ;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
     addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
+    std  FDt            ; Copy result to "FDT" (update "FDt")(mS x 10)
 	
 ;***********************************************************************************************
 ; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
 ;   to the totalizer(open collector output)
 ;***********************************************************************************************
 
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10))-> Accu D
 	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
     bcs  Totalizer3R     ; If the cary bit of CCR is set, branch to Totalizer3R: ("FDcnt"
 	                    ;  rollover, pulse the totalizer)
@@ -713,16 +735,16 @@ INJ4FldClr:
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
 ;   Shadow Dash to calculate current fuel burn.
 ;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
     addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
+    std  FDt            ; Copy result to "FDT" (update "FDt")(mS x 10)
 	
 ;***********************************************************************************************
 ; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
 ;   to the totalizer(open collector output)
 ;***********************************************************************************************
 
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
 	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
     bcs  Totalizer4R     ; If the cary bit of CCR is set, branch to Totalizer4R: ("FDcnt"
 	                    ;  rollover, pulse the totalizer)
@@ -785,16 +807,16 @@ INJ5FldClr:
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
 ;   Shadow Dash to calculate current fuel burn.
 ;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
     addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
+    std  FDt            ; Copy result to "FDT" (update "FDt")(mS x 10)
 	
 ;***********************************************************************************************
 ; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
 ;   to the totalizer(open collector output)
 ;***********************************************************************************************
 
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
 	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
     bcs  Totalizer5R    ; If the cary bit of CCR is set, branch to Totalizer5R: ("FDcnt"
 	                    ;  rollover, pulse the totalizer)
@@ -859,16 +881,16 @@ INJ1FldClr:
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
 ;   Shadow Dash to calculate current fuel burn.
 ;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
     addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
+    std  FDt            ; Copy result to "FDT" (update "FDt")(mS x 10)
 	
 ;***********************************************************************************************
 ; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
 ;   to the totalizer(open collector output)
 ;***********************************************************************************************
 
-    ldd  FDt             ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt             ; Fuel Delivery pulse width total(mS x 10)-> Accu D
 	addd FDcnt           ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
     bcs  Totalizer1R     ; If the cary bit of CCR is set, branch to Totalizer1R: ("FDcnt"
 	                     ;  rollover, pulse the totalizer)
@@ -933,16 +955,16 @@ INJ2FldClr:
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
 ;   Shadow Dash to calculate current fuel burn.
 ;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
     addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
+    std  FDt            ; Copy result to "FDT" (update "FDt")(mS x 10)
 	
 ;***********************************************************************************************
 ; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
 ;   to the totalizer(open collector output)
 ;***********************************************************************************************
 
-    ldd  FDt             ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt             ; Fuel Delivery pulse width total(mS x 10)-> Accu D
 	addd FDcnt           ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
     bcs  Totalizer2R     ; If the cary bit of CCR is set, branch to Totalizer2R: ("FDcnt"
 	                     ;  rollover, pulse the totalizer)

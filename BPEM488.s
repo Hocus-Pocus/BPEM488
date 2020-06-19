@@ -236,8 +236,8 @@ PrimePW:      ds 2 ; Primer injector pulswidth (mS x 10)(offset=102)
 CrankPW:      ds 2 ; Cranking injector pulswidth (mS x 10)(offset=104)
 FDpw:         ds 2 ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)(offset=106)
 PW:           ds 2 ; Running engine injector pulsewidth (mS x 10)(offset=108)
-Place110:     ds 2 ; Place holder(offset=110)
-FDsec:        ds 2 ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
+LpH:          ds 2 ; Fuel burn Litres per hour(offset=110)
+FDsec:        ds 2 ; Fuel delivery pulse width total over 1 second (mS x 10)(offset=112)
 OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter(offset=114)
 TOEdurCnt:    ds 1 ; Throttle Opening Enrichment duration counter(offset=115)
 FDt:          ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)(offset=116)
@@ -248,7 +248,7 @@ FDt:          ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)(offse
 ;*****************************************************************************************
 	 
 STcurr:         ds 2 ; Current value in ST table (Degrees x 10)(offset=118)
-Place120:       ds 2 ; Place holder(offset=120) 
+KmpL:           ds 2 ; Fuel burn kilometers per litre(offset=120) 
 DwellCor:       ds 2 ; Coil dwell voltage correction (%*10)(offset=122)
 DwellFin:       ds 2 ; ("Dwell" * "DwellCor") (mS*10)(offset=124)
 STandItrmx10:   ds 2 ; stCurr and Itmx10 (degrees*10)(offset=126)
@@ -277,12 +277,13 @@ AAoffbits:    ds 1  ; Audio Alarm Off status bit field(offset=138)
 StateStatus:  ds 1  ; State status bit field(offset=139) 
 LoopTime:     ds 2  ; Program main loop time (loops/Sec)(offset=140)
 DutyCyclex10: ds 2  ; Injector duty cycle in run mode (% x 10)(offset=142)
-TestValw:     ds 2  ; Word test value (for program developement only)(offset=144)
-testValb:     ds 1  ; Byte test value (for program developement only)(offset=146)
+MpG:          ds 2  ; Fuel burn miles per gallon Imperial (offset=144)
+TestValw:     ds 2  ; Word test value (for program developement only)(offset=146)
+testValb:     ds 1  ; Byte test value (for program developement only)(offset=148)
 
 ;*****************************************************************************************
 ;*****************************************************************************************
-; - This marks the end of the real time variables (147 bytes in total)
+; - This marks the end of the real time variables (149 bytes in total)
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; --------------------------------- RS232 equates ----------------------------------------                                                                       
@@ -611,7 +612,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
    clrw CrankPW      ; Cranking injector pulswidth (mS x 10)(offset=104)
    clrw FDpw         ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)(offset=106)
    clrw PW           ; Running engine injector pulsewidth (mS x 10)(offset=108)
-   clrw Place110     ; Place holder(offset=110)
+   clrw LpH          ; Fuel burn Litres per hour(offset=110)
    clrw FDsec        ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
    clr  OFCdelCnt    ; Overrun Fuel Cut Delay counter (offset=114)
    clr  TOEdurCnt    ; Throttle Opening Enrichment duration counter(offset=115)
@@ -623,7 +624,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
 ;*****************************************************************************************
 	 
    clrw STcurr         ; Current value in ST table (Degrees x 10)(offset=118)
-   clrw Place120       ; Place holder(offset=120) 
+   clrw KMpL           ; Fuel burn kilometers per litre(offset=120) 
    clrw DwellCor       ; Coil dwell voltage correction (%*10)(offset=122)
    clrw DwellFin       ; ("Dwell" * "DwellCor") (mS*10)(offset=124)
    clrw STandItrmx10   ; stCurr and Itmx10 (degrees*10)(offset=126)
@@ -652,8 +653,9 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
    clr  StateStatus  ; State status bit field(offset=139) 
    clrw LoopTime     ; Program main loop time (loops/Sec)(offset=140)
    clrw DutyCyclex10 ; Injector duty cycle in run mode (% x 10)(offset=142)
-   clrw TestValw     ; Word test value (for program developement only)(offset=143)
-   clr  testValb     ; Byte test value (for program developement only)(offset=145)
+   clrw MpG          ; Fuel burn miles per gallon Imperial (offset=144)
+   clrw TestValw     ; Word test value (for program developement only)(offset=146)
+   clr  testValb     ; Byte test value (for program developement only)(offset=148)
 
 
 ;*****************************************************************************************
@@ -894,16 +896,16 @@ PA6Done:
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
 ;   Shadow Dash to calculate current fuel burn.
 ;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
     addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
+    std  FDt            ; Copy result to "FDT" (update "FDt")(mS x 10)
 	
 ;***********************************************************************************************
 ; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
 ;   to the totalizer(open collector output)
 ;***********************************************************************************************
 
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
 	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
     bcs  Totalizer1     ; If the cary bit of CCR is set, branch to Totalizer1: ("FDcnt"
 	                    ;  rollover, pulse the totalizer)
@@ -929,16 +931,16 @@ TotalizerDone1:
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
 ;   Shadow Dash to calculate current fuel burn.
 ;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
     addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
+    std  FDt            ; Copy result to "FDT" (update "FDt")(mS x 10)
 	
 ;***********************************************************************************************
 ; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
 ;   to the totalizer(open collector output)
 ;***********************************************************************************************
 
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
 	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
     bcs  Totalizer2     ; If the cary bit of CCR is set, branch to Totalizer2: ("FDcnt"
 	                    ;  rollover, pulse the totalizer)
@@ -964,16 +966,16 @@ TotalizerDone2:
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
 ;   Shadow Dash to calculate current fuel burn.
 ;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
     addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
+    std  FDt            ; Copy result to "FDT" (update "FDt")(mS x 10)
 	
 ;***********************************************************************************************
 ; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
 ;   to the totalizer(open collector output)
 ;***********************************************************************************************
 
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
 	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
     bcs  Totalizer3     ; If the cary bit of CCR is set, branch to Totalizer3: ("FDcnt"
 	                    ;  rollover, pulse the totalizer)
@@ -999,16 +1001,16 @@ TotalizerDone3:
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
 ;   Shadow Dash to calculate current fuel burn.
 ;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
     addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
+    std  FDt            ; Copy result to "FDT" (update "FDt")(mS x 10)
 	
 ;***********************************************************************************************
 ; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
 ;   to the totalizer(open collector output)
 ;***********************************************************************************************
 
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
 	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
     bcs  Totalizer4     ; If the cary bit of CCR is set, branch to Totalizer4: ("FDcnt"
 	                    ;  rollover, pulse the totalizer)
@@ -1034,16 +1036,16 @@ TotalizerDone4:
 ; - Update Fuel Delivery Pulse Width Total so the results can be used by Tuner Studio and 
 ;   Shadow Dash to calculate current fuel burn.
 ;***********************************************************************************************
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
     addd FDpw           ; (A:B)+(M:M+1->A:B Add  Fuel Delivery pulse width (mS x 10)
-    std  FDt            ; Copy result to "FDT" (update "FDt")
+    std  FDt            ; Copy result to "FDT" (update "FDt")(mS x 10)
 	
 ;***********************************************************************************************
 ; - Update the Fuel Delivery counter so that on roll over (65535mS)a pulsed signal can be sent to the
 ;   to the totalizer(open collector output)
 ;***********************************************************************************************
 
-    ldd  FDt            ; Fuel Delivery pulse width total(mS)-> Accu D
+    ldd  FDt            ; Fuel Delivery pulse width total(mS x 10)-> Accu D
 	addd FDcnt          ; (A:B)+(M:M+1)->A:B (fuel delivery pulsewidth + fuel delivery counter)
     bcs  Totalizer5     ; If the cary bit of CCR is set, branch to Totalizer5: ("FDcnt"
 	                    ;  rollover, pulse the totalizer)
@@ -1600,6 +1602,13 @@ NO_WUE_ASE:
 ;*****************************************************************************************
 
     RUN_PW_CALCS       ; Macro in injcalcsBPEM.s
+    
+;*****************************************************************************************
+; - Calculate fuel burn Litres per Hour ("LpH"), Kilometers per Litre ("KmpL") and
+;   Miles per Gallon Imperial ("MpG")
+;*****************************************************************************************
+
+    FUEL_BURN_CALCS       ; Macro in injcalcsBPEM.s    
 	
 ;*****************************************************************************************
 ; ----------------------- End Of Injector Calculations Section ---------------------------
@@ -1802,8 +1811,8 @@ reqFuel_F:         ; 2 bytes for Pulse width for 14.7 AFR @ 100% VE (mS x 10)(of
 enginesize_F:      ; 2 bytes for displacement of two engine cylinders (for TS reqFuel calcs only)(cc)(offset = 1006)($03EE)
     dw $640        ; 1600
 	
-InjPrFlo_F         ; 2 bytes for Pair of injectors flow rate (L/hr x 100)(offset = 1008)($03F0) 
-    dw $0190       ; Decimal 400 = 40L/Hr
+InjPrFlo_F         ; 2 bytes for Pair of injectors flow rate (CC/Min)(offset = 1008)($03F0) 
+    dw $019C       ; Decimal 412 = 412 CC/Min
 	
 staged_pri_size_F: ; 1 byte for flow rate of 1 injector (for TS reqFuel calcs only)(cc)(offset = 1010)($03F2)
     db $FC         ; 252

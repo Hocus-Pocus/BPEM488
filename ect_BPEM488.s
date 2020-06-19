@@ -363,15 +363,19 @@ RunRPMDone:
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Do KPH calculations for 2.56uS time base when there is a new input capture period
-;   using 32x16 divide                            
+;   using 32x16 divide 
+; - NOTE! for KPH in 0.1KPH resolution use 2828907 $002B2A6B                           
 ;*****************************************************************************************
 RunKPH:
 
-    ldd  #$510B         ; Load accu D with Lo word of KPHk
-    ldy  #$0004         ; Load accu Y with Hi word of KPHk
+;    ldd  #$510B         ; Load accu D with Lo word of KPHk
+;    ldy  #$0004         ; Load accu Y with Hi word of KPHk
+    ldd  #$2A6B         ; Load accu D with Lo word of KPHk
+    ldy  #$002B         ; Load accu Y with Hi word of KPHk
     ldx  VSSprd         ; Load "X" register with value in "VSSprd"
     ediv                ; Extended divide (Y:D)/(X)=>Y;Rem=>D (Divide "KPHk" by "VSSprd")
-    sty  KPH            ; Copy result to "KPH"
+;    sty  KPH            ; Copy result to "KPH"
+    sty  KPH            ; Copy result to "KPH" (KPH*10)
     bclr ICflgs,KPHcalc ; Clear "KPHcalc" bit of "ICflgs"
 	
 RunKPHDone:
