@@ -55,9 +55,8 @@
 ;*****************************************************************************************
 ;* Version History:                                                                      *
 ;*    May 18 2020                                                                        *
-;*    - BPEM version begins (work in progress)                                           *
-;*    December 8 2020                                                                    *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
+;*    - Update December 10 2020                                                          *
 ;*****************************************************************************************
 ;*****************************************************************************************
 ;* - Configuration -                                                                     *
@@ -93,39 +92,26 @@ RTI_VARS_START_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - "engine" equates
-;***************************************************************************************** 
-;OFCdelon     equ  $01 ; %00000001, bit 0, 0 = OFC timer not counting down(Grn), 
-                                        ; 1 = OFC timer counting down(Red)
-;crank        equ  $02 ; %00000010, bit 1, 0 = engine not cranking(Grn), 
-                                        ; 1 = engine cranking(Red)
-;run          equ  $04 ; %00000100, bit 2, 0 = engine not running(Red), 
-                                        ; 1 = engine running(Grn)
-;ASEon        equ  $08 ; %00001000, bit 3, 0 = not in start/warmup(Grn), 
-                                        ; 1 = in start/warmup(Red)
-;WUEon        equ  $10 ; %00010000, bit 4, 0 = not in warmup(Grn), 
-                                        ; 1 = in warmup(Red)
-;TOEon        equ  $20 ; %00100000, bit 5, 0 = not in TOE mode(Grn),
-                                        ; 1 = TOE mode(Red)
-;OFCon        equ  $40 ; %01000000, bit 6, 0 = not in OFC mode(Grn),
-                                        ; 1 = in OFC mode(Red)
-;FldClr       equ $80  ; %10000000, bit 7, 0 = not in flood clear mode(Grn),
-                                        ; 1 = Flood clear mode(Red)
+;*****************************************************************************************
+ 
+;OFCdelon     equ  $01 ; %00000001, bit 0, In Crank Delay Mode
+;crank        equ  $02 ; %00000010, bit 1, In Crank Mode
+;run          equ  $04 ; %00000100, bit 2, In Run Mode
+;ASEon        equ  $08 ; %00001000, bit 3, In ASE Mode
+;WUEon        equ  $10 ; %00010000, bit 4, In WUE Mode
+;TOEon        equ  $20 ; %00100000, bit 5, In Throttle Opening Enrichment Mode 
+;OFCon        equ  $40 ; %01000000, bit 6, In Overrun Fuel Cut Mode
+;FldClr       equ  $80 ; %10000000, bit 7, In Flood Clear Mode
+
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; "engine2" equates
 ;*****************************************************************************************
 
-;base512        equ $01 ; %00000001, bit 0, 0 = 5.12uS time base off(White),
-                                         ; 1 = 5.12uS time base on(Grn)
-;base256        equ $02 ; %00000010, bit 1, 0 = 2.56uS time base off(White),
-                                         ; 1 = 2.56uS time base on(Grn)
-;eng2Bit2       equ $04 ; %00000100, bit 2, 0 = , 1 = 
-;eng2Bit3       equ $08 ; %00001000, bit 3, 0 = , 1 = 
-;eng2Bit4       equ $10 ; %00010000, bit 4, 0 = , 1 = 
-;eng2Bit5       equ $20 ; %00100000, bit 5, 0 = , 1 = 
-;eng2Bit6       equ $40 ; %01000000, bit 6, 0 = , 1 = 
-;eng2Bit7       equ $80 ; %10000000, bit 7, 0 = , 1 =
-
+;base512        equ $01 ; %00000001, bit 0, In Timer Base 512 mode
+;base256        equ $02 ; %00000010, bit 1, In Timer Base 256 Mode
+;AudAlrm        equ $04 ; %00000100, bit 2, In Audible Alarm Mode
+;TOEduron       equ $08 ; %00001000, bit 3, In Throttle Opening Enrichment Duration Mode
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -157,18 +143,9 @@ RTI_VARS_START_LIN	EQU	@     ; @ Represents the current value of the linear
 ; - "StateStatus" equates 
 ;*****************************************************************************************
 
-;Synch            equ    $01  ; %00000001, bit 0,
-                             ; 0 = crank position not synchronized(Red), 
-							 ; 1 = crank position synchronized(Grn)
-;SynchLost        equ    $02  ; %00000010, bit 1, 0 = synch not lost(Grn), 
-                             ; 1 = synch lost(Red)
-;StateNew         equ    $04  ; %00000100, bit 2, 0 = no new State value, 
-                             ; 1 = New State value
-;StateStatus3     equ    $08  ; %00001000, bit 3,
-;StateStatus4     equ    $10  ; %00010000, bit 4
-;StateStatus5     equ    $20  ; %00100000, bit 5
-;StateStatus6     equ    $40  ; %01000000, bit 6
-;StateStatus7     equ    $80  ; %10000000, bit 7
+;Synch            equ    $01  ; %00000001, bit 0, Crank Position Synchronized
+;SynchLost        equ    $02  ; %00000010, bit 1, Crank Position Synchronize Lost
+;StateNew         equ    $04  ; %00000100, bit 2, New Crank Position 
 
 ;*****************************************************************************************
 ;*****************************************************************************************
@@ -176,10 +153,11 @@ RTI_VARS_START_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*****************************************************************************************
 ;RPMcalc:    equ $01   ; %00000001 (Bit 0) (Do RPM calculations flag)
 ;KpHcalc:    equ $02   ; %00000010 (Bit 1) (Do VSS calculations flag)
-;Ch7_2nd:    equ $04   ; %00000100 (Bit 2) (Ch7 2nd edge flag)
-;Ch6alt:     equ $08   ; %00001000 (Bit 3) (Ch6 alt flag)
-;Ch7_3d:     equ $10   ; %00010000 (Bit 4) (Ch7 3d edge flag)
+;Ch1_2nd:    equ $04   ; %00000100 (Bit 2) (Ch1 2nd edge flag)
+;Ch2alt:     equ $08   ; %00001000 (Bit 3) (Ch2 alt flag)
+;Ch1_3d:     equ $10   ; %00010000 (Bit 4) (Ch1 3d edge flag)
 ;RevMarker:  equ $20   ; %00100000 (Bit 5) (Crank revolution marker flag)
+
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -196,11 +174,11 @@ clock:      ds 1 ; Time rate flag marker bit field
 ; - "clock" equates 
 ;*****************************************************************************************
 
-ms1000     equ $10   ; %00010000 (Bit 4) (seconds marker)
-ms500      equ $08   ; %00001000 (Bit 3) (500mS marker)
-ms250      equ $04   ; %00000100 (Bit 2) (250mS marker)
-ms100      equ $02   ; %00000010 (Bit 1) (100mS marker)
-ms1        equ $01   ; %00000001 (Bit 0) (1mS marker)
+ms1000:     equ $10   ; %00010000 (Bit 4) (seconds marker)
+ms500:      equ $08   ; %00001000 (Bit 3) (500mS marker)
+ms250:      equ $04   ; %00000100 (Bit 2) (250mS marker)
+ms100:      equ $02   ; %00000010 (Bit 1) (100mS marker)
+ms1:        equ $01   ; %00000001 (Bit 0) (1mS marker)
 
 RTI_VARS_END		EQU	*     ; * Represents the current value of the paged 
                               ; program counter
@@ -266,9 +244,9 @@ AIOT_CHK_DONE:
 ;*****************************************************************************************
 
    ldd Stallcnt        ; "Stallcnt" -> Accu D
-   beq  NoStallcntDec  ; If zero branch to NoStallcntDec:
+   beq  NoStallcntDec  ; If zero branch to NoStallcntDec:     
    decw Stallcnt       ; Decrement "Stallcnt" (no crank or stall condition counter)
-
+                       
 NoStallcntDec:
 
 ;*****************************************************************************************
@@ -552,14 +530,6 @@ Do500mS:
 
 DoSec:
     bset clock,ms1000     ; Set "ms1000" bit of "clock"
-    
-;*****************************************************************************************
-; - Flash PB6out LED on output LEDs board every second just to show that the timer is 
-;    working
-;*****************************************************************************************
-    ldaa  PORTB        ; Load ACC A with value in Port B
-    eora  #$40         ; Exlusive or with $01000000
-    staa   PORTB       ; Copy to Port B (toggle Bit6, ("PB6out" LED on output LEDs board) 
 
 ;*****************************************************************************************
 ; - Clear the 250 millisecond counter. Increment "secL". Increment "secH" on roll over

@@ -58,8 +58,7 @@
 ;* Version History:                                                                      *
 ;*    May 13 2020                                                                        *
 ;*    - BPEM488 version begins (work in progress)                                        *
-;*    December 8 2020                                                                    *
-;*    - BPEM488 dedicated hardware version begins (work in progress)                     *    
+;*    - Update December 10 2020                                                          *     
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -250,7 +249,7 @@ ECT_TC1_ISR:
 ;   Event = 1
 ;*****************************************************************************************
 
-    ldx    ECT_TC1H         ; Read ECT_TC1H to clear the flag
+    ldx    ECT_TC1H              ; Read ECT_TC1H to clear the flag
     ldx    #StateLookup     ; Load index register X with the address of "TableLookup"
     ldab   State            ; Load Accu B with the contents of "State"             
     aslb                    ; Shift Accu B 1 place to the left                      
@@ -334,7 +333,7 @@ CAS_2nd:
 
 CAS_3d:
     ldd   ECT_TC1H        ; Load accu D with value in "ECT_TC1H"
-    subd  CAS2ndtk        ; Subtract (A:B)-(M:M+1)=>A:B "CAS2ndtk" from value in "ECT_TC1H"
+    subd  CAS2ndtk        ; Subtract (A:B)-(M:M+1)=>A:B "CAS2ndtk" from value in "ECT_TC7H"
     std   CASprd2tk       ; Copy result to "CASprd2tk"
     addd  CASprd1tk       ; (A:B)+(M:M+1)_->A:B "CASprd2tk" + "CASprd1tk" = "CASprdtk"
     bclr  ICflgs,Ch1_3d   ; Clear "Ch1_3d" bit of "ICflgs"
@@ -631,7 +630,7 @@ Notch_CT3_T2:
 ;   coil dwell for spark #1, waste #6 if we are in run mode.
 ;*****************************************************************************************
 
-    FIRE_IGN1                 ; macro in ect_BPEM488.s
+    FIRE_IGN1                 ; macro in Tim_BPEM488.s
     
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
@@ -642,7 +641,7 @@ Notch_CT3_T3:
 ;   coil dwell for spark #10, waste #5 if we are in run mode.   
 ;*****************************************************************************************
 
-    FIRE_IGN2                 ; macro in ect_BEEM488.s
+    FIRE_IGN2                 ; macro in Tim_BEEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
     
 Notch_CT3_T4:
@@ -704,7 +703,7 @@ Notch_CT4_T6:
 ;   coil dwell for spark #9, waste #8 if we are in run mode.
 ;*****************************************************************************************
 
-    FIRE_IGN3                 ; macro in ect_BPEM488.s
+    FIRE_IGN3                 ; macro in Tim_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT4_T7:
@@ -714,7 +713,7 @@ Notch_CT4_T7:
 ;   coil dwell for spark #4, waste #7 if we are in run mode.   
 ;*****************************************************************************************
 
-    FIRE_IGN4                 ; macro in ect_BPEM488.s
+    FIRE_IGN4                 ; macro in Tim_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone:
 
 Notch_CT4_T8:
@@ -776,7 +775,7 @@ Notch_CT4_T10:
 ;   coil dwell for spark #3, waste #2 if we are in run mode.
 ;*****************************************************************************************
 
-    FIRE_IGN5                 ; macro in ect_BPEM488.s
+    FIRE_IGN5                 ; macro in Tim_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT4_T1:
@@ -786,7 +785,7 @@ Notch_CT4_T1:
 ;   coil dwell for spark #6, waste #1 if we are in run mode.   
 ;*****************************************************************************************
 
-    FIRE_IGN1                 ; macro in ect_BPEM488.s
+    FIRE_IGN1                 ; macro in Tim_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone:
     
 Notch_CT4_T2:
@@ -849,7 +848,7 @@ Notch_CT4_T4:
 ;   coil dwell for spark #5, waste #10 if we are in run mode. 
 ;*****************************************************************************************
 
-    FIRE_IGN2                 ; macro in ect_BPEM488.s
+    FIRE_IGN2                 ; macro in Tim_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT1_T5:
@@ -859,7 +858,7 @@ Notch_CT1_T5:
 ;   coil dwell for spark #8, waste #9 if we are in run mode.   
 ;*****************************************************************************************
 
-    FIRE_IGN3                 ; macro in ect_BPEM488.s
+    FIRE_IGN3                 ; macro in Tim_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone:
 
 Notch_CT1_T6:
@@ -923,7 +922,7 @@ Notch_CT1_T8:
 ;   coil dwell for spark #7, waste #4 if we are in run mode.
 ;*****************************************************************************************
 
-    FIRE_IGN4                 ; macro in ect_BPEM488.s
+    FIRE_IGN4                 ; macro in Tim_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT1_T9:
@@ -933,7 +932,7 @@ Notch_CT1_T9:
 ;   coil dwell for spark #2, waste #3 if we are in run mode.   
 ;*****************************************************************************************
 
-    FIRE_IGN5                 ; macro in ect_BPEM488.s
+    FIRE_IGN5                 ; macro in Tim_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT1_T10:
@@ -978,11 +977,12 @@ Totalizer2R:
 	ldaa #$03           ; Decimal 3->Accu A (3 mS)
     staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
 	                    ; decremented every mS)
-
+                        	
 TotalizerDone2R:
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 StateHandlersDone:
+
     rti                  ; Return from interrupt
     
 ;**********************************************************************

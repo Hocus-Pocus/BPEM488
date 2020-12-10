@@ -55,11 +55,11 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    August 21 2020                                                                     *
-;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*                                                                                       * 
+;*    May 14 2020                                                                        * 
+;*    - BPEM488 Dedicated Hardware version begins(work in progress)                      *
+;*    - Update December 10 2020                                                          *   
 ;*****************************************************************************************
-
+          
 ;*****************************************************************************************
 ;* - Configuration -                                                                     *
 ;*****************************************************************************************
@@ -184,7 +184,7 @@ Mapx10:       ds 2 ; Manifold Absolute Pressure (KPAx10)(offset=20)
 tpsADC:       ds 2 ; 10 bit ADC AN05 Throttle Position Sensor ADC (exact for TS)(offset=22)
 TpsPctx10:    ds 2 ; Throttle Position Sensor % of travel(%x10)(update every 100mSec)(offset=24)
 egoAdc1:      ds 2 ; 10 bit ADC AN06 Exhaust Gas Oxygen ADC Left bank odd cyls(offset=26)
-afr1x10:      ds 2 ; Air Fuel Ratio for gasoline Left bank odd cyls(AFR1x10)(exact for TS)(offset=28)
+afr1x10:      ds 2 ; Air Fuel Ratio for gasoline Left bank odd cyls(AFR1x10)(offset=28)
 baroAdc:      ds 2 ; 10 bit ADC AN07 Barometric Pressure ADC(offset=30) 
 Barox10:      ds 2 ; Barometric Pressure (KPAx10)(offset=32)
 eopAdc:       ds 2 ; 10 bit ADC AN08 Engine Oil Pressure ADC(offset=34) 
@@ -196,7 +196,7 @@ Itrmx10:      ds 2 ; Ignition Trim (degrees x 10)+-20 degrees) (offset=44)
 ftrmAdc:      ds 2 ; 10 bit ADC AN11 Fuel Trim ADC(offset=46)
 Ftrmx10:      ds 2 ; Fuel Trim (% x 10)(+-20%)(offset=48)
 egoAdc2:      ds 2 ; 10 bit ADC AN12  Exhaust Gas Oxygen ADC Right bank even cyls(offset=50)   
-afr2x10:      ds 2 ; Air Fuel Ratio for gasoline Right bank even cyls(AFR2x10)(exact for TS)offset=52)          
+afr2x10:      ds 2 ; Air Fuel Ratio for gasoline Right bank even cyls(AFR2x10) (offset=52)          
 
 ;*****************************************************************************************
 ; - Input capture variables 
@@ -240,6 +240,7 @@ TOEdurCnt:    ds 1 ; Throttle Opening Enrichment duration counter(offset=107)
 FDt:          ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)(offset=108)
 
 ;*****************************************************************************************
+;*****************************************************************************************
 ; - Ignition calculation variables
 ;*****************************************************************************************
 	 
@@ -250,6 +251,7 @@ DwellFin:       ds 2 ; ("Dwell" * "DwellCor") (mS*10)(offset=116)
 STandItrmx10:   ds 2 ; stCurr and Itmx10 (degrees*10)(offset=118)
 
 ;*****************************************************************************************
+;*****************************************************************************************
 ; - Port status variables
 ;*****************************************************************************************
 
@@ -257,8 +259,8 @@ PortAbits:    ds 1  ; Port A status bit field(offset=120)
 PortBbits:    ds 1  ; Port B status bit field(offset=121) 
 PortKbits:    ds 1  ; Port K status bit field(offset=122) 
 PortPbits:    ds 1  ; Port P status bit field(offset=123) 
-PortTbits:    ds 1  ; Port T status bit field(offset=124) 
-
+PortTbits:    ds 1  ; Port T status bit field(offset=124)
+ 
 ;*****************************************************************************************
 ; - Misc variables 
 ;*****************************************************************************************
@@ -274,6 +276,7 @@ MpG:          ds 2  ; Fuel burn miles per gallon Imperial (offset=134)
 TestValw:     ds 2  ; Word test value (for program developement only)(offset=136)
 testValb:     ds 1  ; Byte test value (for program developement only)(offset=138)
 
+
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - This marks the end of the real time variables (139 bytes in total)
@@ -286,147 +289,97 @@ testValb:     ds 1  ; Byte test value (for program developement only)(offset=138
 ; - "engine" equates
 ;***************************************************************************************** 
 
-OFCdelon     equ  $01 ; %00000001, bit 0, 0 = OFC timer not counting down(Grn), 
-                                        ; 1 = OFC timer counting down(Red)
-crank        equ  $02 ; %00000010, bit 1, 0 = engine not cranking(Grn), 
-                                        ; 1 = engine cranking(Red)
-run          equ  $04 ; %00000100, bit 2, 0 = engine not running(Red), 
-                                        ; 1 = engine running(Grn)
-ASEon        equ  $08 ; %00001000, bit 3, 0 = not in start/warmup(Grn), 
-                                        ; 1 = in start/warmup(Red)
-WUEon        equ  $10 ; %00010000, bit 4, 0 = not in warmup(Grn), 
-                                        ; 1 = in warmup(Red)
-TOEon        equ  $20 ; %00100000, bit 5, 0 = not in TOE mode(Grn),
-                                        ; 1 = TOE mode(Red)
-OFCon        equ  $40 ; %01000000, bit 6, 0 = not in OFC mode(Grn),
-                                        ; 1 = in OFC mode(Red)
-FldClr       equ $80  ; %10000000, bit 7, 0 = not in flood clear mode(Grn),
-                                        ; 1 = Flood clear mode(Red)
+OFCdelon     equ  $01 ; %00000001, bit 0, In Crank Delay Mode
+crank        equ  $02 ; %00000010, bit 1, In Crank Mode
+run          equ  $04 ; %00000100, bit 2, In Run Mode
+ASEon        equ  $08 ; %00001000, bit 3, In ASE Mode
+WUEon        equ  $10 ; %00010000, bit 4, In WUE Mode
+TOEon        equ  $20 ; %00100000, bit 5, In Throttle Opening Enrichment Mode 
+OFCon        equ  $40 ; %01000000, bit 6, In Overrun Fuel Cut Mode
+FldClr       equ  $80 ; %10000000, bit 7, In Flood Clear Mode
 										
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; "engine2" equates
 ;*****************************************************************************************
 
-base512        equ $01 ; %00000001, bit 0, 0 = 5.12uS time base off(White),
-                                         ; 1 = 5.12uS time base on(Grn)
-base256        equ $02 ; %00000010, bit 1, 0 = 2.56uS time base off(White),
-                                         ; 1 = 2.56uS time base on(Grn)
-AudAlrm        equ $04 ; %00000100, bit 2, 0 = Audible Alarm on(Grn),
-                                         ; 1 = Audible Alarm off(Red) 
-TOEduron       equ $08 ; %00001000, bit 3, 0 = TOE timer not counting down(Grn),
-                                         ; 1 = TOE timer counting down(Red) 
-eng2Bit4       equ $10 ; %00010000, bit 4, 0 = , 1 = 
-eng2Bit5       equ $20 ; %00100000, bit 5, 0 = , 1 = 
-eng2Bit6       equ $40 ; %01000000, bit 6, 0 = , 1 = 
-eng2Bit7       equ $80 ; %10000000, bit 7, 0 = , 1 =
+base512        equ $01 ; %00000001, bit 0, In Timer Base 512 mode
+base256        equ $02 ; %00000010, bit 1, In Timer Base 256 Mode
+AudAlrm        equ $04 ; %00000100, bit 2, In Audible Alarm Mode
+TOEduron       equ $08 ; %00001000, bit 3, In Throttle Opening Enrichment Duration Mode
 
 ;*****************************************************************************************
 ;***************************************************************************************** 
 ; "alarmbits" equates
 ;*****************************************************************************************
 
-LOP        equ $01 ; %00000001, bit 0, 0 = No low oil pressure(Grn), 
-                                      ;1 = Low oil pressure(Red)
-HOT        equ $02 ; %00000010, bit 1, 0 = No high oil temperature(Grn),
-                                      ;1 = High oil temperature(Red)
-HET        equ $04 ; %00000100, bit 2, 0 = No high coolant temperature(Grn),
-                                      ;1 = High coolant temperature(Red) 
-HEGT       equ $08 ; %00001000, bit 3, 0 = No high exhaust temperature(Grn),
-                                      ;1 = High exhaust temperatrue(Red)
-HFT        equ $10 ; %00010000, bit 4, 0 = No high fuel temperature(Grn),
-                                      ;1 = High fuel temperature(Red) 
-LFP        equ $20 ; %00100000, bit 5, 0 = No Low fuel pressure(Grn),
-                                      ;1 = Low fuel pressure(Red) 
-HFP        equ $40 ; %01000000, bit 6, 0 = No high fuel pressure(Grn),
-                                      ;1 = High fuel pressure(Red)
+LOP        equ $01 ; %00000001, bit 0, Low Oil Pressure
+HOT        equ $02 ; %00000010, bit 1, High Oil Temperature
+HET        equ $04 ; %00000100, bit 2, High Engine Temperature
+HEGT       equ $08 ; %00001000, bit 3, High Exhaust Gas Temperature
+HFT        equ $10 ; %00010000, bit 4, High Fuel Temperature
+LFP        equ $20 ; %00100000, bit 5, Low Fuel Pressure
+HFP        equ $40 ; %01000000, bit 6, High Fuel Pressure
 
 ;*****************************************************************************************
 ;***************************************************************************************** 
 ; "AAoffbits"equates
 ;*****************************************************************************************
-LOPoff        equ $01 ; %00000001, bit 0, 0 = No LOP audio alarm silence, 
-                                      ;1 = LOP audio alarm silence
-HOToff        equ $02 ; %00000010, bit 1, 0 = No HOT audio alarm silence,
-                                      ;1 = HOT audio alarm silence
-HEToff        equ $04 ; %00000100, bit 2, 0 = No HET audio alarm silence,
-                                      ;1 = HET audio alarm silence 
-HEGToff       equ $08 ; %00001000, bit 3, 0 = No HEGT audio alarm silence,
-                                      ;1 = HEGT audio alarm silence
-HFToff        equ $10 ; %00010000, bit 4, 0 = No HFT audio alarm silence,
-                                      ;1 = HFT audio alarm silence 
-LFPoff        equ $20 ; %00100000, bit 5, 0 = No LFP audio alarm silence,
-                                      ;1 = LFP audio alarm silence 
-HFPoff        equ $40 ; %01000000, bit 6, 0 = No HFP audio alarm silence,
-                                       ;1 = HFP audio alarm silence
-Bit7off       equ $80 ; %10000000, bit 7, 0 = , 1 =
+
+LOPoff        equ $01 ; %00000001, bit 0, Low Oil Pressure Alarm Silenced
+HOToff        equ $02 ; %00000010, bit 1, High Oil Temperature Alarm Silenced
+HEToff        equ $04 ; %00000100, bit 2, High Engine Temperature Alarm Silenced
+HEGToff       equ $08 ; %00001000, bit 3, High Exhaust Gas Temperature Alarm Silenced
+HFToff        equ $10 ; %00010000, bit 4, High Fuel Temperature Alarm Silenced
+LFPoff        equ $20 ; %00100000, bit 5, Low Fuel Pressure Alarm Silenced
+HFPoff        equ $40 ; %01000000, bit 6, High Fuel Pressure Alarm Silenced
+
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - "StateStatus" equates 
 ;*****************************************************************************************
 
-Synch            equ    $01  ; %00000001, bit 0,
-                             ; 0 = crank position not synchronized(Red), 
-							 ; 1 = crank position synchronized(Grn)
-SynchLost        equ    $02  ; %00000010, bit 1, 0 = synch not lost(Grn), 
-                             ; 1 = synch lost(Red)
-StateNew         equ    $04  ; %00000100, bit 2, 0 = no new State value, 
-                             ; 1 = New State value
-StateStatus3     equ    $08  ; %00001000, bit 3,
-StateStatus4     equ    $10  ; %00010000, bit 4
-StateStatus5     equ    $20  ; %00100000, bit 5
-StateStatus6     equ    $40  ; %01000000, bit 6
-StateStatus7     equ    $80  ; %10000000, bit 7 
- 								
+Synch            equ    $01  ; %00000001, bit 0, Crank Position Synchronized
+SynchLost        equ    $02  ; %00000010, bit 1, Crank Position Synchronize Lost
+StateNew         equ    $04  ; %00000100, bit 2, New Crank Position 
+								
 ;*****************************************************************************************
 ; PortAbits: Port A status bit field (PORTA)
 ;*****************************************************************************************
 
-LoadEEEM        equ  $01 ;(PA0)%00000001, bit 0, 0 = EEEM load disabled(Grn),
-                                                ;1 = EEEMload enabled(Red)
-Itrimen         equ  $02 ;(PA1)%00000010, bit 1, 0 = Ign trim disabled(Grn),
-                                                ;1 = Ign trim enabled(Red)     
-Ftrimen         equ  $04 ;(PA2)%00000100, bit 2, 0 = Fuel trim disabled(Grn),
-                                                ;1 = Fuel trim enabled(Red)
-AudAlrmSil      equ  $08 ;(PA3)%00001000, bit 3, 0 = Audible Alarm not silenced(Grn)
-                                               ; 1 = Audible Alarm silenced(Red)
-OFCen           equ  $10 ;(PA4)%00010000, bit 4, 0 = Overrun Fuel Cut not enabled(Grn),
-                                                ;1 = Overrun fuel Cut enabled(Red)
-OFCdis          equ  $20 ;(PA5)%00100000, bit 5, 0 = Overrun Fuel Cut not disabled(Grn),
-                                                ;1 = Overrun fuel Cut disnabled(Red)
-PA6in           equ  $40 ;(PA6)%01000000, bit 6,
-
+LoadEEEM        equ  $01 ;(PA0)%00000001, bit 0, Load EEEM Enable
+Itrimen         equ  $02 ;(PA1)%00000010, bit 1, Ignition Trim Enable
+Ftrimen         equ  $04 ;(PA2)%00000100, bit 2, Fuel Trim Enable
+AudAlrmSil      equ  $08 ;(PA3)%00001000, bit 3, Audible Alarm Silence
+OFCen           equ  $10 ;(PA4)%00010000, bit 4, Overrun Fuel Cut Enable
+OFCdis          equ  $20 ;(PA5)%00100000, bit 5, Overrun Fuel Cut Disable
 
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; PortBbits: Port B status bit field (PORTB)
 ;*****************************************************************************************
 
-FuelPump    equ  $01 ;(PB0)%00000001, bit 0, 0 = Fuel Pump off(Red),
-                                            ;1 = Fuel pump on(Grn)
-ASDRelay    equ  $02 ;(PB1)%00000010, bit 1, 0 = ASD Relay off(Red),
-                                            ;1 = ASD Relay on(Grn)
-EngAlarm    equ  $04 ;(PB2)%00000100, bit 2, 0 = Alarm Relay off(Grn),
-                                            ;1 = Alarm Relay on(Red)
-AIOT        equ  $08 ;(PB3)%00001000, bit 3, 0 = AIOT no pulse(Grn)
-                                            ;1 = AIOT pulse(Red)
-PB4out      equ  $10 ;(PB4)%00010000, bit 4
-PB5out      equ  $20 ;(PB5)%00100000, bit 5,
-PB6out      equ  $40 ;(PB6)%01000000, bit 6,
+FuelPump    equ  $01 ;(PB0)%00000001, bit 0, Fuel Pump State
+ASDRelay    equ  $02 ;(PB1)%00000010, bit 1, Automatic Shutdown Relay State
+EngAlarm    equ  $04 ;(PB2)%00000100, bit 2, Engine Alarm State
+AIOT        equ  $08 ;(PB3)%00001000, bit 3, AIOT Signal State
+PB4out      equ  $10 ;(PB4)%00010000, bit 4, PB4out State
+PB5out      equ  $20 ;(PB5)%00100000, bit 5, PB5out State
+PB6out      equ  $40 ;(PB6)%01000000, bit 6, PB6out State
 
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; PortKbits: Port K status bit field (PORTK)
 ;***************************************************************************************** 
 
-LOPalrm    equ  $01 ;(PK0)%00000001, bit 0
-HOTalrm    equ  $02 ;(PK1)%00000010, bit 1
-HETalrm    equ  $04 ;(PK2)%00000100, bit 2
-HEGTalrm   equ  $08 ;(PK3)%00001000, bit 3
-HFTalrm    equ  $10 ;(PK4)%00010000, bit 4
-LFPalrm    equ  $20 ;(PK5)%00100000, bit 5
+LOPalrm    equ  $01 ;(PK0)%00000001, bit 0, Low Oil Pressure Alarm Condition
+HOTalrm    equ  $02 ;(PK1)%00000010, bit 1, High Oil Temperature Alarm Condition
+HETalrm    equ  $04 ;(PK2)%00000100, bit 2, High Engine Temperature Alarm Condition
+HEGTalrm   equ  $08 ;(PK3)%00001000, bit 3, High Exhaust Gas Temperature Alarm Condition
+HFTalrm    equ  $10 ;(PK4)%00010000, bit 4, High Fuel Temperature Alarm Condition
+LFPalrm    equ  $20 ;(PK5)%00100000, bit 5, Low Fuel Pressure Alarm Condition
 ;N/A        equ  $40 ;(PK6)%01000000, bit 6
-HFPalrm    equ  $80 ;(PK7)%10000000, bit 7
+HFPalrm    equ  $80 ;(PK7)%10000000, bit 7, High Fuel Pressure Alarm Condition
 
 ;*****************************************************************************************
 ;*****************************************************************************************
@@ -470,7 +423,6 @@ tmp5b:       ds 1 ; Temporary byte variable #5
 tmp6b:       ds 1 ; Temporary byte variable #6
 tmp7b:       ds 1 ; Temporary byte variable #7
 tmp8b:       ds 1 ; Temporary byte variable #8
-
 
 ;*****************************************************************************************
 
@@ -525,7 +477,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
 ;*****************************************************************************************
 ; - ADC variables
 ;*****************************************************************************************
-
+   
    clrw  batAdc       ; Battery Voltage 10 bit ADC AN00(offset=2) 
    clrw  BatVx10      ; Battery Voltage (Volts x 10)(offset=4) 
    clrw  cltAdc       ; 10 bit ADC AN01 Engine Coolant Temperature ADC(offset=6) 
@@ -539,7 +491,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
    clrw  tpsADC       ; 10 bit ADC AN05 Throttle Position Sensor ADC (exact for TS)(offset=22)
    clrw  TpsPctx10    ; Throttle Position Sensor % of travel(%x10)(update every 100mSec)(offset=24)
    clrw  egoAdc1      ; 10 bit ADC AN06 Exhaust Gas Oxygen ADC Left bank odd cyls(offset=26)
-   clrw  afr1x10      ; Air Fuel Ratio for gasoline Left bank odd cyls(AFR1x10)(exact for TS)(offset=28)
+   clrw  afr1x10      ; Air Fuel Ratio for gasoline Left bank odd cyls(AFR1x10)(offset=28)
    clrw  baroAdc      ; 10 bit ADC AN07 Barometric Pressure ADC(offset=30) 
    clrw  Barox10      ; Barometric Pressure (KPAx10)(offset=32)
    clrw  eopAdc       ; 10 bit ADC AN08 Engine Oil Pressure ADC(offset=34) 
@@ -551,7 +503,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
    clrw  ftrmAdc      ; 10 bit ADC AN11 Fuel Trim ADC(offset=46)
    clrw  Ftrmx10      ; Fuel Trim (% x 10)(+-20%)(offset=48)
    clrw  egoAdc2      ; 10 bit ADC AN12  Exhaust Gas Oxygen ADC Right bank even cyls(offset=50)   
-   clrw  afr2x10      ; Air Fuel Ratio for gasoline Right bank even cyls(AFR2x10)(exact for TS)offset=52)
+   clrw  afr2x10      ; Air Fuel Ratio for gasoline Right bank even cyls(AFR2x10)(offset=52)
 
 ;*****************************************************************************************
 ; - Input capture variables 
@@ -593,7 +545,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
    clr   OFCdelCnt     ; Overrun Fuel Cut delay counter(offset=104)
    clr   TOEdurCnt     ; Throttle Opening Enrichment duration counter(offset=105)
    clrw  FDt           ; Fuel Delivery pulse width total(mS) (for FDsec calcs)(offset=106)
-   
+;*****************************************************************************************
 ;*****************************************************************************************
 ; - Ignition calculation variables
 ;*****************************************************************************************
@@ -603,7 +555,8 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
    clrw  DwellCor      ; Coil dwell voltage correction (%*10)(offset=112)
    clrw  DwellFin      ; ("Dwell" * "DwellCor") (mS*10)(offset=114)
    clrw  STandItrmx10  ; stCurr and Itmx10 (degrees*10)(offset=116)
-   
+
+;*****************************************************************************************
 ;*****************************************************************************************
 ; - Port status variables
 ;*****************************************************************************************
@@ -627,23 +580,22 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
    clrw  DutyCyclex10  ; Injector duty cycle in run mode (% x 10)(offset=130)
    clrw  MpG           ; Fuel burn miles per gallon Imperial (offset=132)
    clrw  TestValw      ; Word test value (for program developement only)(offset=134)
-   clr   testValb      ; Byte test value (for program developement only)(offset=136)   
-   
+   clr   testValb      ; Byte test value (for program developement only)(offset=136) 
+
 ;*****************************************************************************************
 ; - Clear other variables - 
 ;*****************************************************************************************
-;*****************************************************************************************
-; - Misc variables 
-;*****************************************************************************************
-   clrw  LoopCntr      ; Counter for "LoopTime" (incremented every Main Loop pass)
-   clrw  tmp1w         ; Temporary word variable #1
-   clrw  tmp2w         ; Temporary word variable #2
-   clrw  tmp3w         ; Temporary word variable #3
-   clrw  tmp4w         ; Temporary word variable #4
-   clr   tmp5b         ; Temporary byte variable #5
-   clr   tmp6b         ; Temporary byte variable #6
-   clr   tmp7b         ; Temporary byte variable #7
-   clr   tmp8b         ; Temporary byte variable #8
+
+   clrw LoopCntr    ; Counter for "LoopTime" (incremented every Main Loop pass)
+   clr  tmp1w       ; Temporary word variable #1
+   clr  tmp2w       ; Temporary word variable #2
+   clr  tmp3w       ; Temporary word variable #3
+   clr  tmp4w       ; Temporary word variable #4
+   clr  tmp5b       ; Temporary byte variable #5
+   clr  tmp6b       ; Temporary byte variable #6
+   clr  tmp7b       ; Temporary byte variable #7
+   clr  tmp8b       ; Temporary byte variable #8
+
 
 ;*****************************************************************************************
 ; - Initialize other variables -
@@ -662,11 +614,13 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
 ;
 ;*****************************************************************************************
 
-    brset PORTA,PA0,PA0Set ; Pole PORTA, bit PA0 and branch to PA0Set: if bit is Hi
+    EEEM_ENABLE   ; Enable EEPROM Emulation Macro in eeemBPEM488.s  ; If this isn't here you need to do a load on each power up
+
+;    brset PORTA,PA0,PA0Set ; Pole PORTA, bit PA0 and branch to PA0Set: if bit is Hi
                            ; This is the normal condition for the norally open tactile 
                            ; switch on the auxilliary board 
                    
-    EEEM_ENABLE   ; Enable EEPROM Emulation Macro in eeemBPEM488.s
+;    EEEM_ENABLE   ; Enable EEPROM Emulation Macro in eeemBPEM488.s
     
 ;*********************************************************************
 ; - Copy page 1, VE table, ranges and other configurable constants 
@@ -677,7 +631,7 @@ BPEM488_SHARED_VARS_END_LIN   EQU @   ; @ Represents the current value of the li
     ldd    #$400        ; Load accu D with decimal 1024
     ldx    #veBins_F    ; Load index register X with the address  NOTE CHANGE
                         ; of the first value in "veBins_F" table (Flash)
-    ldy    #veBins_E    ; Load index register Y with the address  NOTE CHANGE
+    ldy    #veBins_E      ; Load index register Y with the address  NOTE CHANGE
                         ; of the first value in "veBins" table (Buffer Ram)
 
 CopyPage1:
@@ -695,7 +649,7 @@ CopyPage1:
     ldd    #$400        ; Load accu D with decimal 1024
     ldx    #stBins_F    ; Load index register X with the address  
                         ; of the first value in "stBins_F" table (Flash)
-    ldy    #stBins_E    ; Load index register Y with the address  
+    ldy    #stBins_E      ; Load index register Y with the address  
                         ; of the first value in "stBins" table ( Buffer Ram)
 
 CopyPage2:
@@ -713,7 +667,7 @@ CopyPage2:
     ldd    #$400        ; Load accu D with decimal 1024
     ldx    #afrBins_F   ; Load index register X with the address  
                         ; of the first value in "afrBins_F" table (Flash)
-    ldy    #afrBins_E   ; Load index register Y with the address  
+    ldy    #afrBins_E     ; Load index register Y with the address  
                         ; of the first value in "afrBins" table (Buffer Ram)
 
 CopyPage3:
@@ -732,7 +686,7 @@ PA0Set:
     brclr clock,ms500,*  ; Wait here for 500mSec. Without this the ATD0 sequence below 
                          ; won't work on power up. Slow start up for switching 5V power 
                          ; supply is suspect.
-                         
+
 ;*****************************************************************************************
 ; - Start ATD0 conversion sequence, load all results and do conversions to user units
 ;   as a starting point for calculations.
@@ -757,14 +711,15 @@ PA0Set:
 ;*     PAD15 - Not used     (GPIO input, pull-up)                                        *
 ;*****************************************************************************************
 
+
     START_ATD0    ;(Macro in adc0_BPEM488.s)
-        
+    
 ;*****************************************************************************************
 ; - Convert ADC values to user units -
 ;*****************************************************************************************
 
     CONVERT_ATD0    ;(Macro in adc0_BPEM488.s)
-    	
+	
 ;*****************************************************************************************
 ; - Calculate values at Z1 and Z2 to interpolate injector deadband at current battery  
 ;   voltage. This is done before entering the main loop as will only change if the  
@@ -792,7 +747,7 @@ PA0Set:
 ;*****************************************************************************************
 
     FUEL_PUMP_AND_ASD_ON    ; Macro in gpio_BEEM488.s
-       	
+	
 ;*****************************************************************************************
 ; --------------------------------- Priming Mode ----------------------------------------
 ;
@@ -817,7 +772,6 @@ PA0Set:
     PRIME_PW_LU              ; (Macro in injcalcs_BEEM488.s)
 	movw primePWtk,InjOCadd2 ; Copy value in "primePWtk" to "InjOCadd2" (Primer pulse width 
 	                         ; in 5.12uS res to injector timer output compare adder)
-
 
 ;*****************************************************************************************
 
@@ -1147,11 +1101,13 @@ MainLoop:
 ;                         ; ("HFP Alarm" LED output LEDs Board)       * 
 ;**********************************************************************
 ;*****************************************************************************************
-; - Flash PB6out LED on output LEDs board every second just to show that the timer is working
+; - Flash PB6out LED on output LEDs board every second just to show that the timer is 
+;   working
 ;*****************************************************************************************
 ;    ldaa  PORTB        ; Load ACC A with value in Port B
-;    eora  #$40         ; Exclusive or with $01000000                                               IN USE rti_BPEM488
-;    staa   PORTB       ; Copy to Port B (toggle Bit6, "PB6out" LED on output LEDs board)    
+;    eora  #$40         ; Exclusive or with $01000000                                              
+;    staa   PORTB       ; Copy to Port B (toggle Bit6, "PB6out" LED on output LEDs board)
+;*****************************************************************************************    
 
 ;*****************************************************************************************
 ; - Update Ports A, B, K, P and T status bits
@@ -1195,7 +1151,7 @@ MainLoop:
 ;*****************************************************************************************
 
     CHECK_ALARMS    ; Macro in adc0BPEM488.s
-        
+    
 ;*****************************************************************************************
 ; - Do RPM calculations when there is a new input capture period.                           
 ;*****************************************************************************************
@@ -1252,7 +1208,7 @@ NoKPHcalc:
 ;*****************************************************************************************
 
     DWELL_COR_LU    ; Macro in injcalcs_BPEM.s
-    
+
 ;*****************************************************************************************
 ; The determination of whether the engine is cranking or running is made in the 
 ; State_BPEM488.s module within the Crank Angle Sensor interrupt. It is here that the 
@@ -1298,7 +1254,7 @@ IgnCalcsDone:
 ;*****************************************************************************************
 
     VE_LU       ; Macro in injcalcsBPEM.s
-        
+    
 ;*****************************************************************************************
 ; The Air/Fuel Ratio of the fuel mixture affects how an engine will run. Generally 
 ; speaking AFRs of less than ~7:1 are too rich to ignite. Ratios of greater than ~20:1 are 
@@ -1338,7 +1294,7 @@ IgnCalcsDone:
 ;*****************************************************************************************
 
     MAT_COR_LU       ; Macro in injcalcsBPEM.s
-       
+    
 ;*****************************************************************************************
 ; - Every mS:
 ;   Decrement "AIOTcnt" (AIOT pulse width counter)
@@ -1353,10 +1309,10 @@ IgnCalcsDone:
 NoMS1Routines1:
     job  NoMS1Routines             ; Long branch
 
-DO_MS1_ROUTINES: 
+DO_MS1_ROUTINES:    
     MILLISEC_ROUTINES             ; (Macro in rti_BEEM488.s)
 	bclr clock,ms1                ; Clear "ms1" bit of "clock" bit field
-    
+
 NoMS1Routines:	 
 	
 ;*****************************************************************************************
@@ -1457,7 +1413,7 @@ NoFloodClear:
 ;*****************************************************************************************
 
     CRANK_PW_CALC       ; Macro in injcalcsBPEM.s
-
+    
     job  MainLoopEnd   ; Jump or branch to "MainLoopEnd:" (keep looping here until no 
 	                   ; longer in crank mode
 	
@@ -1562,7 +1518,7 @@ NO_WUE_ASE:
 ;*****************************************************************************************
 
 MainLoopEnd:
-	incw LoopCntr  ; Increment "LoopCntr"(counter for "LoopTime")
+	incw LoopCntr  ; Increment "LoopCntr"(counter for "LoopTime") 
     job  MainLoop  ; Jump or branch to "MainLoop" (end of main loop, start again)
 
 ;*****************************************************************************************

@@ -55,10 +55,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    August 21 2020                                                                     *
+;*    May 17 2020                                                                        *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 8 2020                                                           *
-;*                                                                                       *     
+;*    - Update December 10 2020                                                          *     
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -117,14 +116,14 @@ ECT_VARS_START_LIN	EQU	@     ; @ Represents the current value of the linear
 ;ICflgs:      ds 1  ; Input Capture flags bit field
 
 ;*****************************************************************************************
-; - "ICflgs" equates  
+; - "ICflgs" equates 
 ;*****************************************************************************************
 
 ;RPMcalc:    equ $01   ; %00000001 (Bit 0) (Do RPM calculations flag)
 ;KpHcalc:    equ $02   ; %00000010 (Bit 1) (Do VSS calculations flag)
-;Ch7_2nd:    equ $04   ; %00000100 (Bit 2) (Ch7 2nd edge flag)
+;Ch1_2nd:    equ $04   ; %00000100 (Bit 2) (Ch1 2nd edge flag)
 ;Ch2alt:     equ $08   ; %00001000 (Bit 3) (Ch2 alt flag)
-;Ch7_3d:     equ $10   ; %00010000 (Bit 4) (Ch7 3d edge flag)
+;Ch1_3d:     equ $10   ; %00010000 (Bit 4) (Ch1 3d edge flag)
 ;RevMarker:  equ $20   ; %00100000 (Bit 5) (Crank revolution marker flag)
 
 ;*****************************************************************************************
@@ -367,7 +366,7 @@ RunKPHDone:
 
 #macro FIRE_IGN1, 0
 ;*****************************************************************************************
-; - PT3 - IOC3 OC3 Ign1(1&6) Control
+; - PT0(P9) - IOC0 OC0 LED red  (D7)(1to28)(Ign1)(1&6) Control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired delay from trigger time to energising time.
@@ -377,7 +376,7 @@ RunKPHDone:
     bset ECT_TCTL2,Bit6 ; Set Ch3 output line to 1 on compare  
     ldd  ECT_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
-    std  ECT_TC0H       ; Copy result to Timer IC/OC register 0 (Start OC operation)
+    std  ECT_TC3H       ; Copy result to Timer IC/OC register 0 (Start OC operation)
                         ; (Will trigger an interrupt after the delay time)(LED off)
  
 #emac
@@ -394,7 +393,7 @@ RunKPHDone:
     bset ECT_TCTL1,Bit0 ; Set Ch4 output line to 1 on compare  
     ldd  ECT_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
-    std  ECT_TC2H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
+    std  ECT_TC4H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
                         ; (Will trigger an interrupt after the delay time)(LED off)
 
 #emac
@@ -411,7 +410,7 @@ RunKPHDone:
     bset ECT_TCTL1,Bit2 ; Set Ch5 output line to 1 on compare  
     ldd  ECT_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
-    std  ECT_TC2H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
+    std  ECT_TC5H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
                         ; (Will trigger an interrupt after the delay time)(LED off)
 
 #emac
@@ -428,7 +427,7 @@ RunKPHDone:
     bset ECT_TCTL1,Bit4 ; Set Ch6 output line to 1 on compare  
     ldd  ECT_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
-    std  ECT_TC2H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
+    std  ECT_TC6H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
                         ; (Will trigger an interrupt after the delay time)(LED off)
 
 #emac
@@ -445,7 +444,7 @@ RunKPHDone:
     bset ECT_TCTL1,Bit6 ; Set Ch7 output line to 1 on compare  
     ldd  ECT_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
-    std  ECT_TC2H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
+    std  ECT_TC7H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
                         ; (Will trigger an interrupt after the delay time)(LED off)
 
 #emac
@@ -500,10 +499,10 @@ ECT_TC3_ISR:
     bclr ECT_TCTL2,Bit6    ; Clear Ch3 output line to zero on compare 
     ldd  ECT_TCNTH         ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time)
-    std  ECT_TC0H          ; Copy result to Timer IC/OC register 0 (Start OC operation)
+    std  ECT_TC3H          ; Copy result to Timer IC/OC register 0 (Start OC operation)
                            ; (coil on for dwell time)(LED on)
     rti                    ; Return from Interrupt
-
+    
 ECT_TC4_ISR:
 ;*****************************************************************************************
 ; - ECT ch4 Interrupt Service Routine for Ign2(10&5) control
@@ -516,7 +515,7 @@ ECT_TC4_ISR:
     bclr ECT_TCTL1,Bit0    ; Clear Ch4 output line to zero on compare 
     ldd  ECT_TCNTH         ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time))
-    std  ECT_TC2H          ; Copy result to Timer IC/OC register 2(Start OC operation)
+    std  ECT_TC4H          ; Copy result to Timer IC/OC register 2(Start OC operation)
                            ; (coil on for dwell time)(LED on)
     rti                    ; Return from Interrupt
     
@@ -532,7 +531,7 @@ ECT_TC5_ISR:
     bclr ECT_TCTL1,Bit2    ; Clear Ch5 output line to zero on compare 
     ldd  ECT_TCNTH         ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time))
-    std  ECT_TC2H          ; Copy result to Timer IC/OC register 2(Start OC operation)
+    std  ECT_TC5H          ; Copy result to Timer IC/OC register 2(Start OC operation)
                            ; (coil on for dwell time)(LED on)
     rti                    ; Return from Interrupt
     
@@ -548,7 +547,7 @@ ECT_TC6_ISR:
     bclr ECT_TCTL1,Bit4    ; Clear Ch6 output line to zero on compare 
     ldd  ECT_TCNTH         ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time))
-    std  ECT_TC2H          ; Copy result to Timer IC/OC register 2(Start OC operation)
+    std  ECT_TC6H          ; Copy result to Timer IC/OC register 2(Start OC operation)
                            ; (coil on for dwell time)(LED on)
     rti                    ; Return from Interrupt
     
@@ -564,17 +563,16 @@ ECT_TC7_ISR:
     bclr ECT_TCTL1,Bit6    ; Clear Ch7 output line to zero on compare 
     ldd  ECT_TCNTH         ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time))
-    std  ECT_TC2H          ; Copy result to Timer IC/OC register 2(Start OC operation)
+    std  ECT_TC7H          ; Copy result to Timer IC/OC register 2(Start OC operation)
                            ; (coil on for dwell time)(LED on)
     rti                    ; Return from Interrupt
-    
-
         
 ECT_CODE_END		EQU	*     ; * Represents the current value of the paged 
                               ; program counter
 ECT_CODE_END_LIN	EQU	@     ; @ Represents the current value of the linear 
                               ; program counter
-                              ;*****************************************************************************************
+                              
+;*****************************************************************************************
 ;* - Tables -                                                                            *   
 ;*****************************************************************************************
 

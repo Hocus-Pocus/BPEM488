@@ -55,10 +55,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    August 21 2020                                                                     *
+;*    May 25 2020                                                                        *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 8 2020                                                           *
-;*                                                                                       *   
+;*    - Update December 10 2020                                                          *   
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -169,7 +168,6 @@ BASE_VARS_END_LIN	    EQU @     ; @ Represents the current value of the linear
 ; -  Initialization -
 
 #macro	BASE_INIT, 0
-            INIT_GPIO       ; Initialize GPIOs (gpio_BEEM488.s)
 			INIT_VECTAB     ; Initialize Interrupt vectors (vectabs_BEEM488.s)
 			CLR_VECTAB_VARS ; Clear Vectab variables (vectabs_BPEM488.s)
 			INIT_EEEM       ; Initialize EEPROM Emulation (eeem_BEEM488.s)
@@ -179,6 +177,7 @@ BASE_VARS_END_LIN	    EQU @     ; @ Represents the current value of the linear
             INIT_SCI0       ; Initialize SCI0 (sci0_BEEM488.s)
 			CLR_SCI0_VARS   ; Clear SCI0 variables  (sci0_BEEM488.s)
             INIT_ADC0       ; Initialize ADC0 channels (adc0_BEEM488.s)			
+            INIT_GPIO       ; Initialize GPIOs (gpio_BEEM488.s)
 			INIT_ECT        ; Initialize Enhanced Captuer Timers (ect_BEEM488.s)
 			CLR_ECT_VARS    ; Clear ECT variables  (ect_BEEM488.s) 
             INIT_TIM        ; Initialize Timer (tim_BEEM488.s)

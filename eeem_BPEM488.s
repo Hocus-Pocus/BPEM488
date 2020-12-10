@@ -57,9 +57,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    August 21 2020                                                                     *
+;*    May 23 2020                                                                        *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 8 2020                                                           *   
+;*    - Update December 10 2020                                                          *       
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -139,6 +139,7 @@ nCylinders_E:      rmb $01  ; 1 byte for number of engine cylinders bit field (f
 nInjectors_E:      rmb $01  ; 1 byte for number of injectors bit field (for TS reqFuel calcs only)
 divider_E:         rmb $01  ; 1 byte for squirts per cycle bit field (for TS reqFuel calcs only)
  
+
 ;*****************************************************************************************
 ; - Page 2 ST table, ranges and other configurable constants
 ;  (Copied from EE Emulation D-Flash to Buffer RAM on start up, 
@@ -170,7 +171,8 @@ CrnkDwell_E:  rmb $02  ; 2 bytes for crank mode dwell time (mSec*10)
 CrnkAdv_E:    rmb $02  ; 2 bytes for crank mode ignition advance (Deg*10)
 
 
-;*****************************************************************************************
+
+ ;*****************************************************************************************
 ; - Page 3 AFR table, ranges and other configurable constants
 ;  (Copied from EE Emulation D-Flash to Buffer RAM on start up, 
 ;  all pages 1024 bytes)

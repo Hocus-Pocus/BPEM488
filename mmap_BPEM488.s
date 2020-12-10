@@ -58,10 +58,7 @@
 ;* Required Modules:                                                                     *
 ;*   BPEM488.s            - Application code for the BPEM488 project                     *   
 ;*****************************************************************************************
-;* Version History:                                                                      *
-;*    last file date May 26/2020                                                         *
-;*    December 8 2020                                                                    *
-;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
+
 ;*****************************************************************************************
 ;* - Configuration -                                                                     *
 ;*****************************************************************************************

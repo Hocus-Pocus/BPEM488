@@ -32,7 +32,7 @@
 ;*    aid for myself as an amatuer programmer with no formal training                    *
 ;*****************************************************************************************
 ;* Description:                                                                          *
-;*    This module Initializes all GPIO ports                                             *
+;*    This module Initializes all ports                                                  *
 ;*****************************************************************************************
 ;* Required Modules:                                                                     *
 ;*   BPEM488.s            - Application code for the BPEM488 project                     *
@@ -55,10 +55,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    August 17 2020                                                                     *
-;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 7 2020                                                           *
-;*                                                                                       *   
+;*    May 17 2020                                                                        *
+;*    - BEPEM488 dedicated hardware version version begins (work in progress)            *
+;*    - Update December 10 2020                                                          *   
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -111,12 +110,12 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*     PAD15 - Not used     (GPIO input, pull-up)                                        *
 ;*                                                                                       *
 ;*    Port A:                                                                            *
-;*     PA0 - LoadEEEM       (input, pull-up, active low) momentary contact              *                            
+;*     PA0 - LoadEEEM       (input, pull-up, active low) momentary contact               *                            
 ;*     PA1 - Itrmen         (input, pull-up, active low) maintained contact              *
 ;*     PA2 - Ftrmen         (input, pull-up, active low) maintained contact              *
 ;*     PA3 - AudAlrmSil     (input, pull-up, active low) maintained contact              *
-;*     PA4 - OFCen(PA4)     (input, pull-up, active low) momentar contact              *
-;*     PA5 - OFCdis(PA5)    (input, pull-up, active low) momentary contact              *
+;*     PA4 - OFCen(PA4)     (input, pull-up, active low) momentar contact                *
+;*     PA5 - OFCdis(PA5)    (input, pull-up, active low) momentary contact               *
 ;*     PA6 - PA6in          (input, pull-up, active low) maintained contact spare        *
 ;*     PA7 - Not used       (input, pull-up)                                             *
 ;*                                                                                       *
@@ -242,7 +241,7 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     movw  #$FFFF,PER0AD0   ; Load Port AD0 Pull Up Enable Register 0 and Port AD0 Pull 
 	                       ; Up Enable Register 1 with %1111111111111111 (all pull up 
 						   ; devices devices enabled)
-
+                           
 ;*****************************************************************************************
 ;#macro INIT_ADC0, 0
 ;
@@ -351,7 +350,7 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
     clr   DDRE        ; Load %00000000 into Port E Data 
                       ; Direction Register (all pins inputs)
-                      
+ 
 ;*****************************************************************************************
 ; - Initialize Port H. General purpose I/Os. Not used, all pins inputs - Page 144, 147
 ;*****************************************************************************************
@@ -362,31 +361,18 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                       ; Register and Port H Polarity Select  
                       ; Register with %1111111100000000  
                       ; (pull-ups on all pins)
-                      
+
 ;*****************************************************************************************
 ; - Initialize Port J. General purpose I/Os.Not used, all pins inputs - Page 150, 153
-; DEDICATED VERSION
 ;*****************************************************************************************
 
-;    clr   DDRJ        ; Load %00000000 into Port J Data Direction  
+    clr   DDRJ        ; Load %00000000 into Port J Data Direction  
                       ; Register(all pins inputs)
-;    movw #$FF00,PERJ  ; Load Port J Pull Device Enable  
+    movw #$FF00,PERJ  ; Load Port J Pull Device Enable  
                       ; Register and Port J Polarity Select  
                       ; Register with %1111111100000000  
                       ; (pull-ups on all pins)
-                      
-;*****************************************************************************************
-; - Initialize Port J. General purpose I/Os. 
-;   PJ1 output, all others inputs.
-; BPEM488SIM VERSION 
-;*****************************************************************************************
 
-    movb  #$02, PTJ   ; Load Port J Data Register with 
-                      ; %00000010(initialize PJ1 Hi)
-	movb  #$02, DDRJ  ; Load Port J Data Direction Register  
-                      ; with %00000010 (PJ1 output (SCI2 TXD) 
-                      ; all others inputs)
-                         
 ;*****************************************************************************************
 ; - Initialize Port K. General purpose I/Os. All pins outputs, initialize low - Page 120
 ;   NOTE! - PK6 not available in 112 pin package.
@@ -408,7 +394,7 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                       ; Register and Port M Polarity Select  
                       ; Register with %1111111100000000  
                       ; (pull-ups on all pins)
-					  
+
 ;*****************************************************************************************
 ; - Initialize Port P. General purpose I/Os. Fuel Injector Control TIM1 OC0 through    
 ;   OC4, OC5 spare, GPIO outputs pins 6 and 7 
@@ -461,38 +447,21 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*****************************************************************************************
 
 ;* - NOTE! TIM1 is initialized in tim_BEEM488.s
-
+                      
 ;*****************************************************************************************	
 ; - Initialize Port S. General purpose I/Os. SCI0 RS232 RXD input Pin 0, TXD output pin 1, 
 ;   all others not used, set as inputs - Page 126, 128 
 ;   Note! When SCI0 is enabled Pins 0 and 1 are under SCI control 
-;  DEDICATED HARDWARE VERSION
+
 ;*****************************************************************************************
 
-;    clr   DDRS        ; Load %00000000 into Port S Data Direction  
+    clr   DDRS        ; Load %00000000 into Port S Data Direction  
                       ; Register(all pins inputs)
-;    movw #$FF00,PERS  ; Load Port S Pull Device Enable  
+    movw #$FF00,PERS  ; Load Port S Pull Device Enable  
                       ; Register and Port S Polarity Select  
                       ; Register with %1111111100000000  
                       ; (pull-ups on all pins)
-                      
-;*****************************************************************************************	
-; - Initialize Port S. General purpose I/Os. outputs pins 7,6,5,3,1
-;   inputs pins 4,2,0
-;  BPEM4888SIM VERSION
-;*****************************************************************************************
 
-    movb  #$8A,PTS    ; Load Port S Data Register with 
-                      ; %10001010(initialize PS7,3,1 Hi, 
-                      ; PS6,5,4,2,0 Lo
-    movb  #$EA,DDRS   ; Load Port S Data Direction Register  
-                      ; with %11101010 (outputs on PS7,6,5, 
-                      ; 3,1 inputs on PS4,2,0)
-    movb  #$10,PPSS   ; Load Port S Polarity Select Register  
-                      ; with %00010000 (PS4 pull down, 
-                      ; PS7,6,5,3,2,1,0 pull up)
-                      
-					  
 ;;***************************************************************************************
 ;; - Initialize the SCI0 interface for 115,200 Baud Rate
 ;;   When IREN = 0, SCI Baud Rate = SCI bus clock / 16 x SBR[12-0]
@@ -519,7 +488,7 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*****************************************************************************************
 
 ;* - NOTE! SCI0 is initialized in sci0_BPEM488.s
-
+                      
 ;*****************************************************************************************	
 ; - Initialize Port T. Enhanced Capture Channels IOC7-IOC0. pg 527
 ;   Camshaft position, Crankshaft position and Vehicle Speed inputs
@@ -608,7 +577,6 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
     movb  #$51,PUCR   ; Load %01010001 into Pull Up Control 
                       ; Register (pullups enabled BKGD, Port E and Port A	
-
 #emac
 
 #macro	FUEL_PUMP_AND_ASD_ON, 0
@@ -617,8 +585,8 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ; - Energise the Fuel pump relay and the Emergency Shutdown relay on Port B Bit0 and Bit1
 ;*****************************************************************************************
 
-    bset  PORTB,FuelPump  ; Set "FuelPump" PB0 on Port B
-	bset  PORTB,ASDRelay  ; Set "ASDRelay" PB1 on Port B
+    bset  PORTB,FuelPump  ; Set "FuelPump" pin on Port B(LED9 board 1 to 28)
+	bset  PORTB,ASDRelay  ; Set "ASDRelay" pin on Port B(LED23 board 1 to 28)
 	
 #emac
 
@@ -628,8 +596,8 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ; - De-energise the Fuel pump relay and the Emergency Shutdown relay on Port B Bit0, Bit1
 ;*****************************************************************************************
 
-    bclr  PORTB,FuelPump  ; Clear "FuelPump" PB0 on Port B
-	bclr  PORTB,ASDRelay  ; Clear "ASDRelay" PB1 on Port B
+    bclr  PORTB,FuelPump  ; Clear "FuelPump" pin on Port B(LED9 board 1 to 28)
+	bclr  PORTB,ASDRelay  ; Clear "ASDRelay" pin on Port B(LED23 board 1 to 28)
 
 #emac
 

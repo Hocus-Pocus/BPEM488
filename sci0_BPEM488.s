@@ -32,7 +32,7 @@
 ;*    aid for myself as an amatuer programmer with no formal training                    *
 ;*****************************************************************************************
 ;* Description:                                                                          *
-;*    Interrupt handler for SCI0, (Communications with Tuner Studio, and Shadow Dash)    *
+;*    Interrupt handler for SCI0, (Communications with Tuner Studio)                     *
 ;*****************************************************************************************
 ;* Required Modules:                                                                     *
 ;*   BPEM488.s            - Application code for the BPEM488 project                     *
@@ -55,10 +55,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    August 21 2020                                                                     *
+;*    May 25 2020                                                                        *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - update December 8 2020                                                           *
-;*                                                                                       *
+;*    - Update December10 2020                                                           *
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -66,6 +65,7 @@
 ;*****************************************************************************************
 
     CPU	S12X   ; Switch to S12x opcode table
+
 
 ;*****************************************************************************************
 ;* - Variables -                                                                         *
@@ -196,12 +196,8 @@ SCI0_CODE_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ; NOTE! I am not using the CAN_ID
 ;
 ; The settings in the TS .ini file are:
-;   queryCommand = "Q"  ; Returns "Signature" in the code. "Signature" must match "signature" below 
-;   signature = "MS2Extra comms342h2" ; This must be used in order to communicate with Tuner Studio and Shadow Dash
-;               1234567890123456789  ; 19 bytes
-;   versionInfo = "S"   ; Returns the current revision number, "RevNum" in the code 
-;                       ; and places it in the title bar in the tuner Studio main screen
-;
+;   queryCommand        = "H"
+;   signature           = "MShift 5.001" 
 ;   endianness          = big
 ;   nPages              = 3
 ;   pageSize            = 1024,            1024,            1024
@@ -570,7 +566,7 @@ ModeO:
     ldaa  secH             ; Load accu A with value at "secH"
     staa  SCI0DRL          ; Copy to SCI0DRL (first byte to send)
     movw  #$0000,txcnt     ; Clear "txcnt"
-    movw  #$008B,txgoalMSB ; Load "txgoalMSB:txgoalLSB" with decimal 139(number of bytes to send) REAL TIME VARIABLES HERE!!!!!!!!
+    movw  #$008B,txgoalMSB ; Load "txgoalMSB:txgoalLSB" with decimal 139(number of bytes to send)                    REAL TIME VARIABLES HERE!!!!!!!!
     movb  #$02,txmode      ; Load "txmode" with decimal 2
 			
 DoTx:
@@ -690,7 +686,7 @@ Signature:
                                ; to communicate   
 
 RevNum:
-     fcc 'BPEM488 12 08 2020                                       '
+     fcc 'BPEM488 12 10 2020                                       '
 ;         123456789012345678901234567890123456789012345678901234567  ; 57 bytes
 ;                              ; This should be changed with each code revision but 
                                ; string length must stay the same

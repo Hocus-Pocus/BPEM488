@@ -56,10 +56,8 @@
 ;*****************************************************************************************
 ;* Version History:                                                                      *
 ;*    May 17 2020                                                                        *
-;*    - BPEM488 version begins (work in progress)                                        *
-;*   December 7 2020                                                                     *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 8 2020                                                           *
+;*    - Update December 10 2020                                                          *   
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -120,7 +118,7 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*     PP4 - TIM1 OC4 Inj5 (7&2)    (output, active high, initialize low)                * 
 ;*     PP5 - TIM1 OC5 PP5out        (output, initialize low) spare                       * 
 ;*     PP6 - Not used               (output, initialize low)                             *
-;*     PP7 - Not used               (output, initialize low)                             *
+;*     PP7 - Not used               (output, initialize low)   
 ;*****************************************************************************************
 ;*****************************************************************************************	
 
@@ -142,8 +140,8 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                         ; Load TIM_TSCR1 with %10011000 (timer enabled, no stop in wait, 
                         ; no stop in freeze, fast flag clear, precision timer)
                         
-    movb #$1F,TIM_TIE   ; Load TIM_TIE (Timer Interrupt Enable Register)
-                        ; with %00111111 (enable interrupts CH5...0)
+    movb #$FF,TIM_TIE   ; Load TIM_TIE (Timer Interrupt Enable Register)
+                        ; with %11111111 (enable interrupts all channels)
 
     movb #$07,TIM_TSCR2 ; (TIM_TSCR2 equ $03DD)(Load TIM_TSCR2 with %00000111 
                         ; (timer overflow interrupt disabled,timer counter 
@@ -156,8 +154,6 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     movb #$FF,TIM_PTPSR ; (TIM_PTPSR equ $03FE)(Load TIM_PTPSR with %11111111
                         ; (prescale 256, 5.12us resolution, 
                         ; max period 335.5ms) (time base for prime or crank modes)
-                        
-
                         
 #emac
 
@@ -234,7 +230,7 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd InjOCadd1      ; (A:B)+(M:M+1->A:B Add "InjOCadd1" (Delay from trigger to start 
                         ; of injection)
-    std  TIM_TC3H       ; Copy result to Timer IC/OC register 3 (Start OC operation)
+    std  TIM_TC0H       ; Copy result to Timer IC/OC register 0 (Start OC operation)
 	                    ; (Will trigger an interrupt after the delay time)(LED off)
 
 #emac
@@ -252,14 +248,14 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd InjOCadd1      ; (A:B)+(M:M+1->A:B Add "InjOCadd1" (Delay from trigger to start 
                         ; of injection)
-    std  TIM_TC4H       ; Copy result to Timer IC/OC register 4 (Start OC operation)
+    std  TIM_TC1H       ; Copy result to Timer IC/OC register 1 (Start OC operation)
 	                    ; (Will trigger an interrupt after the delay time)(LED off)
 
 #emac
 
 #macro FIRE_INJ3, 0                        
 ;*****************************************************************************************
-; - PP2 - TIM1 OC2(Inj3)(3&6) Control
+;; - PP2 - TIM1 OC2(Inj3)(3&6) Control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired delay from trigger time to energising time.
@@ -270,7 +266,7 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd InjOCadd1      ; (A:B)+(M:M+1->A:B Add "InjOCadd1" (Delay from trigger to start 
                         ; of injection)
-    std  TIM_TC5H       ; Copy result to Timer IC/OC register 5 (Start OC operation)
+    std  TIM_TC2H       ; Copy result to Timer IC/OC register2 (Start OC operation)
 	                    ; (Will trigger an interrupt after the delay time)(LED off)
 
 #emac
@@ -288,7 +284,7 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd InjOCadd1      ; (A:B)+(M:M+1->A:B Add "InjOCadd1" (Delay from trigger to start 
                         ; of injection)
-    std  TIM_TC6H       ; Copy result to Timer IC/OC register 6 (Start OC operation)
+    std  TIM_TC3H       ; Copy result to Timer IC/OC register 3 (Start OC operation)
 	                    ; (Will trigger an interrupt after the delay time)(LED off)
 
 #emac
@@ -306,7 +302,7 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd InjOCadd1      ; (A:B)+(M:M+1->A:B Add "InjOCadd1" (Delay from trigger to start 
                         ; of injection)
-    std  TIM_TC7H       ; Copy result to Timer IC/OC register 7(Start OC operation)
+    std  TIM_TC4H       ; Copy result to Timer IC/OC register 4(Start OC operation)
 	                    ; (Will trigger an interrupt after the delay time)(LED off)
        
 #emac
@@ -322,7 +318,7 @@ TIM_CODE_START_LIN	EQU	@ ; @ Represents the current value of the linear
                           ; program counter
 
 ;*****************************************************************************************
-; - In the INIT_TIM macro, all Port P pins are set as outputs with 
+; - In the INIT_TIM macro, Port T PT0, PT2 and all Port P pins are set as outputs with 
 ;   initial setting low. To control both the ignition and injector drivers two interrupts  
 ;   are required for each ignition or injection event. At the appropriate crank angle and  
 ;   cam phase an interrupt is triggered. In this ISR routine the channel output compare 

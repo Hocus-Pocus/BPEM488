@@ -55,10 +55,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors (This module)     *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    August 21 2020                                                                     *
+;*    May 25 2020                                                                        *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 8 2020                                                           *
-;*                                                                                       *    
+;*    - Update December 10 2020                                                          *    
 ;*****************************************************************************************
 
 ;*****************************************************************************************

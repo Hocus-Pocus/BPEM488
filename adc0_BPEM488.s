@@ -55,10 +55,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    August 29 2020                                                                     *
+;*    May 17 2020                                                                        *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 8 2020                                                           *                                                                                       *   
-;*                                                                                       *   
+;*    - Update December 10 2020                                                          *   
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -80,9 +79,6 @@ ADC0_VARS_START_LIN	EQU   @ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 ; - RS232 Real Time Variables - (declared in BPEM488.s)
 ;*****************************************************************************************
-;*****************************************************************************************
-; - ADC variables
-;*****************************************************************************************
 
 ;batAdc:       ds 2 ; Battery Voltage 10 bit ADC AN00(offset=2) 
 ;BatVx10:      ds 2 ; Battery Voltage (Volts x 10)(offset=4) 
@@ -97,7 +93,7 @@ ADC0_VARS_START_LIN	EQU   @ ; @ Represents the current value of the linear
 ;tpsADC:       ds 2 ; 10 bit ADC AN05 Throttle Position Sensor ADC (exact for TS)(offset=22)
 ;TpsPctx10:    ds 2 ; Throttle Position Sensor % of travel(%x10)(update every 100mSec)(offset=24)
 ;egoAdc1:      ds 2 ; 10 bit ADC AN06 Exhaust Gas Oxygen ADC Left bank odd cyls(offset=26)
-;afr1x10:      ds 2 ; Air Fuel Ratio for gasoline Left bank odd cyls(afr1x10)(exact for TS)(offset=28)
+;afr1x10:      ds 2 ; Air Fuel Ratio for gasoline Left bank odd cyls(AFR1x10)(exact for TS)(offset=28)
 ;baroAdc:      ds 2 ; 10 bit ADC AN07 Barometric Pressure ADC(offset=30) 
 ;Barox10:      ds 2 ; Barometric Pressure (KPAx10)(offset=32)
 ;eopAdc:       ds 2 ; 10 bit ADC AN08 Engine Oil Pressure ADC(offset=34) 
@@ -109,7 +105,7 @@ ADC0_VARS_START_LIN	EQU   @ ; @ Represents the current value of the linear
 ;ftrmAdc:      ds 2 ; 10 bit ADC AN11 Fuel Trim ADC(offset=46)
 ;Ftrmx10:      ds 2 ; Fuel Trim (% x 10)(+-20%)(offset=48)
 ;egoAdc2:      ds 2 ; 10 bit ADC AN12  Exhaust Gas Oxygen ADC Right bank even cyls(offset=50)   
-;afr2x10:      ds 2 ; Air Fuel Ratio for gasoline Right bank even cyls(afr2x10)(exact for TS)offset=52)                 
+;afr2x10:      ds 2 ; Air Fuel Ratio for gasoline Right bank even cyls(AFR2x10)(exact for TS)offset=52)
 
 ;*****************************************************************************************
 ; - Port status variables
@@ -126,112 +122,54 @@ ADC0_VARS_START_LIN	EQU   @ ; @ Represents the current value of the linear
 ;engine2:      ds 1  ; Engine2 status bit field(offset=124)
 ;alarmbits:    ds 1  ; Alarm status bit field(offset=125)
 ;AAoffbits:    ds 1  ; Audio Alarm Off status bit field(offset=126)
+          
 
 ;*****************************************************************************************
 ; "engine2" equates
 ;*****************************************************************************************
 
-;base512        equ $01 ; %00000001, bit 0, 0 = 5.12uS time base off(White),
-                                         ; 1 = 5.12uS time base on(Grn)
-;base256        equ $02 ; %00000010, bit 1, 0 = 2.56uS time base off(White),
-                                         ; 1 = 2.56uS time base on(Grn)
-;AudAlrm        equ $04 ; %00000100, bit 2, 0 = Audible Alarm on(Grn),
-                                         ; 1 = Audible Alarm off(Red) 
-;TOEduron       equ $08 ; %00001000, bit 3, 0 = TOE timer not counting down(Grn),
-                                         ; 1 = TOE timer counting down(Red) 
-;eng2Bit4       equ $10 ; %00010000, bit 4, 0 = , 1 = 
-;eng2Bit5       equ $20 ; %00100000, bit 5, 0 = , 1 = 
-;eng2Bit6       equ $40 ; %01000000, bit 6, 0 = , 1 = 
-;eng2Bit7       equ $80 ; %10000000, bit 7, 0 = , 1 =
+;base512        equ $01 ; %00000001, bit 0, In Timer Base 512 mode
+;base256        equ $02 ; %00000010, bit 1, In Timer Base 256 Mode
+;AudAlrm        equ $04 ; %00000100, bit 2, In Audible Alarm Mode
+;TOEduron       equ $08 ; %00001000, bit 3, In Throttle Opening Enrichment Duration Mode
 
 ;*****************************************************************************************
 ;***************************************************************************************** 
 ; "alarmbits" equates
 ;*****************************************************************************************
 
-;LOP        equ $01 ; %00000001, bit 0, 0 = No low oil pressure(Grn), 
-                                      ;1 = Low oil pressure(Red)
-;HOT        equ $02 ; %00000010, bit 1, 0 = No high oil temperature(Grn),
-                                      ;1 = High oil temperature(Red)
-;HET        equ $04 ; %00000100, bit 2, 0 = No high coolant temperature(Grn),
-                                      ;1 = High coolant temperature(Red) 
-;HEGT       equ $08 ; %00001000, bit 3, 0 = No high exhaust temperature(Grn),
-                                      ;1 = High exhaust temperatrue(Red)
-;HFT        equ $10 ; %00010000, bit 4, 0 = No high fuel temperature(Grn),
-                                      ;1 = High fuel temperature(Red) 
-;LFP        equ $20 ; %00100000, bit 5, 0 = No Low fuel pressure(Grn),
-                                      ;1 = Low fuel pressure(Red) 
-;HFP        equ $40 ; %01000000, bit 6, 0 = No high fuel pressure(Grn),
-                                      ;1 = High fuel pressure(Red)
-
-;*****************************************************************************************
-;***************************************************************************************** 
-; "AAoffbits"equates
-;*****************************************************************************************
-
-;LOPoff        equ $01 ; %00000001, bit 0, 0 = No LOP audio alarm silence, 
-                                      ;1 = LOP audio alarm silence
-;HOToff        equ $02 ; %00000010, bit 1, 0 = No HOT audio alarm silence,
-                                      ;1 = HOT audio alarm silence
-;HEToff        equ $04 ; %00000100, bit 2, 0 = No HET audio alarm silence,
-                                      ;1 = HET audio alarm silence 
-;HEGToff       equ $08 ; %00001000, bit 3, 0 = No HEGT audio alarm silence,
-                                      ;1 = HEGT audio alarm silence
-;HFToff        equ $10 ; %00010000, bit 4, 0 = No HFT audio alarm silence,
-                                      ;1 = HFT audio alarm silence 
-;LFPoff        equ $20 ; %00100000, bit 5, 0 = No LFP audio alarm silence,
-                                      ;1 = LFP audio alarm silence 
-;HFPoff        equ $40 ; %01000000, bit 6, 0 = No HFP audio alarm silence,
-                                       ;1 = HFP audio alarm silence
+;LOP        equ $01 ; %00000001, bit 0, Low Oil Pressure
+;HOT        equ $02 ; %00000010, bit 1, High Oil Temperature
+;HET        equ $04 ; %00000100, bit 2, High Engine Temperature
+;HEGT       equ $08 ; %00001000, bit 3, High Exhaust Gas Temperature
+;HFT        equ $10 ; %00010000, bit 4, High Fuel Temperature
+;LFP        equ $20 ; %00100000, bit 5, Low Fuel Pressure
+;HFP        equ $40 ; %01000000, bit 6, High Fuel Pressure
 
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; PortAbits: Port A status bit field (PORTA)
 ;*****************************************************************************************
 
-;LoadEEEM        equ  $01 ;(PA0)%00000001, bit 0, 0 = EEEM load disabled(Grn),
-                                                ;1 = EEEMload enabled(Red)
-;Itrimen         equ  $02 ;(PA1)%00000010, bit 1, 0 = Ign trim disabled(Grn),
-                                                ;1 = Ign trim enabled(Red)     
-;Ftrimen         equ  $04 ;(PA2)%00000100, bit 2, 0 = Fuel trim disabled(Grn),
-                                                ;1 = Fuel trim enabled(Red)
-;AudAlrmSil      equ  $08 ;(PA3)%00001000, bit 3, 0 = Audible Alarm not silenced(Grn)
-                                               ; 1 = Audible Alarm silenced(Red)
-;PA4in           equ  $10 ;(PA4)%00010000, bit 4
-;PA5in           equ  $20 ;(PA5)%00100000, bit 5
-;PA6in           equ  $40 ;(PA6)%01000000, bit 6,
+;LoadEEEM        equ  $01 ;(PA0)%00000001, bit 0, Load EEEM Enable
+;Itrimen         equ  $02 ;(PA1)%00000010, bit 1, Ignition Trim Enable
+;Ftrimen         equ  $04 ;(PA2)%00000100, bit 2, Fuel Trim Enable
+;AudAlrmSil      equ  $08 ;(PA3)%00001000, bit 3, Audible Alarm Silence
+;OFCen           equ  $10 ;(PA4)%00010000, bit 4, Overrun Fuel Cut Enable
+;OFCdis          equ  $20 ;(PA5)%00100000, bit 5, Overrun Fuel Cut Disable
 
-;*****************************************************************************************
 ;*****************************************************************************************
 ; PortBbits: Port B status bit field (PORTB)
 ;*****************************************************************************************
 
-;FuelPump    equ  $01 ;(PB0)%00000001, bit 0, 0 = Fuel Pump off(Red),
-                                            ;1 = Fuel pump on(Grn)
-;ASDRelay    equ  $02 ;(PB1)%00000010, bit 1, 0 = ASD Relay off(Red),
-                                            ;1 = ASD Relay on(Grn)
-;EngAlarm    equ  $04 ;(PB2)%00000100, bit 2, 0 = Alarm Relay off(Grn),
-                                            ;1 = Alarm Relay on(Red)
-;AIOT        equ  $08 ;(PB3)%00001000, bit 3, 0 = AIOT no pulse(Grn)
-                                            ;1 = AIOT pulse(Red)
-;PB4out      equ  $10 ;(PB4)%00010000, bit 4
-;PB5out      equ  $20 ;(PB5)%00100000, bit 5,
-;PB6out      equ  $40 ;(PB6)%01000000, bit 6,
-
-;*****************************************************************************************
-;*****************************************************************************************
-; PortKbits: Port K status bit field (PORTK)
-;***************************************************************************************** 
-
-;LOPalrm    equ  $01 ;(PK0)%00000001, bit 0
-;HOTalrm    equ  $02 ;(PK1)%00000010, bit 1
-;HETalrm    equ  $04 ;(PK2)%00000100, bit 2
-;HEGTalrm   equ  $08 ;(PK3)%00001000, bit 3
-;HFTalrm    equ  $10 ;(PK4)%00010000, bit 4
-;LFPalrm    equ  $20 ;(PK5)%00100000, bit 5
-;;N/A        equ  $40 ;(PK6)%01000000, bit 6
-;HFPalrm    equ  $80 ;(PK7)%10000000, bit 7
-
+;FuelPump    equ  $01 ;(PB0)%00000001, bit 0, Fuel Pump State
+;ASDRelay    equ  $02 ;(PB1)%00000010, bit 1, Automatic Shutdown Relay State
+;EngAlarm    equ  $04 ;(PB2)%00000100, bit 2, Engine Alarm State
+;AIOT        equ  $08 ;(PB3)%00001000, bit 3, AIOT Signal State
+;PB4out      equ  $10 ;(PB4)%00010000, bit 4, PB4out State
+;PB5out      equ  $20 ;(PB5)%00100000, bit 5, PB5out State
+;PB6out      equ  $40 ;(PB6)%01000000, bit 6, PB6out State
+   
 ;*****************************************************************************************
 
 ADC0_VARS_END		EQU	*     ; * Represents the current value of the paged 
@@ -245,14 +183,12 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 #macro INIT_ADC0, 0
 
-;****************************************************************************************
-; - Initialize Analog to Digital Converter (ATD0) PAD12 through PAD00 for continuous 
-;   conversions
+;*****************************************************************************************
+; - Initialize Analog to Digital Converter (ATD0) for continuous conversions
 ;   8.3MHz ATDCLK period = 0.00000012048 Sec.
 ;   10 bit ATD Conversion period = 41 ATDCLK cycles(ref page 1219) 
 ;   Sample time per channel = 24+2 for discharge capacitor = 26 ATDCLK cycles
-;   Sample time for all 16 channels = (41+26)x16=1072 ATDCLK periods = 0.00012915 Sec. 
-;   (~129uS)
+;   Sample time for all 16 channels = (41+26)x16=1072 ATDCLK periods = 0.00012915 Sec. (~129uS)
 ;*****************************************************************************************
 
     movw  #$0000,ATD0DIENH  ; Load ATD0 Input Enable Register  
@@ -325,7 +261,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 #macro START_ATD0, 0
 
 ;*****************************************************************************************
-;- Start ATD0 and get ADC values for all selected channels
+;- Start ATD0 and get ADC values for all channels
 ;*****************************************************************************************
 
     movb  #$30,ATD0CTL5   ; Load "ATD0CTL5" with %00110000 (no special channel,continuous  
@@ -406,6 +342,8 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 #macro CONVERT_ATD0, 0
 
 ;*****************************************************************************************
+; - Calculate Battery Voltage
+;*****************************************************************************************
 ; - Calculate Battery Voltage x 10 -
 ;    (batAdc/1023)*29.95 = BatV
 ;             or
@@ -445,7 +383,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     ldy   DodgeThermistor,X  ; Load index register Y with value in "DodgeThermistor" table,
                             ; offset in index register X
     sty   Matx10            ; Copy result to "Matx100" Manifold Air Temperature x 10
-	
+    
 ;*****************************************************************************************
 ; - Calculate Manifold Absolute Pressure x 10 (Used to calculate to 1 decimal place)
 ;   Dodge V10 MAP sensor test data 7/30/20:
@@ -489,7 +427,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
     leas  10,SP    ; Stack pointer -> bottom of stack    
     std   Mapx10   ; Copy result to "Mapx10" Manifold Absolute Pressure x 10
-	
+    
 ;*****************************************************************************************        
 ; - Calculate Throttle Position Percent x 10 -
 ;*****************************************************************************************
@@ -499,7 +437,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                      ; on buffer RAM page 1 (veBins)
     ldd  $03E8,Y     ; Load Accu D with value in buffer RAM page 1 offset 1000 (tpsMin)
     pshd             ; Push to stack (V1)
-    ldd  tpsAdc      ; Load double accumulator with "tpsAdc"
+    ldd  tpsADC      ; Load double accumulator with "tpsADCAdc"
     pshd             ; Push to stack (V)
     movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
     ldy  #veBins_E   ; Load index register Y with address of first configurable constant
@@ -534,7 +472,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
     leas  10,SP    ; Stack pointer -> bottom of stack    
     std  TpsPctx10 ; Copy result to "TpsPctx10" Throttle Position Percent of travel x 10
-	
+    
 ;*****************************************************************************************
 ; - Calculate Air Fuel Ratio x 10 for left bank (odd cylinders)-
 ;   Innovate LC-2 AFR is ratiometric 0V to 5V 7.35 AFR to 22.39 AFR
@@ -577,7 +515,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
     leas  10,SP       ; Stack pointer -> bottom of stack    
     std   afr1x10     ; Copy result to "afr1x10" Air Fuel Ratio x 10
-    
+    	
 ;*****************************************************************************************
 ; - Calculate Barometric Pressure x 10(Used to calculate to 1 decimal place)
 ;   Baro sensor MPX4115AP
@@ -600,7 +538,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     ldx   #$0009        ; Load index register "X" with decimal 9
     idiv                ; Integer divide (D)/(X)=>X Rem=>D 
     stx   Barox10        ; Copy result to "Barox10" (KPAx10)
-	
+    
 ;*****************************************************************************************        
 ; - Calculate Engine Oil Pressure x 10 -
 ;   Pressure transducer is ratiometric 1V to 5V 0PSI to 100PSI
@@ -643,7 +581,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
     leas  10,SP    ; Stack pointer -> bottom of stack    
     std   Eopx10   ; Copy result to "Eopx10" Engine Oil Pressure x 10
-	
+    
 ;*****************************************************************************************        
 ; - Calculate Engine Fuel Pressure x 10 -
 ;   Pressure transducer is ratiometric 1V to 5V 0PSI to 100PSI
@@ -686,7 +624,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
     leas  10,SP    ; Stack pointer -> bottom of stack    
     std   Efpx10   ; Copy result to "Efpx10" Engine Fuel Pressure x 10
-	
+    
 ;*****************************************************************************************        
 ; - Calculate Ignition Trim (Degrees x 10)(+-20 Degrees) -
 ;   Ignition calculations delay the coil energisation time (dwell) and the discharge time
@@ -742,6 +680,7 @@ NoItrim:
 
 ItrimDone:	
     
+    
 ;*****************************************************************************************        
 ; - Calculate Fuel Trim (% x 10)(+-20%) -
 ;   (80% = 80% of VEcurr, 100% = 100% of VeCurr(no correction), 120% = 120% of VEcurr)
@@ -792,7 +731,7 @@ NoFtrim:
     movw #$03E8,Ftrmx10  ; Decimal 1000 -> "Ftrmx10" (100%, no trim)
 	
 FtrimDone:
-
+	
 ;*****************************************************************************************
 ; - Calculate Air Fuel Ratio x 10 for right bank (even cylinders)-
 ;   Innovate LC-2 AFR is ratiometric 0V to 5V 7.35 AFR to 22.39 AFR
@@ -835,7 +774,7 @@ FtrimDone:
 
     leas  10,SP       ; Stack pointer -> bottom of stack    
     std   afr2x10     ; Copy result to "afr2x10" Air Fuel Ratio x 10
-	
+    
 #emac
 
 #macro CHECK_ALARMS, 0
@@ -843,9 +782,9 @@ FtrimDone:
 ;*****************************************************************************************
 ; - BPEM488 allows for the following alarms:
 ;   High Engine Temperature
-;*   High Oil Temperature
-;*   High Fuel Temperature
-;*   High Exhaust Gas Temperture
+;   High Oil Temperature
+;   High Fuel Temperature
+;   High Exhaust Gas Temperture
 ;   Low Oil Pressure
 ;   High Fuel Pressure
 ;   Low Fuel Pressure
@@ -989,7 +928,7 @@ HET_ALARM_DONE:
 ;*     bset    alarmbits,HEGT                 ; Set "HEGT" bit of "alarmbits"
 ;*
 ;*HEGT_ALARM_DONE:	
-;*
+
 ;*****************************************************************************************        
 ; - Check for low oil pressure
 ;*****************************************************************************************
