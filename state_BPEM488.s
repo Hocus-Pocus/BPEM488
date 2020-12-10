@@ -58,7 +58,8 @@
 ;* Version History:                                                                      *
 ;*    May 13 2020                                                                        *
 ;*    - BPEM488 version begins (work in progress)                                        *
-;*                                                                                       *     
+;*    December 8 2020                                                                    *
+;*    - BPEM488 dedicated hardware version begins (work in progress)                     *    
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -175,9 +176,9 @@ ICflgs:      ds 1  ; Input Capture flags bit field
 
 RPMcalc:    equ $01   ; %00000001 (Bit 0) (Do RPM calculations flag)
 KpHcalc:    equ $02   ; %00000010 (Bit 1) (Do VSS calculations flag)
-Ch7_2nd:    equ $04   ; %00000100 (Bit 2) (Ch7 2nd edge flag)
-Ch6alt:     equ $08   ; %00001000 (Bit 3) (Ch6 alt flag)
-Ch7_3d:     equ $10   ; %00010000 (Bit 4) (Ch7 3d edge flag)
+Ch1_2nd:    equ $04   ; %00000100 (Bit 2) (Ch1 2nd edge flag)
+Ch2alt:     equ $08   ; %00001000 (Bit 3) (Ch2 alt flag)
+Ch1_3d:     equ $10   ; %00010000 (Bit 4) (Ch1 3d edge flag)
 RevMarker:  equ $20   ; %00100000 (Bit 5) (Crank revolution marker flag)
 
 ;***************************************************************************************** 
@@ -227,13 +228,13 @@ STATE_CODE_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;   position and camshaft phase is re-established. 
 ;*****************************************************************************************    
 
-ECT_TC5_ISR:
+ECT_TC0_ISR:
 ;*****************************************************************************************
-; - ECT_TC5_ISR Interrupt Service Routine (Camshaft sensor notch)
+; - ECT_TC0_ISR Interrupt Service Routine (Camshaft sensor notch)
 ;   Event = 0
 ;*****************************************************************************************
 
-    ldx    ECT_TC5H         ; Read ECT_TC5H to clear the flag
+    ldx    ECT_TC0H         ; Read ECT_TC0H to clear the flag
     ldx    #StateLookup     ; Load index register X with the address of "TableLookup"
     ldab   State            ; Load Accu B with the contents of "State"             
     aslb                    ; Shift Accu B 1 place to the left                      
@@ -243,13 +244,13 @@ ECT_TC5_ISR:
     staa   State            ; Copy to "State"
     rti                     ; Return from interrupt
         
-ECT_TC7_ISR:
+ECT_TC1_ISR:
 ;*****************************************************************************************
-; - ECT_TC7_ISR Interrupt Service Routine (Crankshaft sensor notch)
+; - ECT_TC1_ISR Interrupt Service Routine (Crankshaft sensor notch)
 ;   Event = 1
 ;*****************************************************************************************
 
-    ldx    ECT_TC7H              ; Read ECT_TC7H to clear the flag
+    ldx    ECT_TC1H         ; Read ECT_TC1H to clear the flag
     ldx    #StateLookup     ; Load index register X with the address of "TableLookup"
     ldab   State            ; Load Accu B with the contents of "State"             
     aslb                    ; Shift Accu B 1 place to the left                      
@@ -315,28 +316,28 @@ STATE_STATUS_done:
     std  Stallcnt       ; Copy to "Stallcnt" (no crank or stall condition counter)
                         ; (1mS increments)				 
 
-    brset ICflgs,Ch7_2nd,CAS_2nd ; If "Ch7_2nd" bit of "ICflgs" is set, branch to "CAS_2nd:"
-    brset ICflgs,Ch7_3d,CAS_3d   ; If "Ch7_3d" bit of "ICflgs" is set, branch to "CAS_3d:"
-    ldd   ECT_TC7H               ; Load accu D with value in "ECT_TC7H"
+    brset ICflgs,Ch1_2nd,CAS_2nd ; If "Ch1_2nd" bit of "ICflgs" is set, branch to "CAS_2nd:"
+    brset ICflgs,Ch1_3d,CAS_3d   ; If "Ch1_3d" bit of "ICflgs" is set, branch to "CAS_3d:"
+    ldd   ECT_TC1H               ; Load accu D with value in "ECT_TC1H"
     std   CAS1sttk               ; Copy to "CAS1sttk"
-    bset  ICflgs,Ch7_2nd         ; Set "Ch7_2nd" bit of "ICflgs"
+    bset  ICflgs,Ch1_2nd         ; Set "Ch1_2nd" bit of "ICflgs"
     bra   CASDone                ; Branch to CASDone:
     
 CAS_2nd:
-    ldd   ECT_TC7H        ; Load accu D with value in "ECT_TC7H"
+    ldd   ECT_TC1H        ; Load accu D with value in "ECT_TC1H"
     std   CAS2ndtk        ; Copy to "CAS2ndtk"
     subd  CAS1sttk        ; Subtract (A:B)-(M:M+1)=>A:B "CAS1sttk" from value in "ECT_TC7H"
     std   CASprd1tk       ; Copy result to "CASprd1tk"                                 
-    bclr  ICflgs,Ch7_2nd  ; Clear "Ch7_2nd" bit of "ICflgs"
-    bset  ICflgs,Ch7_3d   ; Set "Ch7_3d" bit of "ICflgs"
+    bclr  ICflgs,Ch1_2nd  ; Clear "Ch1_2nd" bit of "ICflgs"
+    bset  ICflgs,Ch1_3d   ; Set "Ch1_3d" bit of "ICflgs"
     bra   CASDone         ; Branch to CASDone:
 
 CAS_3d:
-    ldd   ECT_TC7H        ; Load accu D with value in "ECT_TC7H"
-    subd  CAS2ndtk        ; Subtract (A:B)-(M:M+1)=>A:B "CAS2ndtk" from value in "ECT_TC7H"
+    ldd   ECT_TC1H        ; Load accu D with value in "ECT_TC1H"
+    subd  CAS2ndtk        ; Subtract (A:B)-(M:M+1)=>A:B "CAS2ndtk" from value in "ECT_TC1H"
     std   CASprd2tk       ; Copy result to "CASprd2tk"
     addd  CASprd1tk       ; (A:B)+(M:M+1)_->A:B "CASprd2tk" + "CASprd1tk" = "CASprdtk"
-    bclr  ICflgs,Ch7_3d   ; Clear "Ch7_3d" bit of "ICflgs"
+    bclr  ICflgs,Ch1_3d   ; Clear "Ch1_3d" bit of "ICflgs"
 	
 ;*****************************************************************************************
 ; - All calculations that use the Crank Angle Sensor period need to know what the 
@@ -630,7 +631,7 @@ Notch_CT3_T2:
 ;   coil dwell for spark #1, waste #6 if we are in run mode.
 ;*****************************************************************************************
 
-    FIRE_IGN1                 ; macro in Tim_BPEM488.s
+    FIRE_IGN1                 ; macro in ect_BPEM488.s
     
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
@@ -641,7 +642,7 @@ Notch_CT3_T3:
 ;   coil dwell for spark #10, waste #5 if we are in run mode.   
 ;*****************************************************************************************
 
-    FIRE_IGN2                 ; macro in Tim_BEEM488.s
+    FIRE_IGN2                 ; macro in ect_BEEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
     
 Notch_CT3_T4:
@@ -703,7 +704,7 @@ Notch_CT4_T6:
 ;   coil dwell for spark #9, waste #8 if we are in run mode.
 ;*****************************************************************************************
 
-    FIRE_IGN3                 ; macro in Tim_BPEM488.s
+    FIRE_IGN3                 ; macro in ect_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT4_T7:
@@ -713,7 +714,7 @@ Notch_CT4_T7:
 ;   coil dwell for spark #4, waste #7 if we are in run mode.   
 ;*****************************************************************************************
 
-    FIRE_IGN4                 ; macro in Tim_BPEM488.s
+    FIRE_IGN4                 ; macro in ect_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone:
 
 Notch_CT4_T8:
@@ -775,7 +776,7 @@ Notch_CT4_T10:
 ;   coil dwell for spark #3, waste #2 if we are in run mode.
 ;*****************************************************************************************
 
-    FIRE_IGN5                 ; macro in Tim_BPEM488.s
+    FIRE_IGN5                 ; macro in ect_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT4_T1:
@@ -785,7 +786,7 @@ Notch_CT4_T1:
 ;   coil dwell for spark #6, waste #1 if we are in run mode.   
 ;*****************************************************************************************
 
-    FIRE_IGN1                 ; macro in Tim_BPEM488.s
+    FIRE_IGN1                 ; macro in ect_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone:
     
 Notch_CT4_T2:
@@ -848,7 +849,7 @@ Notch_CT4_T4:
 ;   coil dwell for spark #5, waste #10 if we are in run mode. 
 ;*****************************************************************************************
 
-    FIRE_IGN2                 ; macro in Tim_BPEM488.s
+    FIRE_IGN2                 ; macro in ect_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT1_T5:
@@ -858,7 +859,7 @@ Notch_CT1_T5:
 ;   coil dwell for spark #8, waste #9 if we are in run mode.   
 ;*****************************************************************************************
 
-    FIRE_IGN3                 ; macro in Tim_BPEM488.s
+    FIRE_IGN3                 ; macro in ect_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone:
 
 Notch_CT1_T6:
@@ -922,7 +923,7 @@ Notch_CT1_T8:
 ;   coil dwell for spark #7, waste #4 if we are in run mode.
 ;*****************************************************************************************
 
-    FIRE_IGN4                 ; macro in Tim_BPEM488.s
+    FIRE_IGN4                 ; macro in ect_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT1_T9:
@@ -932,7 +933,7 @@ Notch_CT1_T9:
 ;   coil dwell for spark #2, waste #3 if we are in run mode.   
 ;*****************************************************************************************
 
-    FIRE_IGN5                 ; macro in Tim_BPEM488.s
+    FIRE_IGN5                 ; macro in ect_BPEM488.s
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT1_T10:
@@ -977,20 +978,11 @@ Totalizer2R:
 	ldaa #$03           ; Decimal 3->Accu A (3 mS)
     staa AIOTcnt        ; Copy to "AIOTcnt" ( counter for totalizer pulse width, 
 	                    ; decremented every mS)
-                        
-;**********************************************************************
-; - De-Bug LED
-     ldaa  PORTK        ; Load ACC A with value in Port K            *
-     eora  #$80         ; Exclusive or with $10000000                * in use state
-     staa   PORTK       ; Copy to Port K (toggle Bit7)               * 
-                        ; LED2, board 87 to 112)                      *
-;**********************************************************************     
-	
+
 TotalizerDone2R:
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 StateHandlersDone:
-
     rti                  ; Return from interrupt
     
 ;**********************************************************************

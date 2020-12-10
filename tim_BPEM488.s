@@ -57,7 +57,9 @@
 ;* Version History:                                                                      *
 ;*    May 17 2020                                                                        *
 ;*    - BPEM488 version begins (work in progress)                                        *
-;*                                                                                       *   
+;*   December 7 2020                                                                     *
+;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
+;*    - Update December 8 2020                                                           *
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -111,14 +113,14 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Initialize Port P. General purpose I/Os. all pins outputs
-;*     PP0(P4) - TIM1 OC0 (D21)(1to28)(Ign3)(9&8)     (output, low) analog Vout option   *   
-;*     PP1(P3) - TIM1 OC1 (D5)(1to28)(Ign4)(4&7)      (output, low) analog Vout option   *    
-;*     PP2(P2) - TIM1 OC2 (D24)(1to28)(Ign5)(3&2)     (output, low) analog Vout option   *    
-;*     PP3(P1) - TIM1 OC3 (D1)(1to28)(Inj1)(1&10)     (output, low) analog Vout option   *   
-;*     PP4(P112) - TIM1 OC4 (D3)(87to112)(Inj2)(9&4)  (output, low) analog Vout option   * 
-;*     PP5(P111) - TIM1 OC5 (D6)(87to112)(Inj3)(3&6)  (output, low) analog Vout option   * 
-;*     PP6(P110) - TIM1 OC6 (D1)(87to112)(Inj4)(5&8)  (output, low) analog Vout option   * 
-;*     PP7(P109) - TIM1 OC7 (D7)(87to112)(Inj5)(7&2)  (output, low) analog Vout option   * 
+;*     PP0 - TIM1 OC0 Inj1 (1&10)   (output, active high, initialize low)                *   
+;*     PP1 - TIM1 OC1 Inj2 (9&4)    (output, active high, initialize low)                *    
+;*     PP2 - TIM1 OC2 Inj3 (3&6)    (output, active high, initialize low)                * 
+;*     PP3 - TIM1 OC3 Inj4 (5&8)    (output, active high, initialize low)                *  
+;*     PP4 - TIM1 OC4 Inj5 (7&2)    (output, active high, initialize low)                * 
+;*     PP5 - TIM1 OC5 PP5out        (output, initialize low) spare                       * 
+;*     PP6 - Not used               (output, initialize low)                             *
+;*     PP7 - Not used               (output, initialize low)                             *
 ;*****************************************************************************************
 ;*****************************************************************************************	
 
@@ -140,8 +142,8 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                         ; Load TIM_TSCR1 with %10011000 (timer enabled, no stop in wait, 
                         ; no stop in freeze, fast flag clear, precision timer)
                         
-    movb #$FF,TIM_TIE   ; Load TIM_TIE (Timer Interrupt Enable Register)
-                        ; with %11111111 (enable interrupts all channels)
+    movb #$1F,TIM_TIE   ; Load TIM_TIE (Timer Interrupt Enable Register)
+                        ; with %00111111 (enable interrupts CH5...0)
 
     movb #$07,TIM_TSCR2 ; (TIM_TSCR2 equ $03DD)(Load TIM_TSCR2 with %00000111 
                         ; (timer overflow interrupt disabled,timer counter 
@@ -221,14 +223,14 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 #macro FIRE_INJ1, 0 
 ;*****************************************************************************************
-; - PP3(P1) - TIM1 OC3 (D1)(1to28)(Inj1)(1&10) Control
+; - PP0 - TIM1 OC0(Inj1)(1&10) Control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired delay from trigger time to energising time.
 ;*****************************************************************************************
 
-    bset TIM_TCTL2,Bit7 ; Set Ch3 output line to 1 on compare
-    bset TIM_TCTL2,Bit6 ; Set Ch3 output line to 1 on compare  
+    bset TIM_TCTL2,Bit0 ; Set Ch0 output line to 1 on compare
+    bset TIM_TCTL2,Bit1 ; Set Ch0 output line to 1 on compare  
     ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd InjOCadd1      ; (A:B)+(M:M+1->A:B Add "InjOCadd1" (Delay from trigger to start 
                         ; of injection)
@@ -239,14 +241,14 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 #macro FIRE_INJ2, 0                        
 ;*****************************************************************************************
-; - PP4(P112) - TIM1 OC4 (D3)(87to112)(Inj2)(9&4) Control
+; - PP1 - TIM1 OC1(Inj2)(9&4) Control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired delay from trigger time to energising time.
 ;*****************************************************************************************
 
-    bset TIM_TCTL1,Bit0 ; Set Ch4 output line to 1 on compare
-    bset TIM_TCTL1,Bit1 ; Set Ch4 output line to 1 on compare  
+    bset TIM_TCTL2,Bit2 ; Set Ch1 output line to 1 on compare
+    bset TIM_TCTL2,Bit3 ; Set Ch1 output line to 1 on compare  
     ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd InjOCadd1      ; (A:B)+(M:M+1->A:B Add "InjOCadd1" (Delay from trigger to start 
                         ; of injection)
@@ -257,14 +259,14 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 #macro FIRE_INJ3, 0                        
 ;*****************************************************************************************
-; - PP5(P111) - TIM1 OC5 (D6)(87to112)(Inj3)(3&6) Control
+; - PP2 - TIM1 OC2(Inj3)(3&6) Control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired delay from trigger time to energising time.
 ;*****************************************************************************************
 
-    bset TIM_TCTL1,Bit2 ; Set Ch5 output line to 1 on compare
-    bset TIM_TCTL1,Bit3 ; Set Ch5 output line to 1 on compare 
+    bset TIM_TCTL2,Bit4 ; Set Ch2 output line to 1 on compare
+    bset TIM_TCTL2,Bit5 ; Set Ch2 output line to 1 on compare 
     ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd InjOCadd1      ; (A:B)+(M:M+1->A:B Add "InjOCadd1" (Delay from trigger to start 
                         ; of injection)
@@ -275,14 +277,14 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 #macro FIRE_INJ4, 0                        
 ;*****************************************************************************************
-; - PP6(P110) - TIM1 OC6 (D1)(87to112)(Inj4)(5&8) Control
+; - PP3 - TIM1 OC3(Inj4)(5&8) Control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired delay from trigger time to energising time.
 ;*****************************************************************************************
 
-    bset TIM_TCTL1,Bit4 ; Set Ch6 output line to 1 on compare
-    bset TIM_TCTL1,Bit5 ; Set Ch6 output line to 1 on compare  
+    bset TIM_TCTL2,Bit6 ; Set Ch3 output line to 1 on compare
+    bset TIM_TCTL2,Bit7 ; Set Ch3 output line to 1 on compare  
     ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd InjOCadd1      ; (A:B)+(M:M+1->A:B Add "InjOCadd1" (Delay from trigger to start 
                         ; of injection)
@@ -293,14 +295,14 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 #macro FIRE_INJ5, 0                        
 ;*****************************************************************************************
-; - PP7(P109) - TIM1 OC7 (D7)(87to112)(Inj5)(7&2) Control
+; - PP4 - TIM1 OC4(Inj5)(7&2) Control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired delay from trigger time to energising time.
 ;*****************************************************************************************
 
-    bset TIM_TCTL1,Bit7 ; Set Ch7 output line to 1 on compare
-    bset TIM_TCTL1,Bit6 ; Set Ch7 output line to 1 on compare  
+    bset TIM_TCTL1,Bit0 ; Set Ch4 output line to 1 on compare
+    bset TIM_TCTL1,Bit1 ; Set Ch4 output line to 1 on compare  
     ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd InjOCadd1      ; (A:B)+(M:M+1->A:B Add "InjOCadd1" (Delay from trigger to start 
                         ; of injection)
@@ -309,56 +311,6 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
        
 #emac
  
-#macro FIRE_IGN3, 0
-;*****************************************************************************************
-; - PP0(P4) - TIM1 OC0 (D21)(1to28)(Ign3)(9&8) Control
-;*****************************************************************************************
-;*****************************************************************************************
-; - Set the output compare value for desired delay from trigger time to energising time.
-;*****************************************************************************************
-
-    bset TIM_TCTL2,Bit1 ; Set Ch0 output line to 1 on compare
-    bset TIM_TCTL2,Bit0 ; Set Ch0 output line to 1 on compare  
-    ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
-    addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
-    std  TIM_TC0H       ; Copy result to Timer IC/OC register 0 (Start OC operation)
-	                    ; (Will trigger an interrupt after the delay time)(LED off)
-                           
-#emac
-
-#macro FIRE_IGN4, 0
-;*****************************************************************************************
-; - PP1(P3) - TIM1 OC1 (D5)(1to28)(Ign4)(4&7) Control
-;*****************************************************************************************
-;*****************************************************************************************
-; - Set the output compare value for desired delay from trigger time to energising time.
-;*****************************************************************************************
-
-    bset TIM_TCTL2,Bit3 ; Set Ch1 output line to 1 on compare
-    bset TIM_TCTL2,Bit2 ; Set Ch1 output line to 1 on compare  
-    ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
-    addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
-    std  TIM_TC1H       ; Copy result to Timer IC/OC register 1 (Start OC operation)
-                        ; (Will trigger an interrupt after the delay time)(LED off)
-                        
-#emac
-
-#macro FIRE_IGN5, 0
-;*****************************************************************************************
-; - PP2(P2) - TIM1 OC2 (D24)(1to28)(Ign5)(3&2) Control
-;*****************************************************************************************
-;*****************************************************************************************
-; - Set the output compare value for desired delay from trigger time to energising time.
-;*****************************************************************************************
-
-    bset TIM_TCTL2,Bit5 ; Set Ch2 output line to 1 on compare
-    bset TIM_TCTL2,Bit4 ; Set Ch2 output line to 1 on compare  
-    ldd  TIM_TCNTH      ; Contents of Timer Count Register-> Accu D
-    addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
-    std  TIM_TC2H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
-                        ; (Will trigger an interrupt after the delay time)(LED off)                        
-#emac                                                 
-
 ;*****************************************************************************************
 ;* - Code -                                                                              *  
 ;*****************************************************************************************
@@ -370,7 +322,7 @@ TIM_CODE_START_LIN	EQU	@ ; @ Represents the current value of the linear
                           ; program counter
 
 ;*****************************************************************************************
-; - In the INIT_TIM macro, Port T PT0, PT2 and all Port P pins are set as outputs with 
+; - In the INIT_TIM macro, all Port P pins are set as outputs with 
 ;   initial setting low. To control both the ignition and injector drivers two interrupts  
 ;   are required for each ignition or injection event. At the appropriate crank angle and  
 ;   cam phase an interrupt is triggered. In this ISR routine the channel output compare 
@@ -384,7 +336,7 @@ TIM_CODE_START_LIN	EQU	@ ; @ Represents the current value of the linear
 
 TIM_TC0_ISR:
 ;*****************************************************************************************
-; - TIM ch1 Interrupt Service Routine (for (D21)(1to28)(Ign3)(9&8) control)
+; - TIM ch0 Interrupt Service Routine for Inj1(1&10) control)
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired on time and disable the interrupt
@@ -393,7 +345,7 @@ TIM_TC0_ISR:
     bset TIM_TCTL2,Bit1    ; Clear Ch0 output line to zero on compare
     bclr TIM_TCTL2,Bit0    ; Clear Ch0 output line to zero on compare 
     ldd  TIM_TCNTH         ; Contents of Timer Count Register-> Accu D
-    addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time)
+    addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
     std  TIM_TC0H          ; Copy result to Timer IC/OC register 1 (Start OC operation)
                            ; (coil on for dwell time)(LED on)
     rti                    ; Return from Interrupt    
@@ -401,7 +353,7 @@ TIM_TC0_ISR:
 
 TIM_TC1_ISR:
 ;*****************************************************************************************
-; - TIM ch1 Interrupt Service Routine (for (D5)(1to28)(Ign4)(4&7) control)
+; - TIM ch1 Interrupt Service Routine for Inj2 (9&4) control)
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired on time and disable the interrupt
@@ -410,7 +362,7 @@ TIM_TC1_ISR:
     bset TIM_TCTL2,Bit3    ; Clear Ch1 output line to zero on compare
     bclr TIM_TCTL2,Bit2    ; Clear Ch1 output line to zero on compare 
     ldd  TIM_TCNTH         ; Contents of Timer Count Register-> Accu D
-    addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time))
+    addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
     std  TIM_TC1H          ; Copy result to Timer IC/OC register 1 (Start OC operation)
                            ; (coil on for dwell time)(LED on)
     rti                    ; Return from Interrupt    
@@ -418,7 +370,7 @@ TIM_TC1_ISR:
 
 TIM_TC2_ISR:
 ;*****************************************************************************************
-; - TIM ch2 Interrupt Service Routine (for (D24)(1to28)(Ign5)(3&2) control)
+; - TIM ch2 Interrupt Service Routine for Inj3 (3&6) control)
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired on time and disable the interrupt
@@ -427,14 +379,14 @@ TIM_TC2_ISR:
     bset TIM_TCTL2,Bit5    ; Clear Ch2 output line to zero on compare
     bclr TIM_TCTL2,Bit4    ; Clear Ch2 output line to zero on compare 
     ldd  TIM_TCNTH         ; Contents of Timer Count Register-> Accu D
-    addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time)
+    addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
     std  TIM_TC2H          ; Copy result to Timer IC/OC register 2 (Start OC operation)
                            ; (coil on for dwell time)(LED on)
     rti                    ; Return from Interrupt    
 
 TIM_TC3_ISR:
 ;*****************************************************************************************
-; - TIM ch3 Interrupt Service Routine (for (D1)(1to28)(Inj1)(1&10) control)
+; - TIM ch3 Interrupt Service Routine for Inj4)(5&8) control)
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired on time and disable the interrupt
@@ -450,7 +402,7 @@ TIM_TC3_ISR:
 
 TIM_TC4_ISR:
 ;*****************************************************************************************
-; - TIM ch4 Interrupt Service Routine (for(D3)(87to112)(Inj2)(9&4) control)
+; - TIM ch4 Interrupt Service Routine for Inj5(7&2) control)
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired on time and disable the interrupt
@@ -461,55 +413,6 @@ TIM_TC4_ISR:
     ldd  TIM_TCNTH         ; Contents of Timer Count Register-> Accu D
     addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
     std  TIM_TC4H          ; Copy result to Timer IC/OC register 4(Start OC operation)
-                           ; (Should result in LED on for ~3 to ~25 mS)
-    rti                    ; Return from Interrupt
-
-    
-TIM_TC5_ISR:
-;*****************************************************************************************
-; - TIM ch5 Interrupt Service Routine (for(D6)(87to112)(Inj3)(3&6) control)
-;*****************************************************************************************
-;*****************************************************************************************
-; - Set the output compare value for desired on time and disable the interrupt
-;*****************************************************************************************
-
-    bset TIM_TCTL1,Bit3    ; Clear Ch5 output line to zero on compare
-    bclr TIM_TCTL1,Bit2    ; Clear Ch5 output line to zero on compare 
-    ldd  TIM_TCNTH         ; Contents of Timer Count Register-> Accu D
-    addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
-    std  TIM_TC5H          ; Copy result to Timer IC/OC register 5(Start OC operation)
-                           ; (Should result in LED on for ~3 to ~25 mS)
-    rti                    ; Return from Interrupt
-
-TIM_TC6_ISR:
-;*****************************************************************************************
-; - TIM ch6 Interrupt Service Routine (for(D1)(87to112)(Inj4)(5&8) control)
-;*****************************************************************************************
-;*****************************************************************************************
-; - Set the output compare value for desired on time and disable the interrupt
-;*****************************************************************************************
-
-    bset TIM_TCTL1,Bit5    ; Clear Ch6 output line to zero on compare
-    bclr TIM_TCTL1,Bit4    ; Clear Ch6 output line to zero on compare 
-    ldd  TIM_TCNTH         ; Contents of Timer Count Register-> Accu D
-    addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
-    std  TIM_TC6H          ; Copy result to Timer IC/OC register 6(Start OC operation)
-                           ; (Should result in LED on for ~3 to ~25 mS)
-    rti                    ; Return from Interrupt
-    
-TIM_TC7_ISR:
-;*****************************************************************************************
-; - TIM ch7 Interrupt Service Routine (for(D7)(87to112)(Inj5)(7&2) control)
-;*****************************************************************************************
-;*****************************************************************************************
-; - Set the output compare value for desired on time and disable the interrupt
-;*****************************************************************************************
-
-    bset TIM_TCTL1,Bit7    ; Clear Ch7 output line to zero on compare
-    bclr TIM_TCTL1,Bit6    ; Clear Ch7 output line to zero on compare 
-    ldd  TIM_TCNTH         ; Contents of Timer Count Register-> Accu D
-    addd InjOCadd2         ; Add "InjOCadd2" (injector pulse width)
-    std  TIM_TC7H          ; Copy result to Timer IC/OC register(Start OC operation)
                            ; (Should result in LED on for ~3 to ~25 mS)
     rti                    ; Return from Interrupt
 

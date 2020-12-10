@@ -55,8 +55,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    May 17 2020                                                                        *
-;*    - BPEM488 version begins (work in progress)                                        *
+;*    August 21 2020                                                                     *
+;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
+;*    - Update December 8 2020                                                           *
 ;*                                                                                       *     
 ;*****************************************************************************************
 
@@ -116,13 +117,13 @@ ECT_VARS_START_LIN	EQU	@     ; @ Represents the current value of the linear
 ;ICflgs:      ds 1  ; Input Capture flags bit field
 
 ;*****************************************************************************************
-; - "ICflgs" equates 
+; - "ICflgs" equates  
 ;*****************************************************************************************
 
 ;RPMcalc:    equ $01   ; %00000001 (Bit 0) (Do RPM calculations flag)
 ;KpHcalc:    equ $02   ; %00000010 (Bit 1) (Do VSS calculations flag)
 ;Ch7_2nd:    equ $04   ; %00000100 (Bit 2) (Ch7 2nd edge flag)
-;Ch6alt:     equ $08   ; %00001000 (Bit 3) (Ch6 alt flag)
+;Ch2alt:     equ $08   ; %00001000 (Bit 3) (Ch2 alt flag)
 ;Ch7_3d:     equ $10   ; %00010000 (Bit 4) (Ch7 3d edge flag)
 ;RevMarker:  equ $20   ; %00100000 (Bit 5) (Crank revolution marker flag)
 
@@ -160,14 +161,14 @@ ECT_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 ;*****************************************************************************************	
 ; - Initialize Port T. Enhanced Capture Channels IOC7-IOC0. pg 527
-;*     PT0(P9) - IOC0 OC0 LED red  (D7)(1to28)(Ign1)(1&6)   (output, low)                *
-;*     PT1(P10) - IOC1 IC1 (CASc)(Tooth decoder)(input,  pull-down) VR sensor P9         *
-;*     PT2(P11) - IOC2 OC2 LED red  (D8)(1to28)(Ign2)(10&5)  (output, low)               *
-;*     PT3(P12) - IOC3 IC3 (VSSb)(Vehicle Speed)(input,  pull-down) VR sensor P10        *
-;*     PT4(P15) - IOC4 IC4 (CASa)(RPM)          (input,  pull-down) Volt to Freq U1      *
-;*     PT5(P16) - IOC5 IC5 (CASd)(Tooth decoder)(input,  pull-down) gear tooth K2 Cam    *
-;*     PT6(P17) - IOC6 IC6 (VSSa)(Vehicle Speed)(input,  pull-down) Volt to Freq U2      *
-;*     PT7(P18) - IoC7 IC7 (CASb)(Tooth decoder)(input,  pull-down) gear tooth K3 Crank  *   
+;*     PT0 - IOC0 - Camshaft Position   (input, pull-down, active high) gear tooth sens  *
+;*     PT1 - IOC1 - Crankshaft Position (input, pull-down, active high) gear tooth sens  *
+;*     PT2 - IOC2 - Vehicle Speed       (input, pull-down, active high) gear tooth sens  *
+;*     PT3 - IOC3 - Ign1 (1&6)          (output, active high, initialize low)            *
+;*     PT4 - IOC4 - Ign2 (10&5)         (output, active high, initialize low)            *
+;*     PT5 - IOC5 - Ign3 (9&8)          (output, active high, initialize low)            *
+;*     PT6 - IOC6 - Ign4 (4&7)          (output, active high, initialize low)            *
+;*     PT7 - IOC7 - Ign5 (3&2)          (output, active high, initialize low)            *
 ;*****************************************************************************************
 ;*****************************************************************************************
 ;* - The crank trigger wheel on the Dodge V10 has 5 pairs of two notches. Each notch is 
@@ -199,28 +200,10 @@ ECT_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 #macro INIT_ECT, 0
 
-    movw  #$0500,DDRT   ; Load Port T Data Direction Register and  
-                        ; Port T Reduced Drive Register with 
-                        ; %0000_0101_0000_0000 (PT2,0 outputs, 
-                        ; PT7,6,5,4,3,1 inputs PT2,0 full 
-                        ; drive, PT7,6,5,4,3,0 full drive)
-                        
-    movw  #$FAFA,PERT   ; Load Port T Pull Device Register and  
-                        ; Port T Polarity Select Register with 
-                        ; %1111_1010_1111_1010
-                        ; (pull device enabled on PT7,6,5,4, 
-                        ; 3,1. Disabled on PT2,0. Pull down on 
-                        ; PT7,6,5,4,3,1 pull up on PT2,0)
-                        
-    bclr PTT,Bit2       ; Initialize PT2 low
-    bclr PTT,Bit0       ; Initialize PT0 low
-                        
-    movb #$05,ECT_TIOS  ; Load Timer Input capture/Output 
-                        ; compare Select register with 
-                        ; %00000101 (Hall/K3, VtoF/U2, 
-                        ; Hall/K2, VtoF/U1, VR2/P10,
-                        ; D8, VR1/P9, D7)(IC Ch7,6,5,4,3,1)
-                        ;(OC Ch2,0)
+     movb #$F8,ECT_TIOS  ; Load Timer Input capture/Output 
+                         ; compare Select register with 
+                        ; %11111000 Output Compare PT7,6,5,4,3
+                        ; Input Capture PT2,1,0
                         
     movb #$98,ECT_TSCR1 ; Load ECT_TSCR1 with %10011000 
                         ;(timer enabled, no stop in wait, 
@@ -256,11 +239,11 @@ ECT_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                         ; (prescale 256, 5.12us resolution, 
                         ; max period 335.5ms)
                         
-    movb #$55,ECT_TCTL3 ; Load ECT_TCTL3 with %01010101 (rising 
-                        ; edge capture Ch7,6,5,4)
+    movb #$00,ECT_TCTL3 ; Load ECT_TCTL3 with %00000000 
+                        ; (capture disabled Ch7,6,5,4)
                         
-    movb #$44,ECT_TCTL4 ; Load ECT_TCTL4 with %01000100 (rising 
-                        ; edge capture Ch3,1)(Capture disabled Ch2,0)
+    movb #$15,ECT_TCTL4 ; Load ECT_TCTL4 with %00010101 (Capture disabled Ch3
+                        ; rising edge capture Ch2,1,0)
 
 #emac
 
@@ -384,14 +367,14 @@ RunKPHDone:
 
 #macro FIRE_IGN1, 0
 ;*****************************************************************************************
-; - PT0(P9) - IOC0 OC0 LED red  (D7)(1to28)(Ign1)(1&6) Control
+; - PT3 - IOC3 OC3 Ign1(1&6) Control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired delay from trigger time to energising time.
 ;*****************************************************************************************
 
-    bset ECT_TCTL2,Bit1 ; Set Ch0 output line to 1 on compare
-    bset ECT_TCTL2,Bit0 ; Set Ch0 output line to 1 on compare  
+    bset ECT_TCTL2,Bit7 ; Set Ch3 output line to 1 on compare
+    bset ECT_TCTL2,Bit6 ; Set Ch3 output line to 1 on compare  
     ldd  ECT_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
     std  ECT_TC0H       ; Copy result to Timer IC/OC register 0 (Start OC operation)
@@ -401,14 +384,65 @@ RunKPHDone:
 
 #macro FIRE_IGN2, 0
 ;*****************************************************************************************
-; - PT2(P11) - IOC2 OC2 LED red  (D8)(1to28)(Ign2)(10&5) Control
+; - PT4 - IOC4 OC4 Ign2(10&5) Control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired delay from trigger time to energising time.
 ;*****************************************************************************************
 
-    bset ECT_TCTL2,Bit5 ; Set Ch2 output line to 1 on compare
-    bset ECT_TCTL2,Bit4 ; Set Ch2 output line to 1 on compare  
+    bset ECT_TCTL1,Bit1 ; Set Ch4 output line to 1 on compare
+    bset ECT_TCTL1,Bit0 ; Set Ch4 output line to 1 on compare  
+    ldd  ECT_TCNTH      ; Contents of Timer Count Register-> Accu D
+    addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
+    std  ECT_TC2H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
+                        ; (Will trigger an interrupt after the delay time)(LED off)
+
+#emac
+
+#macro FIRE_IGN3, 0
+;*****************************************************************************************
+; - PT5 - IOC5 OC5 Ign3(9&8) Control
+;*****************************************************************************************
+;*****************************************************************************************
+; - Set the output compare value for desired delay from trigger time to energising time.
+;*****************************************************************************************
+
+    bset ECT_TCTL1,Bit3 ; Set Ch5 output line to 1 on compare
+    bset ECT_TCTL1,Bit2 ; Set Ch5 output line to 1 on compare  
+    ldd  ECT_TCNTH      ; Contents of Timer Count Register-> Accu D
+    addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
+    std  ECT_TC2H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
+                        ; (Will trigger an interrupt after the delay time)(LED off)
+
+#emac
+
+#macro FIRE_IGN4, 0
+;*****************************************************************************************
+; - PT6 - IOC6 OC6 Ign4(4&7) Control
+;*****************************************************************************************
+;*****************************************************************************************
+; - Set the output compare value for desired delay from trigger time to energising time.
+;*****************************************************************************************
+
+    bset ECT_TCTL1,Bit5 ; Set Ch6 output line to 1 on compare
+    bset ECT_TCTL1,Bit4 ; Set Ch6 output line to 1 on compare  
+    ldd  ECT_TCNTH      ; Contents of Timer Count Register-> Accu D
+    addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
+    std  ECT_TC2H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
+                        ; (Will trigger an interrupt after the delay time)(LED off)
+
+#emac
+
+#macro FIRE_IGN5, 0
+;*****************************************************************************************
+; - PT7 - IOC7 OC7 Ign5(3&2) Control
+;*****************************************************************************************
+;*****************************************************************************************
+; - Set the output compare value for desired delay from trigger time to energising time.
+;*****************************************************************************************
+
+    bset ECT_TCTL1,Bit7 ; Set Ch7 output line to 1 on compare
+    bset ECT_TCTL1,Bit6 ; Set Ch7 output line to 1 on compare  
     ldd  ECT_TCNTH      ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd1      ; Add "IgnOCadd1" (Delay time from crank signal to energise coil)
     std  ECT_TC2H       ; Copy result to Timer IC/OC register 2 (Start OC operation)
@@ -422,84 +456,120 @@ RunKPHDone:
 
 			ORG 	ECT_CODE_START, ECT_CODE_START_LIN
             
-ECT_TC0_ISR:
 ;*****************************************************************************************
-; - ECT ch0 Interrupt Service Routine (for (D7)(1to28)(Ign1)(1&6) control)
+; - NOTE! ECT_TC0_ISR (camshaft position sensor) is handled in state_BEEM488.s module)
+;*****************************************************************************************
+;*****************************************************************************************
+; - NOTE! ECT_TC1_ISR (crankshaft position sensor) is handled in state_BEEM488.s module)
+;*****************************************************************************************
+;*****************************************************************************************
+; - ECT ch2 Interrupt Service Routine (for VSS calculations)
+;*****************************************************************************************
+
+ECT_TC2_ISR:
+;*****************************************************************************************
+; - Get two consecutive rising edge signals for vehicle speed and 
+;   calculate the period. KPH calculations are done in the main loop 
+;*****************************************************************************************
+
+    brset ICflgs,Ch2alt,VSS2 ; If "Ch2alt" bit of "ICflgs" is set, branch to "VSS2:"
+    ldd  ECT_TC2H            ; Load accu D with value in "ECT_TC2H"
+    std  VSS1st              ; Copy to "VSS1st"
+    bset ICflgs,Ch2alt       ; Set "Ch2alt" bit of "ICflgs"
+    bra  ECT2_ISR_Done       ; Branch to "ECT2_ISR_Done:"
+
+VSS2:
+    ldd  ECT_TC2H       ; Load accu D with value in "ECT_TC2H"
+    subd VSS1st         ; Subtract (A:B)-(M:M+1)=>A:B "VSS1st" from value in "ECT_TC2H"
+    std  VSSprd         ; Copy result to "VSSprd"
+    bclr ICflgs,Ch2alt  ; Clear "Ch2alt" bit of "ICflgs"
+    bset ICflgs,KPHcalc ; Set "KPHcalc" bit of "ICflgs"
+   
+ECT2_ISR_Done: 
+    rti                ; Return from Interrupt
+    
+ECT_TC3_ISR:
+;*****************************************************************************************
+; - ECT ch3 Interrupt Service Routine for Ign1(1&6) control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired on time and disable the interrupt
 ;*****************************************************************************************
 
-    bset ECT_TCTL2,Bit1    ; Clear Ch0 output line to zero on compare
-    bclr ECT_TCTL2,Bit0    ; Clear Ch0 output line to zero on compare 
+    bset ECT_TCTL2,Bit7    ; Clear Ch3 output line to zero on compare
+    bclr ECT_TCTL2,Bit6    ; Clear Ch3 output line to zero on compare 
     ldd  ECT_TCNTH         ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time)
     std  ECT_TC0H          ; Copy result to Timer IC/OC register 0 (Start OC operation)
                            ; (coil on for dwell time)(LED on)
     rti                    ; Return from Interrupt
 
+ECT_TC4_ISR:
 ;*****************************************************************************************
-; - NOTE! ECT_TC1_ISR is not enabled
-;*****************************************************************************************
-    
-ECT_TC2_ISR:
-;*****************************************************************************************
-; - ECT ch2 Interrupt Service Routine (for (D8)(1to28)(Ign2)(10&5) control)
+; - ECT ch4 Interrupt Service Routine for Ign2(10&5) control
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Set the output compare value for desired on time and disable the interrupt
 ;*****************************************************************************************
 
-    bset ECT_TCTL2,Bit5    ; Clear Ch2 output line to zero on compare
-    bclr ECT_TCTL2,Bit4    ; Clear Ch2 output line to zero on compare 
+    bset ECT_TCTL1,Bit1    ; Clear Ch4 output line to zero on compare
+    bclr ECT_TCTL1,Bit0    ; Clear Ch4 output line to zero on compare 
     ldd  ECT_TCNTH         ; Contents of Timer Count Register-> Accu D
     addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time))
     std  ECT_TC2H          ; Copy result to Timer IC/OC register 2(Start OC operation)
                            ; (coil on for dwell time)(LED on)
     rti                    ; Return from Interrupt
     
+ECT_TC5_ISR:
 ;*****************************************************************************************
-; - NOTE! ECT_TC3_ISR is not enabled
-;*****************************************************************************************  
-
+; - ECT ch5 Interrupt Service Routine for Ign3(9&8) control
 ;*****************************************************************************************
-; - NOTE! ECT_TC4_ISR is not enabled
-;*****************************************************************************************    
-
 ;*****************************************************************************************
-; - NOTE! ECT_TC5_ISR (camshaft position sensor) is handled in state_BEEM488.s module)
+; - Set the output compare value for desired on time and disable the interrupt
 ;*****************************************************************************************
 
-;*****************************************************************************************
-; - ECT ch6 Interrupt Service Routine (for VSS calculations)
-;*****************************************************************************************
-
+    bset ECT_TCTL1,Bit3    ; Clear Ch5 output line to zero on compare
+    bclr ECT_TCTL1,Bit2    ; Clear Ch5 output line to zero on compare 
+    ldd  ECT_TCNTH         ; Contents of Timer Count Register-> Accu D
+    addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time))
+    std  ECT_TC2H          ; Copy result to Timer IC/OC register 2(Start OC operation)
+                           ; (coil on for dwell time)(LED on)
+    rti                    ; Return from Interrupt
+    
 ECT_TC6_ISR:
 ;*****************************************************************************************
-; - Get two consecutive rising edge signals for vehicle speed and 
-;   calculate the period. KPH calculations are done in the main loop 
+; - ECT ch6 Interrupt Service Routine for Ign4(4&7) control
+;*****************************************************************************************
+;*****************************************************************************************
+; - Set the output compare value for desired on time and disable the interrupt
 ;*****************************************************************************************
 
-    brset ICflgs,Ch6alt,VSS2 ; If "Ch6alt" bit of "ICflgs" is set, branch to "VSS2:"
-    ldd  ECT_TC6H            ; Load accu D with value in "ECT_TC6H"
-    std  VSS1st              ; Copy to "VSS1st"
-    bset ICflgs,Ch6alt       ; Set "Ch6alt" bit of "ICflgs"
-    bra  ECT6_ISR_Done       ; Branch to "ECT6_ISR_Done:"
+    bset ECT_TCTL1,Bit5    ; Clear Ch6 output line to zero on compare
+    bclr ECT_TCTL1,Bit4    ; Clear Ch6 output line to zero on compare 
+    ldd  ECT_TCNTH         ; Contents of Timer Count Register-> Accu D
+    addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time))
+    std  ECT_TC2H          ; Copy result to Timer IC/OC register 2(Start OC operation)
+                           ; (coil on for dwell time)(LED on)
+    rti                    ; Return from Interrupt
+    
+ECT_TC7_ISR:
+;*****************************************************************************************
+; - ECT ch7 Interrupt Service Routine for Ign5(3&2) control
+;*****************************************************************************************
+;*****************************************************************************************
+; - Set the output compare value for desired on time and disable the interrupt
+;*****************************************************************************************
 
-VSS2:
-    ldd  ECT_TC6H       ; Load accu D with value in "ECT_TC6H"
-    subd VSS1st         ; Subtract (A:B)-(M:M+1)=>A:B "VSS1st" from value in "ECT_TC6H"
-    std  VSSprd         ; Copy result to "VSSprd"
-    bclr ICflgs,Ch6alt  ; Clear "Ch6alt" bit of "ICflgs"
-    bset ICflgs,KPHcalc ; Set "KPHcalc" bit of "ICflgs"
-   
-ECT6_ISR_Done: 
-    rti                ; Return from Interrupt
+    bset ECT_TCTL1,Bit7    ; Clear Ch7 output line to zero on compare
+    bclr ECT_TCTL1,Bit6    ; Clear Ch7 output line to zero on compare 
+    ldd  ECT_TCNTH         ; Contents of Timer Count Register-> Accu D
+    addd IgnOCadd2         ; Add "IgnOCadd2" (dwell time))
+    std  ECT_TC2H          ; Copy result to Timer IC/OC register 2(Start OC operation)
+                           ; (coil on for dwell time)(LED on)
+    rti                    ; Return from Interrupt
     
-;*****************************************************************************************
-; - NOTE! ECT_TC7_ISR (crankshaft position sensor) is handled in state_BEEM488.s module)
-;*****************************************************************************************
-    
+
+        
 ECT_CODE_END		EQU	*     ; * Represents the current value of the paged 
                               ; program counter
 ECT_CODE_END_LIN	EQU	@     ; @ Represents the current value of the linear 

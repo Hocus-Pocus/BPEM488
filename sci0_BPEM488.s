@@ -32,7 +32,7 @@
 ;*    aid for myself as an amatuer programmer with no formal training                    *
 ;*****************************************************************************************
 ;* Description:                                                                          *
-;*    Interrupt handler for SCI0, (Communications with Tuner Studio)                     *
+;*    Interrupt handler for SCI0, (Communications with Tuner Studio, and Shadow Dash)    *
 ;*****************************************************************************************
 ;* Required Modules:                                                                     *
 ;*   BPEM488.s            - Application code for the BPEM488 project                     *
@@ -55,8 +55,10 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    May 25 2020                                                                        *
-;*    - BPEM488 version begins (work in progress)                                        *
+;*    August 21 2020                                                                     *
+;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
+;*    - update December 8 2020                                                           *
+;*                                                                                       *
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -64,7 +66,6 @@
 ;*****************************************************************************************
 
     CPU	S12X   ; Switch to S12x opcode table
-
 
 ;*****************************************************************************************
 ;* - Variables -                                                                         *
@@ -156,15 +157,18 @@ SCI0_CODE_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ; Communication is established when the Tuner Studio sends
 ; a command character. The particular character sets the mode:
 ;
-; "H" = This is the first command that Tuner Studio sends to request the
-;       format of the data. It must receive the signature 
-;       'MShift 5.001' because the TS.ini file used with this code was 
+; "Q" = This is the first command that Tuner Studio sends to request the
+;       format of the data. It must receive the signature "MS2Extra comms342h2"
+;       in order to communicate with both Tuner Studio and Shadow Dash. originally I 
+;       used 'MShift 5.001' because the TS.ini file used with this code was 
 ;       built from the base Megashift .ini. (QueryCommand)(1st)
-; "C" = This command requests the constants. (pageReadCommand)(2nd)
+; "S" = This command requests the version information and TS displays it in the title 
+;       block (2nd)
+; "C" = This command requests the constants. (pageReadCommand)(3d)
 ;       It is sent after communication with TS has been established and 
 ;       loads TS with all the the constant pages in RAM. It is also sent 
 ;       when editing a particular page. 
-; "O" = This command requests the real time variables (ochGetCommand)(3d)
+; "O" = This command requests the real time variables (ochGetCommand)(4th)
 ;       It is sent to update the real time variables at a selectable time rate
 ; "W" = This command sends an updated constant value from TS to the controller 
 ;       (pageValueWrite). It is sent when editing configurable constants
@@ -192,8 +196,12 @@ SCI0_CODE_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ; NOTE! I am not using the CAN_ID
 ;
 ; The settings in the TS .ini file are:
-;   queryCommand        = "H"
-;   signature           = "MShift 5.001" 
+;   queryCommand = "Q"  ; Returns "Signature" in the code. "Signature" must match "signature" below 
+;   signature = "MS2Extra comms342h2" ; This must be used in order to communicate with Tuner Studio and Shadow Dash
+;               1234567890123456789  ; 19 bytes
+;   versionInfo = "S"   ; Returns the current revision number, "RevNum" in the code 
+;                       ; and places it in the title bar in the tuner Studio main screen
+;
 ;   endianness          = big
 ;   nPages              = 3
 ;   pageSize            = 1024,            1024,            1024
@@ -443,8 +451,10 @@ StoreDone:
 
 CheckTxCmnd:
     ldaa  SCI0DRL    ; Load accu A with value in SCI0DRL(get the command byte)
-    cmpa  #$48       ; Compare with ASCII "H"
-    beq   ModeH      ; If equal branch to "ModeH:"(QueryCommand)
+    cmpa  #$51       ; Compare with ASCII "Q"
+    beq   ModeQ      ; If equal branch to "ModeQ:"(QueryCommand) Return "Signature"
+    cmpa  #$53       ; Compare with ASCII "S"
+    beq   ModeS      ; If equal branch to "ModeS:"(version info Command) Return "RevNum"
     cmpa  #$4F       ; Compare with ASCII "O"
     beq   ModeO      ; If equal branch to "ModeO:"(ochGetCommand)
     cmpa  #$43       ; Compare with ASCII "C"
@@ -540,11 +550,19 @@ ModeB2
 ; No code for this yet
     rti                 ; Return from interrupt
             
-ModeH:
+ModeQ:
     ldaa  Signature        ; Load accu A with value at "Signature"
     staa  SCI0DRL          ; Copy to SCI0DRL (first byte to send)
     movw  #$0000,txcnt     ; Clear "txcnt"
-    movw  #$000C,txgoalMSB ; Load "txgoalMSB:txgoaLSB" with decimal 12(number of bytes to send)
+    movw  #$0013,txgoalMSB ; Load "txgoalMSB:txgoaLSB" with decimal 19(number of bytes to send)
+    movb  #$01,txmode      ; Load "txmode" with decimal 1
+    bra   DoTx             ; Branch to "DoTx:" (start transmission)
+    
+ModeS:
+    ldaa  RevNum           ; Load accu A with value at "RevNum"
+    staa  SCI0DRL          ; Copy to SCI0DRL (first byte to send)
+    movw  #$0000,txcnt     ; Clear "txcnt"
+    movw  #$0039,txgoalMSB ; Load "txgoalMSB:txgoaLSB" with decimal 57(number of bytes to send)
     movb  #$01,txmode      ; Load "txmode" with decimal 1
     bra   DoTx             ; Branch to "DoTx:" (start transmission)
 
@@ -552,7 +570,7 @@ ModeO:
     ldaa  secH             ; Load accu A with value at "secH"
     staa  SCI0DRL          ; Copy to SCI0DRL (first byte to send)
     movw  #$0000,txcnt     ; Clear "txcnt"
-    movw  #$0095,txgoalMSB ; Load "txgoalMSB:txgoalLSB" with decimal 149(number of bytes to send) REAL TIME VARIABLES HERE!!!!!!!!
+    movw  #$008B,txgoalMSB ; Load "txgoalMSB:txgoalLSB" with decimal 139(number of bytes to send) REAL TIME VARIABLES HERE!!!!!!!!
     movb  #$02,txmode      ; Load "txmode" with decimal 2
 			
 DoTx:
@@ -665,10 +683,18 @@ SCI0_CODE_END_LIN	EQU	@     ; @ Represents the current value of the linear
 SCI0_TABS_START_LIN	EQU	@ ; @ Represents the current value of the linear 
                               ; program counter			
 
-
 Signature:     
-    fcc 'MShift 5.001' ; ASCII string (Tuner Studio MUST have this)
-	
+    fcc 'MS2Extra comms342h2'
+;        1234567890123456789   ; 19 bytes
+;                              ; This must remain the same in order for both TS and SD 
+                               ; to communicate   
+
+RevNum:
+     fcc 'BPEM488 12 08 2020                                       '
+;         123456789012345678901234567890123456789012345678901234567  ; 57 bytes
+;                              ; This should be changed with each code revision but 
+                               ; string length must stay the same
+
 SCI0_TABS_END		EQU	*     ; * Represents the current value of the paged 
                               ; program counter	
 SCI0_TABS_END_LIN	EQU	@     ; @ Represents the current value of the linear 

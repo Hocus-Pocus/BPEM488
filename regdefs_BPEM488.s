@@ -56,8 +56,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    May 19 2020                                                                        *
-;*    - BPEM488 version begins (work in progress)                                        *
+;*    August 21 2020                                                                     *
+;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
+;*    - Update December 8 2020                                                           *
 ;*                                                                                       *                                                                     
 ;*****************************************************************************************
 
@@ -693,6 +694,8 @@ PPSS2:       equ $04   ; Port S pull device select bit 2 pin #91
 PPSS1:       equ $02   ; Port S pull device select bit 1 pin #90
 PPSS0:       equ $01   ; Port S pull device select bit 0 pin #89
 
+PERS:        equ $024C ; Port S Pull Device Enable Register (pg 128)
+
 ;*****************************************************************************************
 ; - Port Integration Module (S12XEPIMV1) Port M equates
 ;*****************************************************************************************
@@ -857,6 +860,8 @@ DDRJ3:        equ $08   ; %00001000 Port J data direction bit 3
 DDRJ2:        equ $04   ; %00000100 Port J data direction bit 2 
 DDRJ1:        equ $02   ; %00000010 Port J data direction bit 1 pin #21
 DDRJ0:        equ $01   ; %00000001 Port J data direction bit 0 pin #20
+
+PERJ:         equ $02C  ; Port J Pull Device Enable Register (pg 153)
 
 ;*****************************************************************************************
 ; - Port Integration Module (S12XEPIMV1) Port AD0 equates

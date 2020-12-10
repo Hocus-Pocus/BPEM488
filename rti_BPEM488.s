@@ -56,6 +56,8 @@
 ;* Version History:                                                                      *
 ;*    May 18 2020                                                                        *
 ;*    - BPEM version begins (work in progress)                                           *
+;*    December 8 2020                                                                    *
+;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
 ;*****************************************************************************************
 ;*****************************************************************************************
 ;* - Configuration -                                                                     *
@@ -194,11 +196,11 @@ clock:      ds 1 ; Time rate flag marker bit field
 ; - "clock" equates 
 ;*****************************************************************************************
 
-ms1000:     equ $10   ; %00010000 (Bit 4) (seconds marker)
-ms500:      equ $08   ; %00001000 (Bit 3) (500mS marker)
-ms250:      equ $04   ; %00000100 (Bit 2) (250mS marker)
-ms100:      equ $02   ; %00000010 (Bit 1) (100mS marker)
-ms1:        equ $01   ; %00000001 (Bit 0) (1mS marker)
+ms1000     equ $10   ; %00010000 (Bit 4) (seconds marker)
+ms500      equ $08   ; %00001000 (Bit 3) (500mS marker)
+ms250      equ $04   ; %00000100 (Bit 2) (250mS marker)
+ms100      equ $02   ; %00000010 (Bit 1) (100mS marker)
+ms1        equ $01   ; %00000001 (Bit 0) (1mS marker)
 
 RTI_VARS_END		EQU	*     ; * Represents the current value of the paged 
                               ; program counter
@@ -264,9 +266,9 @@ AIOT_CHK_DONE:
 ;*****************************************************************************************
 
    ldd Stallcnt        ; "Stallcnt" -> Accu D
-   beq  NoStallcntDec  ; If zero branch to NoStallcntDec:     
+   beq  NoStallcntDec  ; If zero branch to NoStallcntDec:
    decw Stallcnt       ; Decrement "Stallcnt" (no crank or stall condition counter)
-                       
+
 NoStallcntDec:
 
 ;*****************************************************************************************
@@ -550,6 +552,14 @@ Do500mS:
 
 DoSec:
     bset clock,ms1000     ; Set "ms1000" bit of "clock"
+    
+;*****************************************************************************************
+; - Flash PB6out LED on output LEDs board every second just to show that the timer is 
+;    working
+;*****************************************************************************************
+    ldaa  PORTB        ; Load ACC A with value in Port B
+    eora  #$40         ; Exlusive or with $01000000
+    staa   PORTB       ; Copy to Port B (toggle Bit6, ("PB6out" LED on output LEDs board) 
 
 ;*****************************************************************************************
 ; - Clear the 250 millisecond counter. Increment "secL". Increment "secH" on roll over

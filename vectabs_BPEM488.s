@@ -55,9 +55,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    May 25 2020                                                                        *
-;*    - BPEM488 version begins (work in progress)                                        *
-;*                                                                                       *   
+;*    December 7 2020                                                                    *
+;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
+;*    - Update December 8 2020                                                           *   
 ;*****************************************************************************************
 ;* - Configuration -                                                                     *
 ;*****************************************************************************************
@@ -119,8 +119,6 @@ VECTAB_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     movb  #$F0,INT_CFADDR  ; Load "CFADDR" with %11110000 (Place RTI -> UI  
                            ; into window)
 ;*    movb  #$00,INT_CFDATA0 ; Load "CFDATA0" with %00000000 (Set RTI disabled)  
-;*    movb  #$81,INT_CFDATA0 ; Load "CFDATA0" with %10000001 (Set RTI XGATE 
-                           ; level 1 priority)
     movb  #$01,INT_CFDATA0 ; Load "CFDATA0" with %10000001 (Set RTI CPU                ; RTI ENABLED, CPU, level 1  
                            ; level 1 priority)
     movb  #$00,INT_CFDATA1 ; Load "CFDATA1" with %00000000 (Set IRQ disabled)
@@ -132,29 +130,29 @@ VECTAB_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     movb  #$E0,INT_CFADDR  ; Load "CFADDR" with %11100000 (Place Enhanced Captuer Timer  
                            ; Ch7 -> Ch0 into window) 
 ;*    movb  #$00,INT_CFDATA0 ; Load "CFDATA0" with %00000000 (Set ECT ch7 disabled) 
-    movb  #$07,INT_CFDATA0 ; Load "CFDATA0" with %00000111 (Set ECT ch7 geartrooth K3 CPU       ; ECT ch7(Crank) ENABLED, CPU, level 7 (Highest)
-                           ; priority level 7)
-;*    movb  #$87,INT_CFDATA0 ; Load "CFDATA0" with %10000111 (Set ECT ch7 Crank XGATE 
-                           ; priority level 7)
-;*    movb  #$00,INT_CFDATA1 ; Load "CFDATA1" with %00000000 (Set ECT ch6 VSS disabled) 
-    movb  #$01,INT_CFDATA1 ; Load "CFDATA1" with %00000001 (Set ECT ch6 Volt Freq U2 CPU,        ; ECT ch6 (VSS) ENABLED, CPU, level 1
-                           ; priority level 1)
+    movb  #$01,INT_CFDATA0 ; Load "CFDATA0" with %00000001 (Set ECT ch7 CPU        ; ECT ch7 (PT7 Ign5 (3&2)) ENABLED, CPU, level 1
+                           ; priority level 1)(PT7 Ign5 (3&2))
+;*    movb  #$00,INT_CFDATA1 ; Load "CFDATA1" with %00000000 (Set ECT ch6 disabled) 
+    movb  #$01,INT_CFDATA1 ; Load "CFDATA1" with %00000001 (Set ECT ch6 CPU,        ; ECT ch6 (PT6 Ign4 4&7) ENABLED, CPU, level 1
+                           ; priority level 1)(PT6 Ign4 (4&7))
 ;*    movb  #$00,INT_CFDATA2 ; Load "CFDATA2" with %00000000 (Set ECT ch5 disabled)
-    movb  #$06,INT_CFDATA2 ; Load "CFDATA2" with %00000110 (Set ECT ch5 Geartooth K2 CPU)        ; ECT ch5 (Cam) ENABLED, CPU level 6
-                           ;priority level 6)
-;*    movb  #$86,INT_CFDATA2 ; Load "CFDATA2" with %10000110 (Set ECT ch5 Geartooth K2 XGATE)
-                           ;priority level 6)
-    movb  #$00,INT_CFDATA3 ; Load "CFDATA3" with %00000000 (Set ECT ch4 disabled)
-;*    movb  #$01,INT_CFDATA3 ; Load "CFDATA3" with %00000001 (Set ECT ch4 Volt/freq RPM CPU,        
-                           ; priority level 1) 
-    movb  #$00,INT_CFDATA4 ; Load "CFDATA4" with %00000000 (Set ECT ch3 VR sensor disabled)
+    movb  #$01,INT_CFDATA2 ; Load "CFDATA2" with %00000001 (Set ECT ch5 CPU)        ; ECT ch5 (PT5 Ign3 (9&8)) ENABLED, CPU, level 1
+                           ; priority level 1)(PT5 Ign3 (9&8))
+,*    movb  #$00,INT_CFDATA3 ; Load "CFDATA3" with %00000000 (Set ECT ch4 disabled)
+    movb  #$01,INT_CFDATA3 ; Load "CFDATA3" with %00000001 (Set ECT ch4 CPU,        ; ECT ch4 (PT4 Ign2 (10&5)) ENABLED, CPU, level 1        
+                           ; priority level 1)(PT4 Ign2 (10&5)) 
+;*    movb  #$00,INT_CFDATA4 ; Load "CFDATA4" with %00000000 (Set ECT ch3 disabled)
+    movb  #$01,INT_CFDATA4 ; Load "CFDATA4" with %00000001 (Set ECT ch3 CPU,        ; ECT ch3 (PT3 Ign1 (1&6)) ENABLED, CPU, level 1        
+                           ; priority level 1)(PT3 Ign1 (1&6))   
 ;*    movb  #$00,INT_CFDATA5 ; Load "CFDATA5" with %00000000 (Set ECT ch2 disabled)
-    movb  #$01,INT_CFDATA5 ; Load "CFDATA5" with %00000001 (Set (D8)(1to28)(Ign2)(10&5)         ; ECT ch2 ((D8)(1to28)(Ign2)(10&5)), ENABLED, CPU level 1 
-                           ; priority level 1) 
-    movb  #$00,INT_CFDATA6 ; Load "CFDATA0" with %00000000 (Set ECT ch1 VR sensor disabled) 
-;*    movb  #$00,INT_CFDATA7 ; Load "CFDATA0" with %00000000 (Set ECT ch0 disabled)
-    movb  #$01,INT_CFDATA7 ; Load "CFDATA7" with %00000001 (Set (D7)(1to28)(Ign1)(1&6)        ; ECT ch0 ((D7)(1to28)(Ign1)(1&6)), ENABLED, CPU level 1 
-                           ; priority level 1) 
+    movb  #$01,INT_CFDATA5 ; Load "CFDATA5" with %00000001 (Set ECT ch2 CPU         ; ECT ch2 (PT2 Vspd), ENABLED, CPU level 1 
+                           ; priority level 1) (PT2 Vspd) 
+;*    movb  #$00,INT_CFDATA6 ; Load "CFDATA0" with %00000000 (Set ECT ch1 VR sensor disabled)
+    movb  #$07,INT_CFDATA5 ; Load "CFDATA5" with %00000111 (Set ECT ch2 CPU         ; ECT ch1 (PT1 CKP), ENABLED, CPU level 7 
+                           ; priority level 7) (PT1 CKP) 
+;*     movb  #$00,INT_CFDATA7 ; Load "CFDATA0" with %00000000 (Set ECT ch0 disabled)
+    movb  #$07,INT_CFDATA7 ; Load "CFDATA7" with %00000111 (Set ECT ch0 CPU        ; ECT ch0 (PT0 CMP), ENABLED, CPU level 7 
+                           ; priority level 7) (PT0 CMP) 
             
 ; - Initialize ATD1 -> Enhanced Capture Timer Overflow Interrupt Vectors - 
 
@@ -252,8 +250,6 @@ VECTAB_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                            ; into window)
     movb  #$00,INT_CFDATA0 ; Load "CFDATA0" with %00000000 (Set XGATE SW trig 1 disabled)
     movb  #$00,INT_CFDATA1 ; Load "CFDATA1" with %00000000 (Set XGATE SW trig 0 disabled) 
-;*    movb  #$81,INT_CFDATA1 ; Load "CFDATA1" with %10000001 (Set XGATE SW trig 0 XGATE,)      ; XGATE SW Trig 0 (RTI) Disabled, XGATE, level 1 (used to clear RTI variables)
-                           ; level 1 priority) 
     movb  #$00,INT_CFDATA2 ; Load "CFDATA2" with %00000000 (Set PIT ch3 disabled)    
     movb  #$00,INT_CFDATA3 ; Load "CFDATA3" with %00000000 (Set PIT ch2 disabled) 
     movb  #$00,INT_CFDATA4 ; Load "CFDATA4" with %00000000 (Set PIT ch1 transmit disabled)
@@ -279,14 +275,14 @@ VECTAB_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     movb  #$50,INT_CFADDR  ; Load "CFADDR" with %01010000 (TIM ch2 -> PIT ch4   
                            ; into window)
 ;*    movb  #$00,INT_CFDATA0 ; Load "CFDATA0" with %00000000 (Set TIM ch2 disabled)
-    movb  #$01,INT_CFDATA0 ; Load "CFDATA0" with %00000001 (Set (D24)(1to28)(Ign5)(3&2)  ; TIM ch2 ((D24)(1to28)(Ign5)(3&2)), ENABLED, CPU level 1 
-                           ; priority level 1) 
+    movb  #$01,INT_CFDATA0 ; Load "CFDATA0" with %00000001 (Set TIM ch2 CPU              ; TIM ch2 (PP2 Inj3 (3&6)), ENABLED, CPU level 1 
+                           ; priority level 1)(PP2 Inj3 (3&6)) 
 ;*    movb  #$00,INT_CFDATA1 ; Load "CFDATA1" with %00000000 (Set TIM ch1 disabled)
-    movb  #$01,INT_CFDATA1 ; Load "CFDATA1" with %00000001 (Set (D5)(1to28)(Ign4)(4&7)   ; TIM ch1 ((D5)(1to28)(Ign4)(4&7)), ENABLED, CPU level 1 
-                           ; priority level 1)    
+    movb  #$01,INT_CFDATA1 ; Load "CFDATA1" with %00000001 (Set TIM ch1 CPU              ; TIM ch1 (PP1 Inj2 (9&4)), ENABLED, CPU level 1 
+                           ; priority level 1)(PP1 Inj2 (9&4))    
 ;*    movb  #$00,INT_CFDATA2 ; Load "CFDATA2" with %00000000 (Set TIM ch0 disabled)
-    movb  #$01,INT_CFDATA2 ; Load "CFDATA2" with %00000001 (Set (D21)(1to28)(Ign3)(9&8)  ; TIM ch0 ((D21)(1to28)(Ign3)(9&8)), ENABLED, CPU level 1 
-                           ; priority level 1)     
+    movb  #$01,INT_CFDATA2 ; Load "CFDATA2" with %00000001 (Set TIM ch0 CPU              ; TIM ch0 (PP0 Inj1 (1&10)), ENABLED, CPU level 1 
+                           ; priority level 1)(PP0 Inj1 (1&10))     
     movb  #$00,INT_CFDATA3 ; Load "CFDATA3" with %00000000 (Set SCI7 disabled) 
     movb  #$00,INT_CFDATA4 ; Load "CFDATA4" with %00000000 (Set PIT ch7 disabled)
     movb  #$00,INT_CFDATA5 ; Load "CFDATA5" with %00000000 (Set PIT ch6 disabled)
@@ -302,21 +298,17 @@ VECTAB_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     movb  #$00,INT_CFDATA1 ; Load "CFDATA1" with %00000000 (Set TIM Pulse accumulator 
                            ; A overflow disabled) 
     movb  #$00,INT_CFDATA2 ; Load "CFDATA2" with %00000000 (Set TIM overflow disabled)    
-;*    movb  #$00,INT_CFDATA3 ; Load "CFDATA3" with %00000000 (Set TIM ch7 disabled)
-    movb  #$01,INT_CFDATA3 ; Load "CFDATA3" with %00000001 (Set (D7)(87to112)(Inj5)(7&2)  ; TIM ch7 ((D7)(87to112)(Inj5)(7&2)), ENABLED, CPU level 1 
-                           ; priority level 1)     
-;*    movb  #$00,INT_CFDATA4 ; Load "CFDATA4" with %00000000 (Set TIM ch6 disabled)
-    movb  #$01,INT_CFDATA4 ; Load "CFDATA4" with %00000001 (Set (D1)(87to112)(Inj4)(5&8)  ; TIM ch6 ((D1)(87to112)(Inj4)(5&8)), ENABLED, CPU level 1 
-                           ; priority level 1) 
-;*    movb  #$00,INT_CFDATA5 ; Load "CFDATA5" with %00000000 (Set TIM ch5 disabled)
-    movb  #$01,INT_CFDATA5 ; Load "CFDATA5" with %00000001 (Set (D6)(87to112)(Inj3)(3&6)  ; TIM ch5 ((D6)(87to112)(Inj3)(3&6)), ENABLED, CPU level 1 
-                           ; priority level 1) 
+    movb  #$00,INT_CFDATA3 ; Load "CFDATA3" with %00000000 (Set TIM ch7 disabled)
+    movb  #$00,INT_CFDATA4 ; Load "CFDATA4" with %00000000 (Set TIM ch6 disabled)
+    movb  #$00,INT_CFDATA5 ; Load "CFDATA5" with %00000000 (Set TIM ch5 disabled)
+;*    movb  #$01,INT_CFDATA5 ; Load "CFDATA5" with %00000001 (Set TIM ch5 CPU 
+                           ; priority level 1)(PP5out) 
 ;*    movb  #$00,INT_CFDATA6 ; Load "CFDATA6" with %00000000 (Set TIM ch4 disabled)
-    movb  #$01,INT_CFDATA6 ; Load "CFDATA6" with %00000001 (Set (D3)(87to112)(Inj2)(9&4)  ; TIM ch4 ((D3)(87to112)(Inj2)(9&4)), ENABLED, CPU level 1 
-                           ; priority level 1)    
+    movb  #$01,INT_CFDATA6 ; Load "CFDATA6" with %00000001 (Set TIM ch4                   ; TIM ch4 (PP4 Inj5 (7&2)), ENABLED, CPU level 1 
+                           ; priority level 1)(PP4 Inj5 (7&2))    
 ;*    movb  #$00,INT_CFDATA7 ; Load "CFDATA7" with %00000000 (Set TIM ch3 disabled)
-    movb  #$01,INT_CFDATA7 ; Load "CFDATA7" with %00000001 (Set (D1)(1to28)(Inj1)(1&10)  ; TIM ch3 ((D1)(1to28)(Inj1)(1&10)), ENABLED, CPU level 1 
-                           ; priority level 1)  
+    movb  #$01,INT_CFDATA7 ; Load "CFDATA7" with %00000001 (Set TIM ch3 CPU               ; TIM ch3 (PP3 Inj4 (5&8)), ENABLED, CPU level 1 
+                           ; priority level 1)(PP3 Inj4 (5&8))  
     
 ; - Initialize ATD1 Compare interrupt -> ATD0 Compare interrupt Interrupt Vectors - 
 
@@ -445,30 +437,37 @@ TIM_PAOV_ISR:
 TIM_TOV_ISR:			
     movb #$44,VecDebug   ; Load "VecDebug" with the last byte of the vector address
     bra  TIM_TOV_ISR     ; Keep looping here
-;*TIM_TC7_ISR:			
-;*    movb #$46,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch7 ((D7)(87to112)(Inj5)(7&2)), ENABLED, CPU level 1
-;*    bra  TIM_TC7_ISR     ; Keep looping here
-;*TIM_TC6_ISR:			
-;*    movb #$48,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch6 ((D1)(87to112)(Inj4)(5&8)), ENABLED, CPU level 1
-;*    bra  TIM_TC6_ISR     ; Keep looping here
-;*TIM_TC5_ISR:			
-;*    movb #$4A,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch5 ((D6)(87to112)(Inj3)(3&6)), ENABLED, CPU level 1
-;*    bra  TIM_TC5_ISR     ; Keep looping here
+TIM_TC7_ISR:			
+    movb #$46,VecDebug   ; Load "VecDebug" with the last byte of the vector address
+    bra  TIM_TC7_ISR     ; Keep looping here
+TIM_TC6_ISR:			
+    movb #$48,VecDebug   ; Load "VecDebug" with the last byte of the vector address
+    bra  TIM_TC6_ISR     ; Keep looping here
+
+TIM_TC5_ISR:			
+    movb #$4A,VecDebug   ; Load "VecDebug" with the last byte of the vector address 
+    bra  TIM_TC5_ISR     ; Keep looping here
+
 ;*TIM_TC4_ISR:			
-;*    movb #$4C,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch4 ((D3)(87to112)(Inj2)(9&4)), ENABLED, CPU level 1
+;*    movb #$4C,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch4 (PP4 Inj5 (7&2)), ENABLED, CPU level 1
 ;*    bra  TIM_TC4_ISR     ; Keep looping here
+
 ;*TIM_TC3_ISR:			
-;*    movb #$4E,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch3 ((D1)(1to28)(Inj1)(1&10)), ENABLED, CPU level 1
+;*    movb #$4E,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch3 (PP3 Inj4 (5&8)), ENABLED, CPU level 1
 ;*    bra  TIM_TC3_ISR     ; Keep looping here
+
 ;*TIM_TC2_ISR:			
-;*    movb #$50,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch2 ((D24)(1to28)(Ign5)(3&2)), ENABLED, CPU level 1
+;*    movb #$50,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch2 (PP2Inj3 (3&6)), ENABLED, CPU level 1
 ;*    bra  TIM_TC2_ISR     ; Keep looping here
+
 ;*TIM_TC1_ISR:			
-;*    movb #$52,VecDebug   ; Load "VecDebug" with the last byte of the vector address   ; TIM ch1 ((D5)(1to28)(Ign4)(4&7)), ENABLED, CPU level 1
+;*    movb #$52,VecDebug   ; Load "VecDebug" with the last byte of the vector address   ; TIM ch1 (PP1 Inj2 (9&4)), ENABLED, CPU level 1
 ;*    bra  TIM_TC1_ISR     ; Keep looping here
+
 ;*TIM_TC0_ISR:			
-;*    movb #$54,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch0 ((D21)(1to28)(Ign3)(9&8)), ENABLED, CPU level 1
+;*    movb #$54,VecDebug   ; Load "VecDebug" with the last byte of the vector address  ; TIM ch0 (PP0 Inj1 (1&10)), ENABLED, CPU level 1
 ;*    bra  TIM_TC0_ISR     ; Keep looping here
+
 SCI7_ISR:			
     movb #$56,VecDebug   ; Load "VecDebug" with the last byte of the vector address
     bra  SCI7_ISR        ; Keep looping here
@@ -679,36 +678,39 @@ ECT_TOV_ISR:
     movb #$DE,VecDebug   ; Load "VecDebug" with the last byte of the vector address
     bra  ECT_TOV_ISR     ; Keep looping here
 ;*ECT_TC7_ISR:			
-;*    movb #$E0,VecDebug   ; Load "VecDebug" with the last byte of the vector address       ; ECT ch7 (Crank) ENABLED, CPU, level 7 (Highest) 
+;*    movb #$E0,VecDebug   ; Load "VecDebug" with the last byte of the vector address       ; ECT ch7 (PT7 Ign5 (3&2)) ENABLED, CPU, level 1 
 ;*    bra  ECT_TC7_ISR     ; Keep looping here
     
 ;*ECT_TC6_ISR:			
-;*    movb #$E2,VecDebug   ; Load "VecDebug" with the last byte of the vector address      ; ECT ch6 (VSS) ENABLED, CPU, level 1
+;*    movb #$E2,VecDebug   ; Load "VecDebug" with the last byte of the vector address      ; ECT ch6 (PT6 Ign4 (4&7)) ENABLED, CPU, level 1
 ;*    bra  ECT_TC3_ISR     ; Keep looping here
 
 ;*ECT_TC5_ISR:
-;*    movb #$E4,VecDebug   ; Load "VecDebug" with the last byte of the vector address      ; ECT ch5 (Cam) ENABLED, CpU level 6 
+;*    movb #$E4,VecDebug   ; Load "VecDebug" with the last byte of the vector address      ; ECT ch5 (PT5 Ign3 (9&8)) ENABLED, CPU level 1 
 ;*    bra  ECT_TC5_ISR     ; Keep looping here
     
-ECT_TC4_ISR:			
-    movb #$E6,VecDebug   ; Load "VecDebug" with the last byte of the vector address 
-    bra  ECT_TC3_ISR     ; Keep looping here
+;*ECT_TC4_ISR:			
+;*    movb #$E6,VecDebug   ; Load "VecDebug" with the last byte of the vector address      ; ECT ch4 (PT4 Ign2 (10&5)) ENABLED, CPU level 1 
+;*    bra  ECT_TC3_ISR     ; Keep looping here
 
-ECT_TC3_ISR:			
-    movb #$E8,VecDebug   ; Load "VecDebug" with the last byte of the vector address
-    bra  ECT_TC3_ISR     ; Keep looping here
+;*ECT_TC3_ISR:			
+;*    movb #$E8,VecDebug   ; Load "VecDebug" with the last byte of the vector address      ; ECT ch3 (PT3 Ign1 (1&6)) ENABLED, CPU level 1
+;*    bra  ECT_TC3_ISR     ; Keep looping here
+
 ;*ECT_TC2_ISR:			
 ;*    movb #$EA,VecDebug   ; Load "VecDebug" with the last byte of the vector address      ; ECT ch2 ((D8)(1to28)(Ign2)(10&5)), ENABLED, CPU level 1
 ;*    bra  ECT_TC2_ISR     ; Keep looping here
-ECT_TC1_ISR:			
-    movb #$EC,VecDebug   ; Load "VecDebug" with the last byte of the vector address
-    bra  ECT_TC1_ISR     ; Keep looping here
+
+;*ECT_TC1_ISR:			
+;*    movb #$EC,VecDebug   ; Load "VecDebug" with the last byte of the vector address      ; ECT ch1 (CKP), ENABLED, CPU level 7
+;*    bra  ECT_TC1_ISR     ; Keep looping here
+    
 ;*ECT_TC0_ISR:			
-;*    movb #$EE,VecDebug   ; Load "VecDebug" with the last byte of the vector address      ; ECT ch0 ((D7)(1to28)(Ign1)(1&6)), ENABLED, CPU level 1
+;*    movb #$EE,VecDebug   ; Load "VecDebug" with the last byte of the vector address      ; ECT ch0 (CMP), ENABLED, CPU level 7
 ;*    bra  ECT_TC0_ISR     ; Keep looping here
     
 ;*RTI_ISR
-;*    movb #$F0,VecDebug   ; Load "VecDebug" with the last byte of the vector address        ; RTI ENABLED, CPU, level 1 
+;*    movb #$F0,VecDebug   ; Load "VecDebug" with the last byte of the vector address       ; RTI ENABLED, CPU, level 1 
 ;*    bra  RTI_ISR         ; Keep looping here
 
 IRQ_ISR:				
@@ -786,14 +788,14 @@ ISR_ATD0COMP	EQU ATD0COMP_ISR		;vector base + $3E
 ISR_TIM_PAIE  	EQU TIM_PAIE_ISR		;vector base + $40
 ISR_TIM_PAOV  	EQU TIM_PAOV_ISR		;vector base + $42
 ISR_TIM_TOV   	EQU TIM_TOV_ISR			;vector base + $44
-ISR_TIM_TC7   	EQU TIM_TC7_ISR			;vector base + $46    ; TIM CH 7 ((D7)(87to112)(Inj5)(7&2)) enabled
-ISR_TIM_TC6   	EQU TIM_TC6_ISR			;vector base + $48    ; TIM Ch 6 ((D1)(87to112)(Inj4)(5&8)) enabled
-ISR_TIM_TC5   	EQU TIM_TC5_ISR			;vector base + $4A    ; TIM Ch 5 ((D6)(87to112)(Inj3)(3&6)) enabled
-ISR_TIM_TC4   	EQU TIM_TC4_ISR			;vector base + $4C    ; TIM Ch 4 ((D3)(87to112)(Inj2)(9&4)) enabled
-ISR_TIM_TC3   	EQU TIM_TC3_ISR			;vector base + $4E    ; TIM Ch 3 ((D1)(1to28)(Inj1)(1&10)) enabled
-ISR_TIM_TC2   	EQU TIM_TC2_ISR			;vector base + $50    ; TIM Ch 2 ((D24)(1to28)(Ign5)(3&2)) enabled
-ISR_TIM_TC1   	EQU TIM_TC1_ISR			;vector base + $52    ; TIM Ch 1 ((D5)(1to28)(Ign4)(4&7)) enabled
-ISR_TIM_TC0   	EQU TIM_TC0_ISR			;vector base + $54    ; TIM Ch 0 ((D21)(1to28)(Ign3)(9&8))enabled
+ISR_TIM_TC7   	EQU TIM_TC7_ISR			;vector base + $46    
+ISR_TIM_TC6   	EQU TIM_TC6_ISR			;vector base + $48   
+ISR_TIM_TC5   	EQU TIM_TC5_ISR			;vector base + $4A    ; TIM Ch 5 (PP5out) enabled
+ISR_TIM_TC4   	EQU TIM_TC4_ISR			;vector base + $4C    ; TIM Ch 4 (Inj5 (7&2)) enabled
+ISR_TIM_TC3   	EQU TIM_TC3_ISR			;vector base + $4E    ; TIM Ch 3 (Inj4 (5&8)) enabled
+ISR_TIM_TC2   	EQU TIM_TC2_ISR			;vector base + $50    ; TIM Ch 2 (Inj3 (3&6)) enabled
+ISR_TIM_TC1   	EQU TIM_TC1_ISR			;vector base + $52    ; TIM Ch 1 (Inj2 (9&4)) enabled
+ISR_TIM_TC0   	EQU TIM_TC0_ISR			;vector base + $54    ; TIM Ch 0 (Inj1 (1&10))enabled
 ISR_SCI7      	EQU SCI7_ISR			;vector base + $56
 ISR_PITCH7    	EQU PITCH7_ISR			;vector base + $58
 ISR_PITCH6    	EQU PITCH6_ISR			;vector base + $5A
@@ -808,7 +810,7 @@ ISR_XGSWT4 		EQU XGSWT4_ISR			;vector base + $6A
 ISR_XGSWT3 		EQU XGSWT3_ISR			;vector base + $6C
 ISR_XGSWT2 		EQU XGSWT2_ISR			;vector base + $6E
 ISR_XGSWT1 		EQU XGSWT1_ISR			;vector base + $70
-ISR_XGSWT0 		EQU XGSWT0_ISR			;vector base + $72     ; XGATE SW Trig 0 (RTI) DISABLED, XGATE, level 1 (used to clear RTI variables)
+ISR_XGSWT0 		EQU XGSWT0_ISR			;vector base + $72     
 ISR_PITCH3 		EQU PITCH3_ISR			;vector base + $74
 ISR_PITCH2 		EQU PITCH2_ISR			;vector base + $76
 ISR_PITCH1 		EQU PITCH1_ISR			;vector base + $78
@@ -863,14 +865,14 @@ ISR_SPI0		EQU SPI0_ISR			;vector base + $D8
 ISR_ECT_PAIE	EQU ECT_PAIE_ISR		;vector base + $DA
 ISR_ECT_PAOV	EQU ECT_PAOV_ISR		;vector base + $DC
 ISR_ECT_TOV		EQU ECT_TOV_ISR			;vector base + $DE
-ISR_ECT_TC7		EQU ECT_TC7_ISR			;vector base + $E0   ; ECT Ch 7 (Crank) ENABLED, CPU, level 7 (Highest)
-ISR_ECT_TC6     EQU ECT_TC6_ISR         ;vector base + $E2   ; ECT Ch 6 (VSS) ENABLED, CPU, level 1
-ISR_ECT_TC5		EQU ECT_TC5_ISR			;vector base + $E4   ; ECT Ch 5 (Cam) ENABLED, CPU level 6
-ISR_ECT_TC4     EQU ECT_TC4_ISR         ;vector base + $E6   
-ISR_ECT_TC3		EQU ECT_TC3_ISR			;vector base + $E8
-ISR_ECT_TC2		EQU ECT_TC2_ISR			;vector base + $EA   ; ECT Ch 2 ((D8)(1to28)(Ign2)(10&5)) ENABLED
-ISR_ECT_TC1		EQU ECT_TC1_ISR			;vector base + $EC
-ISR_ECT_TC0		EQU ECT_TC0_ISR			;vector base + $EE   ; ECT Ch 0 ((D7)(1to28)(Ign1)(1&6)), ENABLED, 
+ISR_ECT_TC7		EQU ECT_TC7_ISR			;vector base + $E0   ; ECT Ch 7 (PT7 Ign5 (3&2)) ENABLED, CPU, level 1
+ISR_ECT_TC6     EQU ECT_TC6_ISR         ;vector base + $E2   ; ECT Ch 6 (PT6 Ign4 (4&7)) ENABLED, CPU, level 1
+ISR_ECT_TC5		EQU ECT_TC5_ISR			;vector base + $E4   ; ECT Ch 5 (PT5 Ign3 (9&8)) ENABLED, CPU, level 1
+ISR_ECT_TC4     EQU ECT_TC4_ISR         ;vector base + $E6   ; ECT Ch 4 (PT4 Ign2 (10&5)) ENABLED, CPU, level 1   
+ISR_ECT_TC3		EQU ECT_TC3_ISR			;vector base + $E8   ; ECT Ch 3 (PT3 Ign1 (1&6)) ENABLED, CPU, level 1
+ISR_ECT_TC2		EQU ECT_TC2_ISR			;vector base + $EA   ; ECT Ch 2 (Vspd) ENABLED, CPU, level 1
+ISR_ECT_TC1		EQU ECT_TC1_ISR			;vector base + $EC   ; ECT Ch 1 (CKP) ENABLED, CPU, level 7
+ISR_ECT_TC0		EQU ECT_TC0_ISR			;vector base + $EE   ; ECT Ch 0 (CMP) ENABLED, CPU level 7
 ISR_RTI         EQU RTI_ISR             ;vector base + $F0   ; RTI ENABLED, CPU, level 1 
 ISR_IRQ			EQU IRQ_ISR				;vector base + $F2
 ISR_XIRQ		EQU XIRQ_ISR			;vector base + $F4

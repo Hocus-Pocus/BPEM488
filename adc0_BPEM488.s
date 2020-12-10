@@ -55,8 +55,9 @@
 ;*   DodgeTherm_BPEM488.s - Lookup table for Dodge temperature sensors                   *
 ;*****************************************************************************************
 ;* Version History:                                                                      *
-;*    May 17 2020                                                                        *
-;*    - BPEM488 version begins (work in progress)                                        *
+;*    August 29 2020                                                                     *
+;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
+;*    - Update December 8 2020                                                           *                                                                                       *   
 ;*                                                                                       *   
 ;*****************************************************************************************
 
@@ -79,40 +80,52 @@ ADC0_VARS_START_LIN	EQU   @ ; @ Represents the current value of the linear
 ;*****************************************************************************************
 ; - RS232 Real Time Variables - (declared in BPEM488.s)
 ;*****************************************************************************************
+;*****************************************************************************************
+; - ADC variables
+;*****************************************************************************************
 
-;cltAdc:       ds 2 ; RV15 10 bit ADC AN00 Engine Coolant Temperature ADC(offset=2) 
-;Cltx10:       ds 2 ; Engine Coolant Temperature (Degrees F x 10)(offset=4)
-;matAdc:       ds 2 ; RV14 10 bit ADC AN01 Manifold Air Temperature ADC(offset=6) 
-;Matx10:       ds 2 ; Manifold Air Temperature (Degrees F x 10)(offset=8) 
-;eftAdc:       ds 2 ; RV13 10 bit ADC AN02 Engine Fuel Temperature ADC(offset=10) 
-;Eftx10:       ds 2 ; Engine Fuel Temperature (Degrees F x 10)(offset=12) 
-;eotAdc:       ds 2 ; RV12 10 bit ADC AN03 Engine Oil Temperature ADC(offset=14) 
-;Eotx10:       ds 2 ; Engine Oil Temperature (Degrees F x 10)(offset=16) 
-;RV11Adc:      ds 2 ; RV11 10 bit ADC AN04(19)(offset=18) 
-;mapAdc:       ds 2 ; RV10 10 bit ADC AN05 Manifold Absolute Pressure ADC(offset=20) 
-;Mapx10:       ds 2 ; Manifold Absolute Pressure (KPAx10)(offset=22)       
-;baroAdc:      ds 2 ; RV9 10 bit ADC AN06 Barometric Pressure ADC(offset=24) 
-;Barox10:      ds 2 ; Barometric Pressure (KPAx10)(offset=26) 
-;batAdc:       ds 2 ; Battery Voltage 10 bit ADC AN07(offset=28) 
-;BatVx10:      ds 2 ; Battery Voltage (Volts x 10)(offset=30) 
-;ftrmAdc:      ds 2 ; RV8 10 bit ADC AN08 Fuel Trim ADC(offset=32)
-;Ftrmx10:      ds 2 ; Fuel Trim (% x 10)(+-20%)(offset=34)
-;itrmAdc:      ds 2 ; RV7 10 bit ADC AN09 Ignition Trim ADC(offset=36)
-;Itrmx10:      ds 2 ; Ignition Trim (degrees x 10)+-20 degrees) (offset=38) 
-;egtAdc:       ds 2 ; RV6 10 bit ADC AN10 Exhaust Gas Temperature ADC(offset=40) 
-;Egt:          ds 2 ; Exhaust Gas Temperature (degrees F)(offset=42) 
-;eopAdc:       ds 2 ; RV5 10 bit ADC AN11 Engine Oil Pressure ADC(offset=44) 
-;Eopx10:       ds 2 ; Engine Oil Pressure (PSI x 10)(offset=46) 
-;efpAdc:       ds 2 ; RV4 10 bit ADC AN12 Engine Fuel Pressure ADC(offset=48) 
-;Efpx10:       ds 2 ; Engine Fuel Pressure (PSI x 10)(offset=50) 
-;tpsADC:       ds 2 ; RV3 10 bit ADC AN13 Throttle Position Sensor ADC (exact for TS)(offset=52)
-;TpsPctx10:    ds 2 ; Throttle Position Sensor % of travel(%x10)(update every 100mSec)(offset=54) 
-;iacAdc:       ds 2 ; RV2 10 bit ADC AN14 Idle Air Control ADC(offset=56) 
-;egoAdc:       ds 2 ; RV1 10 bit ADC AN15 Exhaust Gas Oxygen ADC(offset=58)
-;afr1x10:      ds 2 ; Air Fuel Ratio for gasoline (AFRx10)(exact for TS)(60)
-;PortAbits:    ds 1  ; Port A status bit field(offset=128)
-;alarmbits:    ds 1  ; Alarm status bit field(offset=137)
-;engine2:      ds 1  ; Engine2 status bit field(offset=136)
+;batAdc:       ds 2 ; Battery Voltage 10 bit ADC AN00(offset=2) 
+;BatVx10:      ds 2 ; Battery Voltage (Volts x 10)(offset=4) 
+;cltAdc:       ds 2 ; 10 bit ADC AN01 Engine Coolant Temperature ADC(offset=6) 
+;Cltx10:       ds 2 ; Engine Coolant Temperature (Degrees F x 10)(offset=8)
+;matAdc:       ds 2 ; 10 bit ADC AN02 Manifold Air Temperature ADC(offset=10) 
+;Matx10:       ds 2 ; Manifold Air Temperature (Degrees F x 10)(offset=12) 
+;PAD03inAdc:   ds 2 ; 10 bit ADC AN03 Spare Temperature ADC(offset=14) 
+;Place16:      ds 2 ; Place holder 16(offset=16)
+;mapAdc:       ds 2 ; 10 bit ADC AN04 Manifold Absolute Pressure ADC(offset=18) 
+;Mapx10:       ds 2 ; Manifold Absolute Pressure (KPAx10)(offset=20)
+;tpsADC:       ds 2 ; 10 bit ADC AN05 Throttle Position Sensor ADC (exact for TS)(offset=22)
+;TpsPctx10:    ds 2 ; Throttle Position Sensor % of travel(%x10)(update every 100mSec)(offset=24)
+;egoAdc1:      ds 2 ; 10 bit ADC AN06 Exhaust Gas Oxygen ADC Left bank odd cyls(offset=26)
+;afr1x10:      ds 2 ; Air Fuel Ratio for gasoline Left bank odd cyls(afr1x10)(exact for TS)(offset=28)
+;baroAdc:      ds 2 ; 10 bit ADC AN07 Barometric Pressure ADC(offset=30) 
+;Barox10:      ds 2 ; Barometric Pressure (KPAx10)(offset=32)
+;eopAdc:       ds 2 ; 10 bit ADC AN08 Engine Oil Pressure ADC(offset=34) 
+;Eopx10:       ds 2 ; Engine Oil Pressure (PSI x 10)(offset=36)
+;efpAdc:       ds 2 ; 10 bit ADC AN09 Engine Fuel Pressure ADC(offset=38)
+;Efpx10:       ds 2 ; Engine Fuel Pressure (PSI x 10)(offset=40) 
+;itrmAdc:      ds 2 ; 10 bit ADC AN10 Ignition Trim ADC(offset=42)
+;Itrmx10:      ds 2 ; Ignition Trim (degrees x 10)+-20 degrees) (offset=44)
+;ftrmAdc:      ds 2 ; 10 bit ADC AN11 Fuel Trim ADC(offset=46)
+;Ftrmx10:      ds 2 ; Fuel Trim (% x 10)(+-20%)(offset=48)
+;egoAdc2:      ds 2 ; 10 bit ADC AN12  Exhaust Gas Oxygen ADC Right bank even cyls(offset=50)   
+;afr2x10:      ds 2 ; Air Fuel Ratio for gasoline Right bank even cyls(afr2x10)(exact for TS)offset=52)                 
+
+;*****************************************************************************************
+; - Port status variables
+;*****************************************************************************************
+
+;PortAbits:    ds 1  ; Port A status bit field(offset=118)
+;PortBbits:    ds 1  ; Port B status bit field(offset=119) 
+;PortKbits:    ds 1  ; Port K status bit field(offset=120) 
+
+;*****************************************************************************************
+; - Misc variables 
+;*****************************************************************************************
+
+;engine2:      ds 1  ; Engine2 status bit field(offset=124)
+;alarmbits:    ds 1  ; Alarm status bit field(offset=125)
+;AAoffbits:    ds 1  ; Audio Alarm Off status bit field(offset=126)
 
 ;*****************************************************************************************
 ; "engine2" equates
@@ -124,14 +137,14 @@ ADC0_VARS_START_LIN	EQU   @ ; @ Represents the current value of the linear
                                          ; 1 = 2.56uS time base on(Grn)
 ;AudAlrm        equ $04 ; %00000100, bit 2, 0 = Audible Alarm on(Grn),
                                          ; 1 = Audible Alarm off(Red) 
-;eng2Bit3       equ $08 ; %00001000, bit 3, 0 = , 1 = 
+;TOEduron       equ $08 ; %00001000, bit 3, 0 = TOE timer not counting down(Grn),
+                                         ; 1 = TOE timer counting down(Red) 
 ;eng2Bit4       equ $10 ; %00010000, bit 4, 0 = , 1 = 
 ;eng2Bit5       equ $20 ; %00100000, bit 5, 0 = , 1 = 
 ;eng2Bit6       equ $40 ; %01000000, bit 6, 0 = , 1 = 
 ;eng2Bit7       equ $80 ; %10000000, bit 7, 0 = , 1 =
 
 ;*****************************************************************************************
- 
 ;***************************************************************************************** 
 ; "alarmbits" equates
 ;*****************************************************************************************
@@ -150,34 +163,75 @@ ADC0_VARS_START_LIN	EQU   @ ; @ Represents the current value of the linear
                                       ;1 = Low fuel pressure(Red) 
 ;HFP        equ $40 ; %01000000, bit 6, 0 = No high fuel pressure(Grn),
                                       ;1 = High fuel pressure(Red)
-;Bit7       equ $80 ; %10000000, bit 7, 0 = , 1 = 
 
 ;*****************************************************************************************
+;***************************************************************************************** 
+; "AAoffbits"equates
+;*****************************************************************************************
+
+;LOPoff        equ $01 ; %00000001, bit 0, 0 = No LOP audio alarm silence, 
+                                      ;1 = LOP audio alarm silence
+;HOToff        equ $02 ; %00000010, bit 1, 0 = No HOT audio alarm silence,
+                                      ;1 = HOT audio alarm silence
+;HEToff        equ $04 ; %00000100, bit 2, 0 = No HET audio alarm silence,
+                                      ;1 = HET audio alarm silence 
+;HEGToff       equ $08 ; %00001000, bit 3, 0 = No HEGT audio alarm silence,
+                                      ;1 = HEGT audio alarm silence
+;HFToff        equ $10 ; %00010000, bit 4, 0 = No HFT audio alarm silence,
+                                      ;1 = HFT audio alarm silence 
+;LFPoff        equ $20 ; %00100000, bit 5, 0 = No LFP audio alarm silence,
+                                      ;1 = LFP audio alarm silence 
+;HFPoff        equ $40 ; %01000000, bit 6, 0 = No HFP audio alarm silence,
+                                       ;1 = HFP audio alarm silence
 
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; PortAbits: Port A status bit field (PORTA)
 ;*****************************************************************************************
 
-;SW7on57to82  equ  $01 ;(PA0)%00000001, bit 0
-;SW3on57to82  equ  $02 ;(PA1)%00000010, bit 1
-;SW6on57to82  equ  $04 ;(PA2)%00000100, bit 2
-;Ftrimen      equ  $08 ;(PA3)%00001000, bit 3, SW2on57to82, 0 = Fuel trim disabled(Grn),
-                                                          ;1 = Fuel trim enabled(Red)
-;Itrimen      equ  $10 ;(PA4)%00010000, bit 4, SW5on57to82, 0 = Ign trim disabled(Grn),
-                                                          ;1 = Ign trim enabled(Red)
-;SW1on57to82  equ  $20 ;(PA5)%00100000, bit 5
-;RunLoad      equ  $40 ;(PA6)%01000000, bit 6, SW2 on CPU, 0 = EEM load enabled(Red),
-                                                         ;1 = EEMload not enabled(Grn)
-;SW4on57to82  equ  $80 ;(PA7)%10000000, bit 7
+;LoadEEEM        equ  $01 ;(PA0)%00000001, bit 0, 0 = EEEM load disabled(Grn),
+                                                ;1 = EEEMload enabled(Red)
+;Itrimen         equ  $02 ;(PA1)%00000010, bit 1, 0 = Ign trim disabled(Grn),
+                                                ;1 = Ign trim enabled(Red)     
+;Ftrimen         equ  $04 ;(PA2)%00000100, bit 2, 0 = Fuel trim disabled(Grn),
+                                                ;1 = Fuel trim enabled(Red)
+;AudAlrmSil      equ  $08 ;(PA3)%00001000, bit 3, 0 = Audible Alarm not silenced(Grn)
+                                               ; 1 = Audible Alarm silenced(Red)
+;PA4in           equ  $10 ;(PA4)%00010000, bit 4
+;PA5in           equ  $20 ;(PA5)%00100000, bit 5
+;PA6in           equ  $40 ;(PA6)%01000000, bit 6,
 
 ;*****************************************************************************************
-;Port B
-;EngAlarm   equ $20 ;(PB5)%00100000, bit 5, D1on29to56, 0 = Alarm Relay off,
-                                                      ; 1 = Alarm Relay on
-;Port E
-;AudAlrmSil equ $08 ;(PE3)%00001000, bit 3, SW5on29to56, 0 = No Audible Alarm Silence
-                                                       ; 1 = Audible Alarm Silence    
+;*****************************************************************************************
+; PortBbits: Port B status bit field (PORTB)
+;*****************************************************************************************
+
+;FuelPump    equ  $01 ;(PB0)%00000001, bit 0, 0 = Fuel Pump off(Red),
+                                            ;1 = Fuel pump on(Grn)
+;ASDRelay    equ  $02 ;(PB1)%00000010, bit 1, 0 = ASD Relay off(Red),
+                                            ;1 = ASD Relay on(Grn)
+;EngAlarm    equ  $04 ;(PB2)%00000100, bit 2, 0 = Alarm Relay off(Grn),
+                                            ;1 = Alarm Relay on(Red)
+;AIOT        equ  $08 ;(PB3)%00001000, bit 3, 0 = AIOT no pulse(Grn)
+                                            ;1 = AIOT pulse(Red)
+;PB4out      equ  $10 ;(PB4)%00010000, bit 4
+;PB5out      equ  $20 ;(PB5)%00100000, bit 5,
+;PB6out      equ  $40 ;(PB6)%01000000, bit 6,
+
+;*****************************************************************************************
+;*****************************************************************************************
+; PortKbits: Port K status bit field (PORTK)
+;***************************************************************************************** 
+
+;LOPalrm    equ  $01 ;(PK0)%00000001, bit 0
+;HOTalrm    equ  $02 ;(PK1)%00000010, bit 1
+;HETalrm    equ  $04 ;(PK2)%00000100, bit 2
+;HEGTalrm   equ  $08 ;(PK3)%00001000, bit 3
+;HFTalrm    equ  $10 ;(PK4)%00010000, bit 4
+;LFPalrm    equ  $20 ;(PK5)%00100000, bit 5
+;;N/A        equ  $40 ;(PK6)%01000000, bit 6
+;HFPalrm    equ  $80 ;(PK7)%10000000, bit 7
+
 ;*****************************************************************************************
 
 ADC0_VARS_END		EQU	*     ; * Represents the current value of the paged 
@@ -191,22 +245,24 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 #macro INIT_ADC0, 0
 
-;*****************************************************************************************
-; - Initialize Analog to Digital Converter (ATD0) for continuous conversions
+;****************************************************************************************
+; - Initialize Analog to Digital Converter (ATD0) PAD12 through PAD00 for continuous 
+;   conversions
 ;   8.3MHz ATDCLK period = 0.00000012048 Sec.
 ;   10 bit ATD Conversion period = 41 ATDCLK cycles(ref page 1219) 
 ;   Sample time per channel = 24+2 for discharge capacitor = 26 ATDCLK cycles
-;   Sample time for all 16 channels = (41+26)x16=1072 ATDCLK periods = 0.00012915 Sec. (~129uS)
+;   Sample time for all 16 channels = (41+26)x16=1072 ATDCLK periods = 0.00012915 Sec. 
+;   (~129uS)
 ;*****************************************************************************************
 
     movw  #$0000,ATD0DIENH  ; Load ATD0 Input Enable Register  
                             ; Hi byte and Lo byte with 
-                            ; %0000000000000000 (all pins ADC)
+                            ; %1110000000000000 (PAD12 through PAD00 ADC)
                                 
-    movb  #$0F,ATD0CTL0 ; Load "ATD0CTL0" with %00001111
-                        ; (wrap at AN15)
-			            ;             ^  ^ 
-			            ;    WRAP-----+--+ 
+    movb  #$0C,ATD0CTL0 ; Load "ATD0CTL0" with %00001100
+                        ; (wrap after converting AN12)
+			             ;             ^  ^ 
+			             ;    WRAP-----+--+ 
                                 
     movb  #$30,ATD0CTL1 ; Load "ATD0CTL1" with %00110000
                         ; (no external trigger, 10 bit resolution, 
@@ -269,7 +325,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 #macro START_ATD0, 0
 
 ;*****************************************************************************************
-;- Start ATD0 and get ADC values for all channels
+;- Start ATD0 and get ADC values for all selected channels
 ;*****************************************************************************************
 
     movb  #$30,ATD0CTL5   ; Load "ATD0CTL5" with %00110000 (no special channel,continuous  
@@ -286,82 +342,85 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     brclr ATD0STAT0,SCF,*  ; Loop here until Sequence Complete Flag is set
     
     movb  #SCF,ATD0STAT0 ; Set the Sequence Complete Flag of ATD0STAT0 to clear the flag
-    ldd   ATD0DR0H  ; Load accumulator with value in ATD Ch00 
-    std   cltAdc    ; Copy to cltAdc
-    ldd   ATD0DR1H  ; Load accumulator with value in ATD Ch01 
-    std   matAdc    ; Copy to matAdc ADC
-    ldd   ATD0DR2H  ; Load accumulator with value in ATD Ch02 
-    std   eftAdc    ; Copy to eftAdc ADC
-    ldd   ATD0DR3H  ; Load accumulator with value in ATD Ch03 
-    std   eotAdc    ; Copy to eotAdc
-    ldd   ATD0DR4H  ; Load accumulator with value in ATD Ch04 
-    std   RV11Adc   ; Copy to RV11 ADC
-    ldd   ATD0DR5H  ; Load accumulator with value in ATD Ch05 
-    std   mapAdc    ; Copy to mapAdc
-    ldd   ATD0DR6H  ; Load accumulator with value in ATD Ch06 
-    std   baroAdc   ; Copy to baroAdc
-    ldd   ATD0DR7H  ; Load accumulator with value in ATD Ch07 
-    std   batAdc    ; Copy to bat ADC
-    ldd   ATD0DR8H  ; Load accumulator with value in ATD Ch08 
-    std   ftrmAdc   ; Copy to ftrmAdc
-    ldd   ATD0DR9H  ; Load accumulator with value in ATD Ch09 
-    std   itrmAdc   ; Copy to itrmAdc
-    ldd   ATD0DR10H ; Load accumulator with value in ATD Ch10 
-    std   egtAdc    ; Copy to egtAdc
-    ldd   ATD0DR11H ; Load accumulator with value in ATD Ch11 
-    std   eopAdc    ; Copy to eopAdc
-    ldd   ATD0DR12H ; Load accumulator with value in ATD Ch12 
-    std   efpAdc    ; Copy to efpAdc
-    ldd   ATD0DR13H ; Load accumulator with value in ATD Ch13 
-    std   tpsADC    ; Copy to tpsADC
-    ldd   ATD0DR14H ; Load accumulator with value in ATD Ch14 
-    std   iacAdc    ; Copy to iacADC
-    ldd   ATD0DR15H ; Load accumulator with value in ATD Ch15 
-    std   egoAdc    ; Copy to egoAdc
-
+    ldd   ATD0DR0H    ; Load accumulator with value in ATD Ch00 
+    std   batAdc      ; Copy to batAdc
+    ldd   ATD0DR1H    ; Load accumulator with value in ATD Ch01 
+    std   cltAdc      ; Copy to cltAdc
+    ldd   ATD0DR2H    ; Load accumulator with value in ATD Ch02 
+    std   matAdc      ; Copy to matAdc
+    ldd   ATD0DR3H    ; Load accumulator with value in ATD Ch03 
+    std   PAD03inAdc  ; Copy to PAD03inAdc
+    ldd   ATD0DR4H    ; Load accumulator with value in ATD Ch04 
+    std   mapAdc      ; Copy to mapAdc
+    ldd   ATD0DR5H    ; Load accumulator with value in ATD Ch05 
+    std   tpsADC      ; Copy to tpsADC
+    ldd   ATD0DR6H    ; Load accumulator with value in ATD Ch06 
+    std   egoAdc1     ; Copy to egoAdc1
+    ldd   ATD0DR7H    ; Load accumulator with value in ATD Ch07 
+    std   baroAdc     ; Copy to baroAdc
+    ldd   ATD0DR8H    ; Load accumulator with value in ATD Ch08 
+    std   eopAdc      ; Copy to eopAdc
+    ldd   ATD0DR9H    ; Load accumulator with value in ATD Ch09 
+    std   efpAdc      ; Copy to efpAdc
+    ldd   ATD0DR10H   ; Load accumulator with value in ATD Ch10 
+    std   itrmAdc     ; Copy to itrmAdc
+    ldd   ATD0DR11H   ; Load accumulator with value in ATD Ch11 
+    std   ftrmAdc     ; Copy to ftrmAdc
+    ldd   ATD0DR12H   ; Load accumulator with value in ATD Ch12 
+    std   egoAdc2     ; Copy to egoAdc2
 
 #emac 
 
 #macro RUN_ATD0, 0
 
     movb  #SCF,ATD0STAT0 ; Set the Sequence Complete Flag of ATD0STAT0 to clear the flag
-    ldd   ATD0DR0H  ; Load accumulator with value in ATD Ch00 
-    std   cltAdc    ; Copy to cltAdc
-    ldd   ATD0DR1H  ; Load accumulator with value in ATD Ch01 
-    std   matAdc    ; Copy to matAdc ADC
-    ldd   ATD0DR2H  ; Load accumulator with value in ATD Ch02 
-    std   eftAdc    ; Copy to eftAdc ADC
-    ldd   ATD0DR3H  ; Load accumulator with value in ATD Ch03 
-    std   eotAdc    ; Copy to eotAdc
-    ldd   ATD0DR4H  ; Load accumulator with value in ATD Ch04 
-    std   RV11Adc   ; Copy to RV11 ADC
-    ldd   ATD0DR5H  ; Load accumulator with value in ATD Ch05 
-    std   mapAdc    ; Copy to mapAdc
-    ldd   ATD0DR6H  ; Load accumulator with value in ATD Ch06 
-    std   baroAdc   ; Copy to baroAdc
-    ldd   ATD0DR7H  ; Load accumulator with value in ATD Ch07 
-    std   batAdc    ; Copy to bat ADC
-    ldd   ATD0DR8H  ; Load accumulator with value in ATD Ch08 
-    std   ftrmAdc   ; Copy to ftrmAdc
-    ldd   ATD0DR9H  ; Load accumulator with value in ATD Ch09 
-    std   itrmAdc   ; Copy to itrmAdc
-    ldd   ATD0DR10H ; Load accumulator with value in ATD Ch10 
-    std   egtAdc    ; Copy to egtAdc
-    ldd   ATD0DR11H ; Load accumulator with value in ATD Ch11 
-    std   eopAdc    ; Copy to eopAdc
-    ldd   ATD0DR12H ; Load accumulator with value in ATD Ch12 
-    std   efpAdc    ; Copy to efpAdc
-    ldd   ATD0DR13H ; Load accumulator with value in ATD Ch13 
-    std   tpsADC    ; Copy to tpsADC
-    ldd   ATD0DR14H ; Load accumulator with value in ATD Ch14 
-    std   iacAdc    ; Copy to iacADC
-    ldd   ATD0DR15H ; Load accumulator with value in ATD Ch15 
-    std   egoAdc    ; Copy to egoAdc
-
+    ldd   ATD0DR0H    ; Load accumulator with value in ATD Ch00 
+    std   batAdc      ; Copy to batAdc
+    ldd   ATD0DR1H    ; Load accumulator with value in ATD Ch01 
+    std   cltAdc      ; Copy to cltAdc
+    ldd   ATD0DR2H    ; Load accumulator with value in ATD Ch02 
+    std   matAdc      ; Copy to matAdc
+    ldd   ATD0DR3H    ; Load accumulator with value in ATD Ch03 
+    std   PAD03inAdc  ; Copy to PAD03inAdc
+    ldd   ATD0DR4H    ; Load accumulator with value in ATD Ch04 
+    std   mapAdc      ; Copy to mapAdc
+    ldd   ATD0DR5H    ; Load accumulator with value in ATD Ch05 
+    std   tpsAdc      ; Copy to tpsAdc
+    ldd   ATD0DR6H    ; Load accumulator with value in ATD Ch06 
+    std   egoAdc1     ; Copy to egoAdc1
+    ldd   ATD0DR7H    ; Load accumulator with value in ATD Ch07 
+    std   baroAdc     ; Copy to baroAdc
+    ldd   ATD0DR8H    ; Load accumulator with value in ATD Ch08 
+    std   eopAdc      ; Copy to eopAdc
+    ldd   ATD0DR9H    ; Load accumulator with value in ATD Ch09 
+    std   efpAdc      ; Copy to efpAdc
+    ldd   ATD0DR10H   ; Load accumulator with value in ATD Ch10 
+    std   itrmAdc     ; Copy to itrmAdc
+    ldd   ATD0DR11H   ; Load accumulator with value in ATD Ch11 
+    std   ftrmAdc     ; Copy to ftrmAdc
+    ldd   ATD0DR12H   ; Load accumulator with value in ATD Ch12 
+    std   egoAdc2     ; Copy to egoAdc2
 
 #emac 
 
 #macro CONVERT_ATD0, 0
+
+;*****************************************************************************************
+; - Calculate Battery Voltage x 10 -
+;    (batAdc/1023)*29.95 = BatV
+;             or
+;    batAdc*(29.95/1023) = BatV, batADC = BatV
+;    batAdc*.029276637 = BatV  batADC = batV/.029276637    
+;    batAdc*(300/1023) = BatV*10
+;    batAdc*.29276637 = BatV*10 bat ADC = batV*10/.29276637   
+;*****************************************************************************************
+
+    ldd   batAdc       ; Load double accumulator with value in "batAdc"
+    ldy   #$012C       ; Load index register Y with decimal decimal 300
+    emul               ; Extended 16x16 multiply (D)x(Y)=Y:D
+    ldx   #$03FF       ; Load index register X with decimal 1023
+    ediv               ; Extended 32x16 divide(Y:D)/(X)=Y;Rem->D
+    sty   BatVx10      ; Copy result to "BatVx10" (Battery Voltage x 10)
     
 ;*****************************************************************************************
 ; - Look up Engine Coolant Temperature (Degrees F x 10)
@@ -386,53 +445,138 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     ldy   DodgeThermistor,X  ; Load index register Y with value in "DodgeThermistor" table,
                             ; offset in index register X
     sty   Matx10            ; Copy result to "Matx100" Manifold Air Temperature x 10
-    
-;*****************************************************************************************
-; - Look up Engine Fuel Temperature (Degrees F x 10)
-;*****************************************************************************************
-
-    ldx   eftAdc            ; Load index register X with value in "eftAdc"
-    aslx                    ; Arithmetic shift left index register X (multiply "eftAdc"
-                            ; by two) I have no idea why I have to do this but if I don't
-                            ; the table look up is only half of where it shoud be ???????
-    ldy   DodgeThermistor,X  ; Load index register Y with value in "DodgeThermistor" table,
-                            ; offset in index register X
-    sty   Eftx10            ; Copy result to "Eftx100" Engine Fuel Temperature x 10
-    
-;*****************************************************************************************
-; - Look up Engine Oil Temperature (Degrees F x 10)
-;*****************************************************************************************
-
-    ldx   eotAdc            ; Load index register X with value in "eoAdc"
-    aslx                    ; Arithmetic shift left index register X (multiply "eoAdc"
-                            ; by two) I have no idea why I have to do this but if I don't
-                            ; the table look up is only half of where it shoud be ???????
-    ldy   DodgeThermistor,X  ; Load index register Y with value in "DodgeThermistor" table,
-                            ; offset in index register X
-    sty   Eotx10           ; Copy result to "Eotx100" Engine Oil Temperature x 10
-    
+	
 ;*****************************************************************************************
 ; - Calculate Manifold Absolute Pressure x 10 (Used to calculate to 1 decimal place)
-;   MAP sensor MPX4115AP
-;   Vout = MAP sensor output voltage
-;   P = Manifold pressure in KPA 
-;
-;   Vout = (mapAdc/1023)*5
-;   P = ((Vout/5)+0.095)/0.009
-; - For integer math:
-;   P x 10 = ((mapAdc*10,000)/1023)+950)/9                              
+;   Dodge V10 MAP sensor test data 7/30/20:
+;   Vout = 4.57,    ADC = 935, KPA = 101.5
+;   Vout = .004887, ADC = 1,   KPA = 11.02
 ;*****************************************************************************************
 
-    ldd   mapAdc        ; Load double accumulator with value in "mapAdc"
-    ldy   #$2710        ; Load index register Y with decimal decimal 10,000
-    emul                ; Extended 16x16 multiply (D)x(Y)=Y:D
-    ldx   #$03FF        ; Load index register X with decimal 1023
-    ediv                ; Extended 32x16 divide(Y:D)/(X)=Y;Rem->D
-    addy  #$03B6        ; Add without carry decimal 950 to Y (Y)+(M:M+1)->(Y)
-    tfr   Y,D           ; Copy value in "Y" to "D"
-    ldx   #$0009        ; Load index register "X" with decimal 9
-    idiv                ; Integer divide (D)/(X)=>X Rem=>D 
-    stx   Mapx10        ; Copy result to "Mapx10" (KPAx10)
+    ldd  #$000A      ; Load double accumulator with decimal 1 (.004887 volt ADC) ( x 10)
+    pshd             ; Push to stack (V1)
+    ldd  mapAdc      ; Load double accumulator with "mapAdc"
+    ldy  #$000A      ; Load index register Y with decimal 10
+    emul             ; Multiply (D)x(Y)=>Y:D  (multiply "eopAdc" by 10) 
+    pshd             ; Push to stack (V)
+    ldd  #$2486      ; Load double accumulator with decimal 935 (4.57 volt ADC) ( x 10)
+    pshd             ; Push to stack (V2)
+    ldd  #$006E      ; Load double accumulator with decimal 11.02 (Low range KPA) ( x 10)
+    pshd             ; Push to stack (Z1)
+    ldd  #$03F7      ; Load double accumulator with decimal 101.5 (High range KPA) ( x 10)
+    pshd             ; Push to stack (Z2)
+
+;*****************************************************************************************        
+		
+		;    +--------+--------+       
+		;    |        Z2       |  SP+ 0
+		;    +--------+--------+       
+		;    |        Z1       |  SP+ 2
+		;    +--------+--------+       
+		;    |        V2       |  SP+ 4
+		;    +--------+--------+       
+		;    |        V        |  SP+ 6
+		;    +--------+--------+       
+		;    |        V1       |  SP+ 8
+		;    +--------+--------+
+
+;	              V      V1      V2      Z1    Z2
+    2D_IPOL	(6,SP), (8,SP), (4,SP), (2,SP), (0,SP) ; Go to 2D_IPOL Macro, interp_BEPM.s 
+
+;*****************************************************************************************        
+; - Free stack space (result in D)
+;*****************************************************************************************
+
+    leas  10,SP    ; Stack pointer -> bottom of stack    
+    std   Mapx10   ; Copy result to "Mapx10" Manifold Absolute Pressure x 10
+	
+;*****************************************************************************************        
+; - Calculate Throttle Position Percent x 10 -
+;*****************************************************************************************
+
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy  #veBins_E   ; Load index register Y with address of first configurable constant
+                     ; on buffer RAM page 1 (veBins)
+    ldd  $03E8,Y     ; Load Accu D with value in buffer RAM page 1 offset 1000 (tpsMin)
+    pshd             ; Push to stack (V1)
+    ldd  tpsAdc      ; Load double accumulator with "tpsAdc"
+    pshd             ; Push to stack (V)
+    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
+    ldy  #veBins_E   ; Load index register Y with address of first configurable constant
+                     ; on buffer RAM page 1 (vebins)
+    ldd  $03EA,Y     ; Load Accu D with value in buffer RAM page 1 offset 1002 (tpsMax)
+    pshd             ; Push to stack (V2)    
+    ldd  #$0000      ; Load double accumulator with decimal 0 (Low range %) ( x 10)
+    pshd             ; Push to stack (Z1)
+    ldd  #$03E8      ; Load double accumulator with decimal 1000 (High range %) ( x 10)
+    pshd             ; Push to stack (Z2)
+
+;*****************************************************************************************        
+		
+		;    +--------+--------+       
+		;    |        Z2       |  SP+ 0
+		;    +--------+--------+       
+		;    |        Z1       |  SP+ 2
+		;    +--------+--------+       
+		;    |        V2       |  SP+ 4
+		;    +--------+--------+       
+		;    |        V        |  SP+ 6
+		;    +--------+--------+       
+		;    |        V1       |  SP+ 8
+		;    +--------+--------+
+
+;	              V      V1      V2      Z1    Z2
+    2D_IPOL	(6,SP), (8,SP), (4,SP), (2,SP), (0,SP) ; Go to 2D_IPOL Macro, interp_BEPM.s 
+
+;*****************************************************************************************        
+; - Free stack space (result in D)
+;*****************************************************************************************
+
+    leas  10,SP    ; Stack pointer -> bottom of stack    
+    std  TpsPctx10 ; Copy result to "TpsPctx10" Throttle Position Percent of travel x 10
+	
+;*****************************************************************************************
+; - Calculate Air Fuel Ratio x 10 for left bank (odd cylinders)-
+;   Innovate LC-2 AFR is ratiometric 0V to 5V 7.35 AFR to 22.39 AFR
+;   ( All variables are multiplied by 10 for greater precision)
+;*****************************************************************************************
+
+    ldd  #$0000      ; Load double accumulator with decimal 0 (0 volt ADC) ( x 10)
+    pshd             ; Push to stack (V1)
+    ldd  egoAdc1      ; Load double accumulator with "egoAdc1"
+    ldy  #$000A      ; Load index register Y with decimal 10
+    emul             ; Multiply (D)x(Y)=>Y:D  (multiply "eopAdc" by 10) 
+    pshd             ; Push to stack (V)
+    ldd  #$27F6      ; Load double accumulator with decimal 1023 (5 volt ADC) ( x 10) (10230)
+    pshd             ; Push to stack (V2)
+    ldd  #$004A      ; Load double accumulator with decimal 7.35 (Low range AFR) ( x 10) (74)
+    pshd             ; Push to stack (Z1)
+    ldd  #$00E0      ; Load double accumulator with decimal 22.39 (High range AFR) ( x 10) (224)
+    pshd             ; Push to stack (Z2)
+
+;*****************************************************************************************        
+		
+		;    +--------+--------+       
+		;    |        Z2       |  SP+ 0
+		;    +--------+--------+       
+		;    |        Z1       |  SP+ 2
+		;    +--------+--------+       
+		;    |        V2       |  SP+ 4
+		;    +--------+--------+       
+		;    |        V        |  SP+ 6
+		;    +--------+--------+       
+		;    |        V1       |  SP+ 8
+		;    +--------+--------+
+
+;	              V      V1      V2      Z1    Z2
+    2D_IPOL	(6,SP), (8,SP), (4,SP), (2,SP), (0,SP) ; Go to 2D_IPOL Macro, interp_BEPM.s 
+
+;*****************************************************************************************        
+; - Free stack space (result in D)
+;*****************************************************************************************
+
+    leas  10,SP       ; Stack pointer -> bottom of stack    
+    std   afr1x10     ; Copy result to "afr1x10" Air Fuel Ratio x 10
     
 ;*****************************************************************************************
 ; - Calculate Barometric Pressure x 10(Used to calculate to 1 decimal place)
@@ -456,44 +600,25 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     ldx   #$0009        ; Load index register "X" with decimal 9
     idiv                ; Integer divide (D)/(X)=>X Rem=>D 
     stx   Barox10        ; Copy result to "Barox10" (KPAx10)
-    
-;*****************************************************************************************
-; - Calculate Battery Voltage x 10 -
-;    (batAdc/1023)*29.95 = BatV
-;             or
-;    batAdc*(29.95/1023) = BatV, batADC = BatV
-;    batAdc*.029276637 = BatV  batADC = batV/.029276637    
-;    batAdc*(300/1023) = BatV*10
-;    batAdc*.29276637 = BatV*10 bat ADC = batV*10/.29276637   
-;*****************************************************************************************
-
-    ldd   batAdc       ; Load double accumulator with value in "batAdc"
-    ldy   #$012C       ; Load index register Y with decimal decimal 300
-    emul               ; Extended 16x16 multiply (D)x(Y)=Y:D
-    ldx   #$03FF       ; Load index register X with decimal 1023
-    ediv               ; Extended 32x16 divide(Y:D)/(X)=Y;Rem->D
-    sty   BatVx10      ; Copy result to "BatVx10" (Battery Voltage x 10)
-    
+	
 ;*****************************************************************************************        
-; - Calculate Fuel Trim (% x 10)(+-20%) -
-;   (80% = 80% of VEcurr, 100% = 100% of VeCurr(no correction), 120% = 120% of VEcurr)
+; - Calculate Engine Oil Pressure x 10 -
+;   Pressure transducer is ratiometric 1V to 5V 0PSI to 100PSI
 ;   ( All variables are multiplied by 10 for greater precision)
 ;*****************************************************************************************
 
-    brclr PortAbits,Ftrimen,NoFtrim ; "If Ftrimen" bit of "PortAbits" is clear, branch to 
-	                  ; NoFtrim: (Fuel trim enable switch is off so skip over)   
-    ldd   #$0000      ; Load double accumulator with zero (0 volt ADC) 
-    pshd              ; Push to stack (V1)
-    ldd   ftrmAdc     ; Load double accumulator with "ftrmAdc"
-    ldy   #$000A      ; Load index register Y with decimal 10
-    emul              ; Multiply (D)x(Y)=>Y:D  (multiply "eopAdc" by 10) 
-    pshd              ; Push to stack (V)
-    ldd   #$27F6      ; Load double accumulator with decimal 1023x10 (5 volt ADC) 
-    pshd              ; Push to stack (V2)
-    ldd   #$0320      ; Load double accumulator with decimal 80x10 (Low range %) 
-    pshd              ; Push to stack (Z1)
-    ldd   #$04B0      ; Load double accumulator with decimal 120x10 (High range %)
-    pshd              ; Push to stack (Z2)
+    ldd  #$0802      ; Load double accumulator with decimal 205 (1 volt ADC) ( x 10)
+    pshd             ; Push to stack (V1)
+    ldd  eopAdc      ; Load double accumulator with "eopAdc"
+    ldy  #$000A      ; Load index register Y with decimal 10
+    emul             ; Multiply (D)x(Y)=>Y:D  (multiply "eopAdc" by 10) 
+    pshd             ; Push to stack (V)
+    ldd  #$27F6      ; Load double accumulator with decimal 1023 (5 volt ADC) ( x 10)
+    pshd             ; Push to stack (V2)
+    ldd  #$0000      ; Load double accumulator with decimal 0 (Low range PSI) ( x 10)
+    pshd             ; Push to stack (Z1)
+    ldd  #$03E8      ; Load double accumulator with decimal 100 (High range PSI) ( x 10)
+    pshd             ; Push to stack (Z2)
 
 ;*****************************************************************************************        
 		
@@ -516,14 +641,51 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ; - Free stack space (result in D)
 ;*****************************************************************************************
 
-    leas  10,SP     ; Stack pointer -> bottom of stack    
-    std   Ftrmx10   ; Copy result to "Ftrmx10" Fuel Trim (%x10)
-	bra   FtrimDone ; Branch to FtrimDone:
+    leas  10,SP    ; Stack pointer -> bottom of stack    
+    std   Eopx10   ; Copy result to "Eopx10" Engine Oil Pressure x 10
 	
-NoFtrim:
-    movw #$03E8,Ftrmx10  ; Decimal 1000 -> "Ftrmx10" (100%, no trim)
-	
-FtrimDone:
+;*****************************************************************************************        
+; - Calculate Engine Fuel Pressure x 10 -
+;   Pressure transducer is ratiometric 1V to 5V 0PSI to 100PSI
+;   ( All variables are multiplied by 10 for greater precision)
+;*****************************************************************************************
+
+    ldd  #$0802      ; Load double accumulator with decimal 205 (1 volt ADC) ( x 10)
+    pshd             ; Push to stack (V1)
+    ldd  efpAdc      ; Load double accumulator with "efpAdc"
+    ldy  #$000A      ; Load index register Y with decimal 10
+    emul             ; Multiply (D)x(Y)=>Y:D  (multiply "eopAdc" by 10) 
+    pshd             ; Push to stack (V)
+    ldd  #$27F6      ; Load double accumulator with decimal 1023 (5 volt ADC) ( x 10)
+    pshd             ; Push to stack (V2)
+    ldd  #$0000      ; Load double accumulator with decimal 0 (Low range PSI) ( x 10)
+    pshd             ; Push to stack (Z1)
+    ldd  #$03E8      ; Load double accumulator with decimal 100 (High range PSI) ( x 10)
+    pshd             ; Push to stack (Z2)
+
+;*****************************************************************************************        
+		
+		;    +--------+--------+       
+		;    |        Z2       |  SP+ 0
+		;    +--------+--------+       
+		;    |        Z1       |  SP+ 2
+		;    +--------+--------+       
+		;    |        V2       |  SP+ 4
+		;    +--------+--------+       
+		;    |        V        |  SP+ 6
+		;    +--------+--------+       
+		;    |        V1       |  SP+ 8
+		;    +--------+--------+
+
+;	              V      V1      V2      Z1    Z2
+    2D_IPOL	(6,SP), (8,SP), (4,SP), (2,SP), (0,SP) ; Go to 2D_IPOL Macro, interp_BEPM.s 
+
+;*****************************************************************************************        
+; - Free stack space (result in D)
+;*****************************************************************************************
+
+    leas  10,SP    ; Stack pointer -> bottom of stack    
+    std   Efpx10   ; Copy result to "Efpx10" Engine Fuel Pressure x 10
 	
 ;*****************************************************************************************        
 ; - Calculate Ignition Trim (Degrees x 10)(+-20 Degrees) -
@@ -581,41 +743,25 @@ NoItrim:
 ItrimDone:	
     
 ;*****************************************************************************************        
-; - Calculate Exhaust Gas Temperature "Egt" -
-;   EGT amplifier 0.0027v @ 0C (32F), 5.022v @ 720C (1328F) Resolution ~ 5 degrees F
-;   Egt = (((egtAdc-0)*(1328-32))/(1023-0))+32
-;   Egt = ((egtAdc*(1296/1023)+32
-;   Egt = (egtAdc*1.26686217)+32
-;   For integer math:
-;   Egt = (egtAdc*12668/10000)+32    
-;*****************************************************************************************
-
-    ldd   egtAdc       ; Load double accumulator with value in "egtAdc"
-    ldy   #$317C       ; Load index register Y with decimal decimal 12,668
-    emul               ; Extended 16x16 multiply (D)x(Y)=Y:D
-    ldx   #$2710       ; Load index register X with decimal 10,000
-    ediv               ; Extended 32x16 divide(Y:D)/(X)=Y;Rem->D
-    addy  #$0020	   ; (Y)+(M:M+1)->Y Add decimal 32
-    sty   Egt          ; copy result to "Egt" Exhaust Gas Temperature
-    
-;*****************************************************************************************        
-; - Calculate Engine Oil Pressure x 10 -
-;   Pressure transducer is ratiometric 1V to 5V 0PSI to 100PSI
+; - Calculate Fuel Trim (% x 10)(+-20%) -
+;   (80% = 80% of VEcurr, 100% = 100% of VeCurr(no correction), 120% = 120% of VEcurr)
 ;   ( All variables are multiplied by 10 for greater precision)
 ;*****************************************************************************************
 
-    ldd  #$0802      ; Load double accumulator with decimal 205 (1 volt ADC) ( x 10)
-    pshd             ; Push to stack (V1)
-    ldd  eopAdc      ; Load double accumulator with "eopAdc"
-    ldy  #$000A      ; Load index register Y with decimal 10
-    emul             ; Multiply (D)x(Y)=>Y:D  (multiply "eopAdc" by 10) 
-    pshd             ; Push to stack (V)
-    ldd  #$27F6      ; Load double accumulator with decimal 1023 (5 volt ADC) ( x 10)
-    pshd             ; Push to stack (V2)
-    ldd  #$0000      ; Load double accumulator with decimal 0 (Low range PSI) ( x 10)
-    pshd             ; Push to stack (Z1)
-    ldd  #$03E8      ; Load double accumulator with decimal 100 (High range PSI) ( x 10)
-    pshd             ; Push to stack (Z2)
+    brclr PortAbits,Ftrimen,NoFtrim ; "If Ftrimen" bit of "PortAbits" is clear, branch to 
+	                  ; NoFtrim: (Fuel trim enable switch is off so skip over)   
+    ldd   #$0000      ; Load double accumulator with zero (0 volt ADC) 
+    pshd              ; Push to stack (V1)
+    ldd   ftrmAdc     ; Load double accumulator with "ftrmAdc"
+    ldy   #$000A      ; Load index register Y with decimal 10
+    emul              ; Multiply (D)x(Y)=>Y:D  (multiply "eopAdc" by 10) 
+    pshd              ; Push to stack (V)
+    ldd   #$27F6      ; Load double accumulator with decimal 1023x10 (5 volt ADC) 
+    pshd              ; Push to stack (V2)
+    ldd   #$0320      ; Load double accumulator with decimal 80x10 (Low range %) 
+    pshd              ; Push to stack (Z1)
+    ldd   #$04B0      ; Load double accumulator with decimal 120x10 (High range %)
+    pshd              ; Push to stack (Z2)
 
 ;*****************************************************************************************        
 		
@@ -638,106 +784,24 @@ ItrimDone:
 ; - Free stack space (result in D)
 ;*****************************************************************************************
 
-    leas  10,SP    ; Stack pointer -> bottom of stack    
-    std   Eopx10   ; Copy result to "Eopx10" Engine Oil Pressure x 10
-    
-;*****************************************************************************************        
-; - Calculate Engine Fuel Pressure x 10 -
-;   Pressure transducer is ratiometric 1V to 5V 0PSI to 100PSI
-;   ( All variables are multiplied by 10 for greater precision)
+    leas  10,SP     ; Stack pointer -> bottom of stack    
+    std   Ftrmx10   ; Copy result to "Ftrmx10" Fuel Trim (%x10)
+	bra   FtrimDone ; Branch to FtrimDone:
+	
+NoFtrim:
+    movw #$03E8,Ftrmx10  ; Decimal 1000 -> "Ftrmx10" (100%, no trim)
+	
+FtrimDone:
+
 ;*****************************************************************************************
-
-    ldd  #$0802      ; Load double accumulator with decimal 205 (1 volt ADC) ( x 10)
-    pshd             ; Push to stack (V1)
-    ldd  efpAdc      ; Load double accumulator with "efpAdc"
-    ldy  #$000A      ; Load index register Y with decimal 10
-    emul             ; Multiply (D)x(Y)=>Y:D  (multiply "eopAdc" by 10) 
-    pshd             ; Push to stack (V)
-    ldd  #$27F6      ; Load double accumulator with decimal 1023 (5 volt ADC) ( x 10)
-    pshd             ; Push to stack (V2)
-    ldd  #$0000      ; Load double accumulator with decimal 0 (Low range PSI) ( x 10)
-    pshd             ; Push to stack (Z1)
-    ldd  #$03E8      ; Load double accumulator with decimal 100 (High range PSI) ( x 10)
-    pshd             ; Push to stack (Z2)
-
-;*****************************************************************************************        
-		
-		;    +--------+--------+       
-		;    |        Z2       |  SP+ 0
-		;    +--------+--------+       
-		;    |        Z1       |  SP+ 2
-		;    +--------+--------+       
-		;    |        V2       |  SP+ 4
-		;    +--------+--------+       
-		;    |        V        |  SP+ 6
-		;    +--------+--------+       
-		;    |        V1       |  SP+ 8
-		;    +--------+--------+
-
-;	              V      V1      V2      Z1    Z2
-    2D_IPOL	(6,SP), (8,SP), (4,SP), (2,SP), (0,SP) ; Go to 2D_IPOL Macro, interp_BEPM.s 
-
-;*****************************************************************************************        
-; - Free stack space (result in D)
-;*****************************************************************************************
-
-    leas  10,SP    ; Stack pointer -> bottom of stack    
-    std   Efpx10   ; Copy result to "Efpx10" Engine Fuel Pressure x 10
-    
-;*****************************************************************************************        
-; - Calculate Throttle Position Percent x 10 -
-;*****************************************************************************************
-
-    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy  #veBins_E   ; Load index register Y with address of first configurable constant
-                     ; on buffer RAM page 1 (veBins)
-    ldd  $03E8,Y     ; Load Accu D with value in buffer RAM page 1 offset 1000 (tpsMin)
-    pshd             ; Push to stack (V1)
-    ldd  tpsADC      ; Load double accumulator with "tpsADCAdc"
-    pshd             ; Push to stack (V)
-    movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy  #veBins_E   ; Load index register Y with address of first configurable constant
-                     ; on buffer RAM page 1 (vebins)
-    ldd  $03EA,Y     ; Load Accu D with value in buffer RAM page 1 offset 1002 (tpsMax)
-    pshd             ; Push to stack (V2)    
-    ldd  #$0000      ; Load double accumulator with decimal 0 (Low range %) ( x 10)
-    pshd             ; Push to stack (Z1)
-    ldd  #$03E8      ; Load double accumulator with decimal 1000 (High range %) ( x 10)
-    pshd             ; Push to stack (Z2)
-
-;*****************************************************************************************        
-		
-		;    +--------+--------+       
-		;    |        Z2       |  SP+ 0
-		;    +--------+--------+       
-		;    |        Z1       |  SP+ 2
-		;    +--------+--------+       
-		;    |        V2       |  SP+ 4
-		;    +--------+--------+       
-		;    |        V        |  SP+ 6
-		;    +--------+--------+       
-		;    |        V1       |  SP+ 8
-		;    +--------+--------+
-
-;	              V      V1      V2      Z1    Z2
-    2D_IPOL	(6,SP), (8,SP), (4,SP), (2,SP), (0,SP) ; Go to 2D_IPOL Macro, interp_BEPM.s 
-
-;*****************************************************************************************        
-; - Free stack space (result in D)
-;*****************************************************************************************
-
-    leas  10,SP    ; Stack pointer -> bottom of stack    
-    std  TpsPctx10 ; Copy result to "TpsPctx10" Throttle Position Percent of travel x 10
-    
-;*****************************************************************************************
-; - Calculate Air Fuel Ratio x 10 -
+; - Calculate Air Fuel Ratio x 10 for right bank (even cylinders)-
 ;   Innovate LC-2 AFR is ratiometric 0V to 5V 7.35 AFR to 22.39 AFR
 ;   ( All variables are multiplied by 10 for greater precision)
 ;*****************************************************************************************
 
     ldd  #$0000      ; Load double accumulator with decimal 0 (0 volt ADC) ( x 10)
     pshd             ; Push to stack (V1)
-    ldd  egoAdc      ; Load double accumulator with "egoAdc"
+    ldd  egoAdc2     ; Load double accumulator with "egoAdc2"
     ldy  #$000A      ; Load index register Y with decimal 10
     emul             ; Multiply (D)x(Y)=>Y:D  (multiply "eopAdc" by 10) 
     pshd             ; Push to stack (V)
@@ -770,8 +834,8 @@ ItrimDone:
 ;*****************************************************************************************
 
     leas  10,SP       ; Stack pointer -> bottom of stack    
-    std   afr1x10     ; Copy result to "afr1x10" Air Fuel Ratio x 10
-    
+    std   afr2x10     ; Copy result to "afr2x10" Air Fuel Ratio x 10
+	
 #emac
 
 #macro CHECK_ALARMS, 0
@@ -779,9 +843,9 @@ ItrimDone:
 ;*****************************************************************************************
 ; - BPEM488 allows for the following alarms:
 ;   High Engine Temperature
-;   High Oil Temperature
-;   High Fuel Temperature
-;   High Exhaust Gas Temperture
+;*   High Oil Temperature
+;*   High Fuel Temperature
+;*   High Exhaust Gas Temperture
 ;   Low Oil Pressure
 ;   High Fuel Pressure
 ;   Low Fuel Pressure
@@ -825,107 +889,107 @@ HET_ALARM_DONE:
 ; - Check for high oil temperature.
 ;*****************************************************************************************
 
-CHK_HOT_OFF:
-    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
-                    ; on buffer RAM page 2 (stBins)
-    ldd  $02D6,Y    ; Load Accu D with value in buffer RAM page 2 offset 726 (hotoff)
-	cpd  Eotx10     ; (A:B)-(M:M+1) Compare "hotoff" with "Eotx10"
-    bhs  CLEAR_HOT  ; If "hotoff" is higher or the same as "Eotx10" branch to CLEAR_HOT 	
-    bra  CHK_HOT_ON ; Branch to CHK_HOT_ON:
+;*CHK_HOT_OFF:
+;*    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
+;*    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
+;*                    ; on buffer RAM page 2 (stBins)
+;*    ldd  $02D6,Y    ; Load Accu D with value in buffer RAM page 2 offset 726 (hotoff)
+;*	cpd  Eotx10     ; (A:B)-(M:M+1) Compare "hotoff" with "Eotx10"
+;*    bhs  CLEAR_HOT  ; If "hotoff" is higher or the same as "Eotx10" branch to CLEAR_HOT 	
+;*    bra  CHK_HOT_ON ; Branch to CHK_HOT_ON:
 
-CLEAR_HOT:
-     brclr   alarmbits,HOT,HOT_ALARM_DONE ; If "HOT" bit of "alarmbits" is clear,
-                                          ; branch to HOT_ALARM_DONE:
-     bclr    alarmbits,HOT                ; Clear "HOT" bit of "alarmbits"
-     bra     HOT_ALARM_DONE               ; Branch to HOT_ALARM_DONE:
+;*CLEAR_HOT:
+;*     brclr   alarmbits,HOT,HOT_ALARM_DONE ; If "HOT" bit of "alarmbits" is clear,
+;*                                          ; branch to HOT_ALARM_DONE:
+;*     bclr    alarmbits,HOT                ; Clear "HOT" bit of "alarmbits"
+;*     bra     HOT_ALARM_DONE               ; Branch to HOT_ALARM_DONE:
 	 
-CHK_HOT_ON:
-    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
-                    ; on buffer RAM page 2 (stBins)
-    ldd  $02D4,Y    ; Load Accu D with value in buffer RAM page 2 offset 724 (hoton)
-	cpd  Eotx10     ; (A:B)-(M:M+1) Compare "hoton" with "Eotx10"
-    bls  SET_HOT    ; If "hoton" is lower or the same as "Eotx10" branch to SET_HOT 	
-    bra  HOT_ALARM_DONE ; Branch to HOT_ALARM_DONE:
-
-SET_HOT:
-     brset   alarmbits,HOT,HOT_ALARM_DONE ; If "HOT" bit of "alarmbits" is set, branch to
-                                          ; HOT_ALARM_DONE:
-     bset    alarmbits,HOT                ; Set "HOT" bit of "alarmbits"
-
-HOT_ALARM_DONE:	
-
+;*CHK_HOT_ON:
+;*    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
+;*    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
+;*                    ; on buffer RAM page 2 (stBins)
+;*    ldd  $02D4,Y    ; Load Accu D with value in buffer RAM page 2 offset 724 (hoton)
+;*	cpd  Eotx10     ; (A:B)-(M:M+1) Compare "hoton" with "Eotx10"
+;*    bls  SET_HOT    ; If "hoton" is lower or the same as "Eotx10" branch to SET_HOT 	
+;*    bra  HOT_ALARM_DONE ; Branch to HOT_ALARM_DONE:
+;*
+;*SET_HOT:
+;*     brset   alarmbits,HOT,HOT_ALARM_DONE ; If "HOT" bit of "alarmbits" is set, branch to
+;*                                          ; HOT_ALARM_DONE:
+;*     bset    alarmbits,HOT                ; Set "HOT" bit of "alarmbits"
+;*
+;*HOT_ALARM_DONE:	
+;*
 ;*****************************************************************************************        
 ; - Check for high fuel temperature.
 ;*****************************************************************************************
-
-CHK_HFT_OFF:
-    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
-                    ; on buffer RAM page 2 (stBins)
-    ldd  $02DA,Y    ; Load Accu D with value in buffer RAM page 2 offset 730 (hftoff)
-	cpd  Eftx10     ; (A:B)-(M:M+1) Compare "hftoff" with "Eftx10"
-    bhs  CLEAR_HFT  ; If "hftoff" is higher or the same as "Eftx10" branch to CLEAR_HFT 	
-    bra  CHK_HFT_ON ; Branch to CHK_HFT_ON:
-
-CLEAR_HFT:
-     brclr   alarmbits,HFT,HFT_ALARM_DONE ; If "HFT" bit of "alarmbits" is clear,
-                                          ; branch to HFT_ALARM_DONE:
-     bclr    alarmbits,HFT                ; Clear "HFT" bit of "alarmbits"
-     bra     HFT_ALARM_DONE               ; Branch to HFT_ALARM_DONE:
-	 
-CHK_HFT_ON:
-    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
-                    ; on buffer RAM page 2 (stBins)
-    ldd  $02D8,Y    ; Load Accu D with value in buffer RAM page 2 offset 728 (hfton)
-	cpd  Eftx10     ; (A:B)-(M:M+1) Compare "hfton" with "Eftx10"
-    bls  SET_HFT    ; If "hfton" is lower or the same as "Eftx10" branch to SET_HFT 	
-    bra  HFT_ALARM_DONE ; Branch to HFT_ALARM_DONE:
-
-SET_HFT:
-     brset   alarmbits,HFT,HFT_ALARM_DONE ; If "HFT" bit of "alarmbits" is set, branch to
-                                          ; HFT_ALARM_DONE:
-     bset    alarmbits,HFT                ; Set "HFT" bit of "alarmbits"
-
-HFT_ALARM_DONE:	
-
+;*
+;*CHK_HFT_OFF:
+;*    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
+;*    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
+;*                    ; on buffer RAM page 2 (stBins)
+;*    ldd  $02DA,Y    ; Load Accu D with value in buffer RAM page 2 offset 730 (hftoff)
+;*	cpd  Eftx10     ; (A:B)-(M:M+1) Compare "hftoff" with "Eftx10"
+;*    bhs  CLEAR_HFT  ; If "hftoff" is higher or the same as "Eftx10" branch to CLEAR_HFT 	
+;*    bra  CHK_HFT_ON ; Branch to CHK_HFT_ON:
+;*
+;*CLEAR_HFT:
+;*     brclr   alarmbits,HFT,HFT_ALARM_DONE ; If "HFT" bit of "alarmbits" is clear,
+;*                                          ; branch to HFT_ALARM_DONE:
+;*     bclr    alarmbits,HFT                ; Clear "HFT" bit of "alarmbits"
+;*     bra     HFT_ALARM_DONE               ; Branch to HFT_ALARM_DONE:
+;*	 
+;*CHK_HFT_ON:
+;*    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
+;*    ldy  #stBins_E    ; Load index register Y with address of first configurable constant
+;*                    ; on buffer RAM page 2 (stBins)
+;*    ldd  $02D8,Y    ; Load Accu D with value in buffer RAM page 2 offset 728 (hfton)
+;*	cpd  Eftx10     ; (A:B)-(M:M+1) Compare "hfton" with "Eftx10"
+;*    bls  SET_HFT    ; If "hfton" is lower or the same as "Eftx10" branch to SET_HFT 	
+;*    bra  HFT_ALARM_DONE ; Branch to HFT_ALARM_DONE:
+;*
+;*SET_HFT:
+;*     brset   alarmbits,HFT,HFT_ALARM_DONE ; If "HFT" bit of "alarmbits" is set, branch to
+;*                                          ; HFT_ALARM_DONE:
+;*     bset    alarmbits,HFT                ; Set "HFT" bit of "alarmbits"
+;*
+;*HFT_ALARM_DONE:	
+;*
 ;*****************************************************************************************        
 ; - Check for high exhaust gas temperature.
 ;*****************************************************************************************
-
-CHK_HEGT_OFF:
-    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins_E     ; Load index register Y with address of first configurable constant
-                     ; on buffer RAM page 2 (stBins)
-    ldd  $02DE,Y     ; Load Accu D with value in buffer RAM page 2 offset 734 (hegtoff)
-	cpd  Egt         ; (A:B)-(M:M+1) Compare "hegt_ff" with "Egt"
-    bhs  CLEAR_HEGT  ; If "hegtoff" is higher or the same as "Egt" branch to CLEAR_HEGT 	
-    bra  CHK_HEGT_ON ; Branch to CHK_HEGT_ON:
-
-CLEAR_HEGT:
-     brclr   alarmbits,HEGT,HEGT_ALARM_DONE ; If "HEGT" bit of "alarmbits" is clear,
-                                            ; branch to HEGT_ALARM_DONE:
-     bclr    alarmbits,HEGT                 ; Clear "HEGT" bit of "alarmbits"
-     bra     HEGT_ALARM_DONE                ; Branch to HEGT_ALARM_DONE:
-	 
-CHK_HEGT_ON:
-    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
-    ldy  #stBins_E     ; Load index register Y with address of first configurable constant
-                     ; on buffer RAM page 2 (stBins)
-    ldd  $02DC,Y     ; Load Accu D with value in buffer RAM page 2 offset 732 (hegton)
-	cpd  Egt         ; (A:B)-(M:M+1) Compare "hegton" with "Egt"
-    bls  SET_HEGT    ; If "hegton" is lower or the same as "Egt" branch to SET_HEGT 	
-    bra  HEGT_ALARM_DONE ; Branch to HEGT_ALARM_DONE:
-
-SET_HEGT:
-     brset   alarmbits,HEGT,HEGT_ALARM_DONE ; If "HEGT" bit of "alarmbits" is set, branch to
-                                            ; HEGT_ALARM_DONE:
-     bset    alarmbits,HEGT                 ; Set "HEGT" bit of "alarmbits"
-
-HEGT_ALARM_DONE:	
-
+;*
+;*CHK_HEGT_OFF:
+;*    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
+;*    ldy  #stBins_E     ; Load index register Y with address of first configurable constant
+;*                     ; on buffer RAM page 2 (stBins)
+;*    ldd  $02DE,Y     ; Load Accu D with value in buffer RAM page 2 offset 734 (hegtoff)
+;*	cpd  Egt         ; (A:B)-(M:M+1) Compare "hegt_ff" with "Egt"
+;*    bhs  CLEAR_HEGT  ; If "hegtoff" is higher or the same as "Egt" branch to CLEAR_HEGT 	
+;*    bra  CHK_HEGT_ON ; Branch to CHK_HEGT_ON:
+;*
+;*CLEAR_HEGT:
+;*     brclr   alarmbits,HEGT,HEGT_ALARM_DONE ; If "HEGT" bit of "alarmbits" is clear,
+;*                                            ; branch to HEGT_ALARM_DONE:
+;*     bclr    alarmbits,HEGT                 ; Clear "HEGT" bit of "alarmbits"
+;*     bra     HEGT_ALARM_DONE                ; Branch to HEGT_ALARM_DONE:
+;*	 
+;*CHK_HEGT_ON:
+;*    movb  #(BUF_RAM_P2_START>>16),EPAGE  ; Move $FE into EPAGE
+;*    ldy  #stBins_E     ; Load index register Y with address of first configurable constant
+;*                     ; on buffer RAM page 2 (stBins)
+;*    ldd  $02DC,Y     ; Load Accu D with value in buffer RAM page 2 offset 732 (hegton)
+;*	cpd  Egt         ; (A:B)-(M:M+1) Compare "hegton" with "Egt"
+;*    bls  SET_HEGT    ; If "hegton" is lower or the same as "Egt" branch to SET_HEGT 	
+;*    bra  HEGT_ALARM_DONE ; Branch to HEGT_ALARM_DONE:
+;*
+;*SET_HEGT:
+;*     brset   alarmbits,HEGT,HEGT_ALARM_DONE ; If "HEGT" bit of "alarmbits" is set, branch to
+;*                                            ; HEGT_ALARM_DONE:
+;*     bset    alarmbits,HEGT                 ; Set "HEGT" bit of "alarmbits"
+;*
+;*HEGT_ALARM_DONE:	
+;*
 ;*****************************************************************************************        
 ; - Check for low oil pressure
 ;*****************************************************************************************

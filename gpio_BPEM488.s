@@ -57,6 +57,7 @@
 ;* Version History:                                                                      *
 ;*    August 17 2020                                                                     *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
+;*    - Update December 7 2020                                                           *
 ;*                                                                                       *   
 ;*****************************************************************************************
 
@@ -92,38 +93,38 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*    BPEM488 pin assignments                                                            *
 ;*                                                                                       *
 ;*    Port AD:                                                                           *
-;*     PAD00 - (batADC)     (analog, no pull) hard wired Bat volts ADC                   *
-;*     PAD01 - (cltADC)     (analog, no pull) temperature sensor ADC                     *
-;*     PAD02 - (matADC)     (analog, no pull) temperature sensor ADC                     *
-;*     PAD03 - (PAD03inADC) (analog, no pull) temperature sensor ADC  spare              *
-;*     PAD04 - (mapADC)     (analog, no pull) general purpose ADC                        *
-;*     PAD05 - (tpsADC)     (analog, no pull) general purpose ADC                        *
-;*     PAD06 - (egoADC)     (analog, no pull) general purpose ADC                        *
-;*     PAD07 - (baroADC)    (analog, no pull) general purpose ADC                        *
-;*     PAD08 - (eopADC)     (analog, no pull) general purpose ADC                        *
-;*     PAD09 - (efpADC)     (analog, no pull) general purpose ADC                        *
-;*     PAD10 - (ItrmADC)    (analog, no pull) general purpose ADC                        *
-;*     PAD11 - (FtrmADC)    (analog, no pull) general purpose ADC                        *
-;*     PAD12 - (PAD12inADC) (analog, no pull) general purpose ADC  spare                 *
+;*     PAD00 - (batAdc)     (analog, no pull) hard wired Bat volts ADC                   *
+;*     PAD01 - (cltAdc)     (analog, no pull) temperature sensor ADC                     *
+;*     PAD02 - (matAdc)     (analog, no pull) temperature sensor ADC                     *
+;*     PAD03 - (PAD03inAdc) (analog, no pull) temperature sensor ADC  spare              *
+;*     PAD04 - (mapAdc)     (analog, no pull) general purpose ADC                        *
+;*     PAD05 - (tpsAdc)     (analog, no pull) general purpose ADC                        *
+;*     PAD06 - (egoAdc1)(EGO)  (analog, no pull) general purpose ADC                     *
+;*     PAD07 - (baroAdc)    (analog, no pull) general purpose ADC                        *
+;*     PAD08 - (eopAdc)     (analog, no pull) general purpose ADC                        *
+;*     PAD09 - (efpAdc)     (analog, no pull) general purpose ADC                        *
+;*     PAD10 - (itrmAdc)    (analog, no pull) general purpose ADC                        *
+;*     PAD11 - (ftrmAdc)    (analog, no pull) general purpose ADC                        *
+;*     PAD12 - (egoAdc2)(PAD12) (analog, no pull) general purpose ADC                    *
 ;*     PAD13 - Not used     (GPIO input, pull-up)                                        *
 ;*     PAD14 - Not used     (GPIO input, pull-up)                                        *
 ;*     PAD15 - Not used     (GPIO input, pull-up)                                        *
 ;*                                                                                       *
 ;*    Port A:                                                                            *
-;*     PA0 - Load EEEM      (input, pull-up, active low) maintained contact              *                            
-;*     PA1 - Itrm enable    (input, pull-up, active low) maintained contact              *
-;*     PA2 - Ftrm enable    (input, pull-up, active low) maintained contact              *
-;*     PA3 - Alarm silence  (input, pull-up, active low) maintained contact              *
-;*     PA4 - PA4in          (input, pull-up, active low) maintained contact spare        *
-;*     PA5 - PA5in          (input, pull-up, active low) maintained contact spare        *
+;*     PA0 - LoadEEEM       (input, pull-up, active low) momentary contact              *                            
+;*     PA1 - Itrmen         (input, pull-up, active low) maintained contact              *
+;*     PA2 - Ftrmen         (input, pull-up, active low) maintained contact              *
+;*     PA3 - AudAlrmSil     (input, pull-up, active low) maintained contact              *
+;*     PA4 - OFCen(PA4)     (input, pull-up, active low) momentar contact              *
+;*     PA5 - OFCdis(PA5)    (input, pull-up, active low) momentary contact              *
 ;*     PA6 - PA6in          (input, pull-up, active low) maintained contact spare        *
 ;*     PA7 - Not used       (input, pull-up)                                             *
 ;*                                                                                       *
 ;*    Port B:                                                                            *
-;*     PB0 - Fuel pump relay      (output, active high, initialize low)                  *
-;*     PB1 - ASD relay            (output, active high, initialize low)                  *
-;*     PB2 - Audible alarm relay  (output, active high, initialize low)                  *
-;*     PB3 - AIOT TTL output      (output, active high, initialize low)                  *
+;*     PB0 - FuelPump             (output, active high, initialize low)                  *
+;*     PB1 - ASDRelay             (output, active high, initialize low)                  *
+;*     PB2 - EngAlarm             (output, active high, initialize low)                  *
+;*     PB3 - AIOT                 (output, active high, initialize low)                  *
 ;*     PB4 - PB4out               (output, active high, initialize low) spare            *
 ;*     PB5 - PB5out               (output, active high, initialize low) spare            *
 ;*     PB6 - PB6out               (output, active high, initialize low) spare            *
@@ -166,14 +167,14 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*     PJ7 - Not used                    (input, pull-up)                                *
 ;*                                                                                       * 
 ;*    Port K:                                                                            *
-;*     PK0 - Low Oil Pressure alarm              (output, active high, initialize low)   *
-;*     PK1 - High Oil Temperature alarm          (output, active high, initialize low)   *
-;*     PK2 - High Engine Temperature alarm       (output, active high, initialize low)   *
-;*     PK3 - High Exhaust Gas Temperature alarm  (output, active high, initialize low)   *
-;*     PK4 - High Fuel Temperature alarm         (output, active high, initialize low)   *
-;*     PK5 - Low Fuel Pressure alarm             (output, active high, initialize low)   *
+;*     PK0 - LOPalrm                   (output, active high, initialize low)             *
+;*     PK1 - HOTalrm                   (output, active high, initialize low)  N/C        *
+;*     PK2 - HETalrm                   (output, active high, initialize low)             *
+;*     PK3 - HEGTalrm                  (output, active high, initialize low)  N/C        *
+;*     PK4 - HFTalrm                   (output, active high, initialize low)  N/C        *
+;*     PK5 - LFPalrm                   (output, active high, initialize low)             *
 ;*     PK6 - Not Available in 112 LQFP                                                   *
-;*     PK7 - High Fuel pressure alarm            (output, active high, initialize low)   *
+;*     PK7 - HFPalrm                   (output, active high, initialize low)             *
 ;*                                                                                       *
 ;*    Port M:                                                                            *
 ;*     PM0 - Not used   (input, pull-up)                                                 *
@@ -187,7 +188,7 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*                                                                                       *
 ;*    Port L: - Not Available in 112 LQFP                                                *
 ;*                                                                                       *
-;*    Port P:                                                                            *
+;*    Port P: - (Timer module)                                                           *
 ;*     PP0 - TIM1 OC0 Inj1 (1&10)   (output, active high, initialize low)                *   
 ;*     PP1 - TIM1 OC1 Inj2 (9&4)    (output, active high, initialize low)                *    
 ;*     PP2 - TIM1 OC2 Inj3 (3&6)    (output, active high, initialize low)                * 
@@ -210,10 +211,10 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*     PS6 - Not used              (input, pull-up)                                      *
 ;*     PS7 - Not used              (input, pull-up)                                      *
 ;*                                                                                       *
-;*    Port T:                                                                            *
-;*     PT0 - IOC0 - Camshaft Position   (input, pull-down, active high) gear tooth sens  *
-;*     PT1 - IOC1 - Crankshaft Position (input, pull-down, active high) gear tooth sens  *
-;*     PT2 - IOC2 - Vehicle Speed       (input, pull-down, active high) gear tooth sens  *
+;*    Port T: (Enhanced Capture Timer module)                                            *
+;*     PT0 - IOC0 - CMP                 (input, pull-down, active high) gear tooth sens  *
+;*     PT1 - IOC1 - CKP                 (input, pull-down, active high) gear tooth sens  *
+;*     PT2 - IOC2 - Vspd                (input, pull-down, active high) gear tooth sens  *
 ;*     PT3 - IOC3 - Ign1 (1&6)          (output, active high, initialize low)            *
 ;*     PT4 - IOC4 - Ign2 (10&5)         (output, active high, initialize low)            *
 ;*     PT5 - IOC5 - Ign3 (9&8)          (output, active high, initialize low)            *
@@ -364,14 +365,27 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                       
 ;*****************************************************************************************
 ; - Initialize Port J. General purpose I/Os.Not used, all pins inputs - Page 150, 153
+; DEDICATED VERSION
 ;*****************************************************************************************
 
-    clr   DDRJ        ; Load %00000000 into Port J Data Direction  
+;    clr   DDRJ        ; Load %00000000 into Port J Data Direction  
                       ; Register(all pins inputs)
-    movw #$FF00,PERJ  ; Load Port J Pull Device Enable  
+;    movw #$FF00,PERJ  ; Load Port J Pull Device Enable  
                       ; Register and Port J Polarity Select  
                       ; Register with %1111111100000000  
                       ; (pull-ups on all pins)
+                      
+;*****************************************************************************************
+; - Initialize Port J. General purpose I/Os. 
+;   PJ1 output, all others inputs.
+; BPEM488SIM VERSION 
+;*****************************************************************************************
+
+    movb  #$02, PTJ   ; Load Port J Data Register with 
+                      ; %00000010(initialize PJ1 Hi)
+	movb  #$02, DDRJ  ; Load Port J Data Direction Register  
+                      ; with %00000010 (PJ1 output (SCI2 TXD) 
+                      ; all others inputs)
                          
 ;*****************************************************************************************
 ; - Initialize Port K. General purpose I/Os. All pins outputs, initialize low - Page 120
@@ -452,14 +466,32 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ; - Initialize Port S. General purpose I/Os. SCI0 RS232 RXD input Pin 0, TXD output pin 1, 
 ;   all others not used, set as inputs - Page 126, 128 
 ;   Note! When SCI0 is enabled Pins 0 and 1 are under SCI control 
+;  DEDICATED HARDWARE VERSION
 ;*****************************************************************************************
 
-    clr   DDRS        ; Load %00000000 into Port S Data Direction  
+;    clr   DDRS        ; Load %00000000 into Port S Data Direction  
                       ; Register(all pins inputs)
-    movw #$FF00,PERS  ; Load Port S Pull Device Enable  
+;    movw #$FF00,PERS  ; Load Port S Pull Device Enable  
                       ; Register and Port S Polarity Select  
                       ; Register with %1111111100000000  
                       ; (pull-ups on all pins)
+                      
+;*****************************************************************************************	
+; - Initialize Port S. General purpose I/Os. outputs pins 7,6,5,3,1
+;   inputs pins 4,2,0
+;  BPEM4888SIM VERSION
+;*****************************************************************************************
+
+    movb  #$8A,PTS    ; Load Port S Data Register with 
+                      ; %10001010(initialize PS7,3,1 Hi, 
+                      ; PS6,5,4,2,0 Lo
+    movb  #$EA,DDRS   ; Load Port S Data Direction Register  
+                      ; with %11101010 (outputs on PS7,6,5, 
+                      ; 3,1 inputs on PS4,2,0)
+    movb  #$10,PPSS   ; Load Port S Polarity Select Register  
+                      ; with %00010000 (PS4 pull down, 
+                      ; PS7,6,5,3,2,1,0 pull up)
+                      
 					  
 ;;***************************************************************************************
 ;; - Initialize the SCI0 interface for 115,200 Baud Rate
