@@ -292,7 +292,7 @@ DoStall:
    clrw TOEpw        ; Throttle Opening Enrichment adder (mS x 100)
    clrw PWlessTOE    ; Injector pulse width before "TOEpw" and "Deadband" (mS x 10)
    clrw Deadband     ; injector deadband at current battery voltage mS*100
-   clrw PrimePW      ; Primer injector pulswidth (mS x 10)
+;   clrw PrimePW      ; Primer injector pulswidth (mS x 10)
    clrw CrankPW      ; Cranking injector pulswidth (mS x 10)
    clrw FDpw         ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)
    clrw PW           ; Running engine injector pulsewidth (mS x 10)

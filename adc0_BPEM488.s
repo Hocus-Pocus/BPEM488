@@ -57,7 +57,10 @@
 ;* Version History:                                                                      *
 ;*    May 17 2020                                                                        *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 10 2020                                                          *   
+;*    - Update December 12 2020                                                          * 
+;*    - Update December 13 2020                                                          * 
+;*    - Update December 15 2020                                                          *
+;*    - Update December 28 2020 Itrim and Ftrim enable changed from brclr to brset       *        
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -188,58 +191,105 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;   8.3MHz ATDCLK period = 0.00000012048 Sec.
 ;   10 bit ATD Conversion period = 41 ATDCLK cycles(ref page 1219) 
 ;   Sample time per channel = 24+2 for discharge capacitor = 26 ATDCLK cycles
-;   Sample time for all 16 channels = (41+26)x16=1072 ATDCLK periods = 0.00012915 Sec. (~129uS)
+;   Sample time for 13 channels = (41+26)x13=871 ATDCLK periods = 0.000114810 Sec. (~115uS)
 ;*****************************************************************************************
 
-    movw  #$0000,ATD0DIENH  ; Load ATD0 Input Enable Register  
-                            ; Hi byte and Lo byte with 
-                            ; %1110000000000000 (PAD12 through PAD00 ADC)
+    movw  #$1FFF,PT0AD0     ; Load Port AD0 Data Registers PT0AD0:PT1AD0
+                            ; with %0001111111111111 (General Purpose I/Os on pins 15,14,13
+                            ; ATD on pins 12,11,10,9,8,7,6,5,4,3,2,1,0)
+                            ;(Registers are %00000000 out of reset)
+
+    movw  #$0000,DDR0AD0    ; Load Port AD0 Data Direction Registers DDR0AD0:DDR1AD0
+                            ; with %0000000000000000 (All pins inputs)
+                            ;(Registers are %00000000 out of reset)
+
+    movw  #$0000,RDR0AD0    ; Load Port AD0 Reduced Drive Registers RDR0AD0:RDR1AD0
+                            ; with %0000000000000000 (Full Drive Strength Enabled)
+                            ;(Registers are 500000000 out of reset)
+                            
+    movw  #$E000,PER0AD0    ; Load Port AD0 Pullup Enable Registers PER0AD0:PER1AD0
+                            ; with %1110000000000000 (Pullups enabled on pins 15,14,13
+                            ; Pullups disabled on pins 12,11,10,9,8,7,6,5,4,3,2,1,0)
+                            ;(Registers are %00000000 out of reset)
+
+    movb  #$0C,ATD0CTL0     ; Load ATD0 Control Register 0 with %00001100
+                            ; (wrap after converting AN12)
+			                ;             ^  ^ 
+			                ;    WRAP-----+--+
+                            ;(Register is %00001111 out of reset)                            
                                 
-    movb  #$0C,ATD0CTL0 ; Load "ATD0CTL0" with %00001100
-                        ; (wrap after converting AN12)
-			             ;             ^  ^ 
-			             ;    WRAP-----+--+ 
+    movb  #$30,ATD0CTL1     ; Load ATD Control Register 1 with %00110000
+                            ; (no external trigger, 10 bit resolution, 
+                            ; discharge cap before conversion)
+                            ;         ^^^^^  ^ 
+                            ;ETRIGSEL-+||||  | 
+                            ;    SRES--++||  | 
+                            ; SMP_DIS----+|  | 
+                            ; ETRIGCH-----+--+
+                            ;(Register is %00001111 out of reset)
+                            
                                 
-    movb  #$30,ATD0CTL1 ; Load "ATD0CTL1" with %00110000
-                        ; (no external trigger, 10 bit resolution, 
-                        ; discharge cap before conversion)
-                        ;         ^^^^^  ^ 
-                        ;ETRIGSEL-+||||  | 
-                        ;    SRES--++||  | 
-                        ; SMP_DIS----+|  | 
-                        ; ETRIGCH-----+--+
-                                
-;*    movb  #$62,ATD0CTL2 ; Load "ATD0CTL2" with %01100010 
-                        ;(fast flag clear, continue in stop, 
-                        ; no external trigger, Sequence 
-                        ; complete interrupt enabled,
-                        ; Compare interrupt disabled)
-                        ;          ^^^^^^^ 
-                        ;    AFFC--+|||||| 
-                        ; ICLKSTP---+||||| 
-                        ; ETRIGLE----+|||| 
-                        ;  ETRIGP-----+||| 
-                        ;  ETRIGE------+|| 
-                        ;   ASCIE-------+| 
-                        ;  ACMPIE--------+
+;*    movb  #$62,ATD0CTL2    ; Load ATD Control Register 2 with %01100010 
+                           ;(fast flag clear, continue in stop, 
+                           ; no external trigger, Sequence 
+                           ; complete interrupt enabled,
+                           ; Compare interrupt disabled)
+                           ;          ^^^^^^^ 
+                           ;    AFFC--+|||||| 
+                           ; ICLKSTP---+||||| 
+                           ; ETRIGLE----+|||| 
+                           ;  ETRIGP-----+||| 
+                           ;  ETRIGE------+|| 
+                           ;   ASCIE-------+| 
+                           ;  ACMPIE--------+
+                           ;(Register is %00000000 out of reset)
                         
-    movb  #$60,ATD0CTL2 ; Load "ATD0CTL2" with %01100000 
-                        ;(fast flag clear, continue in stop, 
-                        ; no external trigger, Sequence 
-                        ; complete interrupt disabled,
-                        ; Compare interrupt disabled)
-                        ;          ^^^^^^^ 
-                        ;    AFFC--+|||||| 
-                        ; ICLKSTP---+||||| 
-                        ; ETRIGLE----+|||| 
-                        ;  ETRIGP-----+||| 
-                        ;  ETRIGE------+|| 
-                        ;   ASCIE-------+| 
-                        ;  ACMPIE--------+
-                                
-    movb  #$80,ATD0CTL3 ; Load "ATD0CTL3" with %10000000
+;*    movb  #$60,ATD0CTL2    ; Load ATD Control Register 2 with %01100000 
+                           ;(fast flag clear, continue in stop, 
+                           ; no external trigger, Sequence 
+                           ; complete interrupt disabled,
+                           ; Compare interrupt disabled)
+                           ;          ^^^^^^^ 
+                           ;    AFFC--+|||||| 
+                           ; ICLKSTP---+||||| 
+                           ; ETRIGLE----+|||| 
+                           ;  ETRIGP-----+||| 
+                           ;  ETRIGE------+|| 
+                           ;   ASCIE-------+| 
+                           ;  ACMPIE--------+
+                           ;(Register is %00000000 out of reset)
+                        
+    movb  #$20,ATD0CTL2    ; Load ATD Control Register 2 with %00100000 
+                           ;(no fast flag clear, continue in stop, 
+                           ; no external trigger, Sequence 
+                           ; complete interrupt disabled,
+                           ; Compare interrupt disabled)
+                           ;          ^^^^^^^ 
+                           ;    AFFC--+|||||| 
+                           ; ICLKSTP---+||||| 
+                           ; ETRIGLE----+|||| 
+                           ;  ETRIGP-----+||| 
+                           ;  ETRIGE------+|| 
+                           ;   ASCIE-------+| 
+                           ;  ACMPIE--------+;
+                           ;(Register is %00000000 out of reset)
+                        
+;*    movb  #$80,ATD0CTL3    ; Load  ATD Control Register 3 with %10000000
+                           ;(right justifed data, 16 conversions,
+                           ; no Fifo, no freeze)
+                           ;         ^^^^^^^^ 
+                           ;     DJM-+||||||| 
+                           ;     S8C--+|||||| 
+                           ;     S4C---+|||||
+                           ;     S2C----+|||| 
+                           ;     S1C-----+||| 
+                           ;    FIFO------+|| 
+                           ;     FRZ-------++
+                           ;(Register is %00100000 out of reset)                           
+                        
+    movb  #$82,ATD0CTL3 ; Load ATD Control Register 3 with %10000010
                         ;(right justifed data, 16 conversions,
-                        ; no Fifo, no freeze)
+                        ; no Fifo, Finish conversion before stop in freeze)
                         ;         ^^^^^^^^ 
                         ;     DJM-+||||||| 
                         ;     S8C--+|||||| 
@@ -247,24 +297,40 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                         ;     S2C----+|||| 
                         ;     S1C-----+||| 
                         ;    FIFO------+|| 
-                        ;     FRZ-------++ 
+                        ;     FRZ-------++
+                        ;(Register is %00100000 out of reset)                        
 
-    movb  #$E2,ATD0CTL4 ; Load "ATD0CTL4" with %11100010
+    movb  #$E2,ATD0CTL4 ; Load ATD Control Register 4 with %11100010
                         ;(24 cycle sample time, prescale = 2
                         ; for 8.3MHz ATDCLK)
                         ;         ^ ^^   ^
                         ;     SMP-+-+|   | 
-                        ;     PRS----+---+ 
-                                
+                        ;     PRS----+---+
+                        ;(Register is %00000101 out of reset)
+
+   movw  #$1FFF,ATD0DIENH  ; Load ATD0 Input Enable Register Hi byte and Lo byte with 
+                            ; %000111111111111 (Disable input buffer pins 15,14,13
+                            ; Enable input buffer pins 12,11,10,9,8,7,6,5,4,3,2,1,0)
+                            ;(Register is %0000000000000000 out of reset)
+                            
+;*    movw  #$E000,ATD0DIENH  ; Load ATD0 Input Enable Register Hi byte and Lo byte with 
+                            ; %1110000000000000 (Enable input buffer pins 15,14,13
+                            ; Disable input buffer pins 12,11,10,9,8,7,6,5,4,3,2,1,0)
+                            ;(Register is %0000000000000000 out of reset)
+                            
+;*    movw  #$0000,ATD0DIENH  ; Load ATD0 Input Enable Register Hi byte and Lo byte with 
+                            ; %0000000000000000(Disable digital input buffers on all pins)
+                            ;(Register is %0000000000000000 out of reset)
+                            
 #emac
 
 #macro START_ATD0, 0
 
 ;*****************************************************************************************
-;- Start ATD0 and get ADC values for all channels
+;- Start ATD0 and get ADC values for all selected channels
 ;*****************************************************************************************
 
-    movb  #$30,ATD0CTL5   ; Load "ATD0CTL5" with %00110000 (no special channel,continuous  
+    movb  #$30,ATD0CTL5   ; Load ATD Control Register 5 with %00110000 (no special channel,continuous  
                           ; conversion, multi channel, initial channel 0)
                           ; (Start conversion sequence)
                           ;         ^^^^^^^^ 
@@ -275,9 +341,11 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                           ;       CC-----+|| 
                           ;       CB------+| 
                           ;       CA-------+ 
+                          ;(Register is %00000000 out of reset)
+                          
     brclr ATD0STAT0,SCF,*  ; Loop here until Sequence Complete Flag is set
     
-    movb  #SCF,ATD0STAT0 ; Set the Sequence Complete Flag of ATD0STAT0 to clear the flag
+    movb  #SCF,ATD0STAT0 ; Set the Sequence Complete Flag of ATD Status Register 0 to clear the flag
     ldd   ATD0DR0H    ; Load accumulator with value in ATD Ch00 
     std   batAdc      ; Copy to batAdc
     ldd   ATD0DR1H    ; Load accumulator with value in ATD Ch01 
@@ -309,6 +377,9 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 #macro RUN_ATD0, 0
 
+    brclr ATD0STAT0,SCF,NoSeqCmplt  ; If the Sequence Cpmplet Flag is not set, branch to
+                                    ; NoSeqCmplt:
+                                    
     movb  #SCF,ATD0STAT0 ; Set the Sequence Complete Flag of ATD0STAT0 to clear the flag
     ldd   ATD0DR0H    ; Load accumulator with value in ATD Ch00 
     std   batAdc      ; Copy to batAdc
@@ -336,6 +407,8 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     std   ftrmAdc     ; Copy to ftrmAdc
     ldd   ATD0DR12H   ; Load accumulator with value in ATD Ch12 
     std   egoAdc2     ; Copy to egoAdc2
+    
+NoSeqCmplt:
 
 #emac 
 
@@ -343,6 +416,11 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 ;*****************************************************************************************
 ; - Calculate Battery Voltage
+;   System voltage is typically ~12 volts with the engine stopped and ~14 volts with the
+;   engine running and the generator charging. In order for ATD0 Ch0 to measure this  
+;   voltage a 49.9K and a 10K resistor are connected in series across VDD(5 volts) and 
+;   ground. Ch0 measures the voltage drop across the 10K resistor. This arrangement will
+;   accept system voltage of 29.95 volts before the voltage drop will exceed 5 volts.
 ;*****************************************************************************************
 ; - Calculate Battery Voltage x 10 -
 ;    (batAdc/1023)*29.95 = BatV
@@ -518,10 +596,11 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     	
 ;*****************************************************************************************
 ; - Calculate Barometric Pressure x 10(Used to calculate to 1 decimal place)
-;   Baro sensor MPX4115AP
+;   Baro sensor MPXA6115AC7U
 ;   Vout = Baro sensor output voltage
 ;   P = Barometric pressure in KPA 
 ;
+;   Vout = Vs x (0.009 x P - 0.095)
 ;   Vout = (baroAdc/1023)*5
 ;   P = ((Vout/5)+0.095)/0.009
 ; - For integer math:
@@ -635,7 +714,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;   ( All variables are multiplied by 10 for greater precision)
 ;*****************************************************************************************
 
-    brclr PortAbits,Itrimen,NoItrim ; "If Itrimen" bit of "PortAbits" is clear, branch to 
+    brset PortAbits,Itrimen,NoItrim ; "If Itrimen" bit of "PortAbits" is set, branch to 
 	                 ; NoItrim: (Ignition trim enable switch is off so skip over)   
     ldd  #$0000      ; Load double accumulator with zero (0 volt ADC) 
     pshd             ; Push to stack (V1)
@@ -687,7 +766,7 @@ ItrimDone:
 ;   ( All variables are multiplied by 10 for greater precision)
 ;*****************************************************************************************
 
-    brclr PortAbits,Ftrimen,NoFtrim ; "If Ftrimen" bit of "PortAbits" is clear, branch to 
+    brset PortAbits,Ftrimen,NoFtrim ; "If Ftrimen" bit of "PortAbits" set, branch to 
 	                  ; NoFtrim: (Fuel trim enable switch is off so skip over)   
     ldd   #$0000      ; Load double accumulator with zero (0 volt ADC) 
     pshd              ; Push to stack (V1)
@@ -806,6 +885,7 @@ CLEAR_HET:
      brclr   alarmbits,HET,HET_ALARM_DONE ; If "HET" bit of "alarmbits" is clear,
                                           ; branch to HET_ALARM_DONE:
      bclr    alarmbits,HET                ; Clear "HET" bit of "alarmbits"
+     bclr    PORTK,HETalrm                ; Clear "HETalrm" bit of Port K (indicator off)
      bra     HET_ALARM_DONE               ; Branch to HET_ALARM_DONE:
 	 
 CHK_HET_ON:
@@ -821,6 +901,7 @@ SET_HET:
      brset   alarmbits,HET,HET_ALARM_DONE ; If "HET" bit of "alarmbits" is set, branch to
                                           ; HET_ALARM_DONE:
      bset    alarmbits,HET                ; Set "HET" bit of "alarmbits"
+     bset    PORTK,HETalrm                ; Set "HETalrm" bit of Port K (indicator on)
 
 HET_ALARM_DONE:	
 
@@ -841,6 +922,7 @@ HET_ALARM_DONE:
 ;*     brclr   alarmbits,HOT,HOT_ALARM_DONE ; If "HOT" bit of "alarmbits" is clear,
 ;*                                          ; branch to HOT_ALARM_DONE:
 ;*     bclr    alarmbits,HOT                ; Clear "HOT" bit of "alarmbits"
+;*     bclr    PORTK,HOTalrm                ; Clear "HOTalrm" bit of Port K (indicator off)
 ;*     bra     HOT_ALARM_DONE               ; Branch to HOT_ALARM_DONE:
 	 
 ;*CHK_HOT_ON:
@@ -856,6 +938,7 @@ HET_ALARM_DONE:
 ;*     brset   alarmbits,HOT,HOT_ALARM_DONE ; If "HOT" bit of "alarmbits" is set, branch to
 ;*                                          ; HOT_ALARM_DONE:
 ;*     bset    alarmbits,HOT                ; Set "HOT" bit of "alarmbits"
+;*     bset    PORTK,HOTalrm                ; Set "HOTalrm" bit of Port K (indicator on)
 ;*
 ;*HOT_ALARM_DONE:	
 ;*
@@ -876,6 +959,7 @@ HET_ALARM_DONE:
 ;*     brclr   alarmbits,HFT,HFT_ALARM_DONE ; If "HFT" bit of "alarmbits" is clear,
 ;*                                          ; branch to HFT_ALARM_DONE:
 ;*     bclr    alarmbits,HFT                ; Clear "HFT" bit of "alarmbits"
+;*     bclr    PORTK,HFTalrm                ; Clear "HFTalrm" bit of Port K (indicator off)
 ;*     bra     HFT_ALARM_DONE               ; Branch to HFT_ALARM_DONE:
 ;*	 
 ;*CHK_HFT_ON:
@@ -891,6 +975,7 @@ HET_ALARM_DONE:
 ;*     brset   alarmbits,HFT,HFT_ALARM_DONE ; If "HFT" bit of "alarmbits" is set, branch to
 ;*                                          ; HFT_ALARM_DONE:
 ;*     bset    alarmbits,HFT                ; Set "HFT" bit of "alarmbits"
+;*     bset    PORTK,HFTalrm                ; Set "HFTalrm" bit of Port K (indicator on)
 ;*
 ;*HFT_ALARM_DONE:	
 ;*
@@ -911,6 +996,7 @@ HET_ALARM_DONE:
 ;*     brclr   alarmbits,HEGT,HEGT_ALARM_DONE ; If "HEGT" bit of "alarmbits" is clear,
 ;*                                            ; branch to HEGT_ALARM_DONE:
 ;*     bclr    alarmbits,HEGT                 ; Clear "HEGT" bit of "alarmbits"
+;*     bclr    PORTK,HEGTalrm                 ; Clear "HEGTalrm" bit of Port K (indicator off)
 ;*     bra     HEGT_ALARM_DONE                ; Branch to HEGT_ALARM_DONE:
 ;*	 
 ;*CHK_HEGT_ON:
@@ -926,6 +1012,7 @@ HET_ALARM_DONE:
 ;*     brset   alarmbits,HEGT,HEGT_ALARM_DONE ; If "HEGT" bit of "alarmbits" is set, branch to
 ;*                                            ; HEGT_ALARM_DONE:
 ;*     bset    alarmbits,HEGT                 ; Set "HEGT" bit of "alarmbits"
+;*     bset    PORTK,HEGTalrm                 ; Set "HEGTalrm" bit of Port K (indicator on)
 ;*
 ;*HEGT_ALARM_DONE:	
 
@@ -946,6 +1033,7 @@ CLEAR_LOP:
      brclr   alarmbits,LOP,LOP_ALARM_DONE ; If "LOP" bit of "alarmbits" is clear,
                                           ; branch to LOP_ALARM_DONE:
      bclr    alarmbits,LOP                ; Clear "LOP" bit of "alarmbits"
+     bclr    PORTK,LOPalrm                ; Clear "LOPalrm" bit of Port K (indicator off)
      bra     LOP_ALARM_DONE               ; Branch to LOP_ALARM_DONE:
 	 
 CHK_LOP_ON:
@@ -961,6 +1049,7 @@ SET_LOP:
      brset   alarmbits,LOP,LOP_ALARM_DONE ; If "LOP" bit of "alarmbits" is set, branch to
                                           ; LOP_ALARM_DONE:
      bset    alarmbits,LOP                ; Set "LOP" bit of "alarmbits"
+     bset    PORTK,LOPalrm                 ; Set "LOPalrm" bit of Port K (indicator on)
 
 LOP_ALARM_DONE:
 
@@ -981,6 +1070,7 @@ CLEAR_HFP:
      brclr   alarmbits,HFP,HFP_ALARM_DONE ; If "HFP" bit of "alarmbits" is clear,
                                           ; branch to HFP_ALARM_DONE:
      bclr    alarmbits,HFP                ; Clear "HFP" bit of "alarmbits"
+     bclr    PORTK,HFPalrm                ; Clear "HFPalrm" bit of Port K (indicator off)
      bra     HFP_ALARM_DONE               ; Branch to HFP_ALARM_DONE:
 	 
 CHK_HFP_ON:
@@ -996,6 +1086,7 @@ SET_HFP:
      brset   alarmbits,HFP,HFP_ALARM_DONE ; If "LOP" bit of "alarmbits" is set, branch to
                                           ; HFP_ALARM_DONE:
      bset    alarmbits,HFP                ; Set "HFP" bit of "alarmbits"
+     bset    PORTK,HFPalrm                ; Set "HFPalrm" bit of Port K (indicator on)
 
 HFP_ALARM_DONE:	
 	
@@ -1016,6 +1107,7 @@ CLEAR_LFP:
      brclr   alarmbits,LFP,LFP_ALARM_DONE ; If "LFP" bit of "alarmbits" is clear,
                                           ; branch to LFP_ALARM_DONE:
      bclr    alarmbits,LFP                ; Clear "LFP" bit of "alarmbits"
+     bclr    PORTK,LFPalrm                ; Clear "LFPalrm" bit of Port K (indicator off)
      bra     LFP_ALARM_DONE               ; Branch to LFP_ALARM_DONE:
 	 
 CHK_LFP_ON:
@@ -1031,6 +1123,7 @@ SET_LFP:
      brset   alarmbits,LFP,LFP_ALARM_DONE ; If "LOP" bit of "alarmbits" is set, branch to
                                           ; LFP_ALARM_DONE:
      bset    alarmbits,LFP                ; Set "LFP" bit of "alarmbits"
+     bset    PORTK,LFPalrm                ; Set "LFPalrm" bit of Port K (indicator on)
 
 LFP_ALARM_DONE:
 
@@ -1046,7 +1139,7 @@ LFP_ALARM_DONE:
 ; - If we have an audible alarm see if it should be silenced. 
 ;*****************************************************************************************
 
-    brclr PORTE,PE4,NoAudAlrm ; If "AudAlrmSil"(PE4) pin on port E is clear, branch to 
+    brclr PORTA,AudAlrmSil,NoAudAlrm ; If "AudAlrmSil"(PA3) pin on portA is clear, branch to 
                                      ; NoAudAlrm: (Switch is on so prohibit audible alarm)
     bclr engine2,AudAlrm             ; Clear "AudAlrm" bit of "engine2" bit field
     bra  ChkAlarmbits                ; Branch to ChkAlarmbits: 
@@ -1066,7 +1159,7 @@ ChkAlarmbits:
     bra   AudibleAlarmDone           ; Branch to AudibleAlarmDone:  
     
 AudibleAlarmOff:
-    bclr  PORTB,EngAlarm             ; Clear "EngAlarm" pin on port B (audible alarm on)
+    bclr  PORTB,EngAlarm             ; Clear "EngAlarm" pin on port B (audible alarm off)
 
 AudibleAlarmDone:    	
 

@@ -686,7 +686,7 @@ Signature:
                                ; to communicate   
 
 RevNum:
-     fcc 'BPEM488 12 10 2020                                       '
+     fcc 'BPEM488 12 12 2020                                       '
 ;         123456789012345678901234567890123456789012345678901234567  ; 57 bytes
 ;                              ; This should be changed with each code revision but 
                                ; string length must stay the same
