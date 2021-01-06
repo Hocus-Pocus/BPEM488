@@ -57,7 +57,8 @@
 ;* Version History:                                                                      *
 ;*    May 14 2020                                                                        * 
 ;*    - BPEM488 Dedicated Hardware version begins(work in progress)                      *
-;*    - Update December 10 2020                                                          *   
+;*    - Update December 10 2020                                                          *
+;*    - Update January 6 2021 Corrected ADC0 init macro                                  *    
 ;*****************************************************************************************
           
 ;*****************************************************************************************
@@ -415,15 +416,15 @@ Ign5       equ $80 ;(PT7)%10000000, bit 7, Ign5 (3&2)
 ;*****************************************************************************************
 ; - Misc variables 
 ;*****************************************************************************************
-LoopCntr:    ds 2 ; Counter for "LoopTime" (incremented every Main Loop pass)
-tmp1w:       ds 2 ; Temporary word variable #1
-tmp2w:       ds 2 ; Temporary word variable #2
-tmp3w:       ds 2 ; Temporary word variable #3
-tmp4w:       ds 2 ; Temporary word variable #4
-tmp5b:       ds 1 ; Temporary byte variable #5
-tmp6b:       ds 1 ; Temporary byte variable #6
-tmp7b:       ds 1 ; Temporary byte variable #7
-tmp8b:       ds 1 ; Temporary byte variable #8
+LoopCntr    ds 2 ; Counter for "LoopTime" (incremented every Main Loop pass)
+tmp1w       ds 2 ; Temporary word variable #1
+tmp2w       ds 2 ; Temporary word variable #2
+tmp3w       ds 2 ; Temporary word variable #3
+tmp4w       ds 2 ; Temporary word variable #4
+tmp5b       ds 1 ; Temporary byte variable #5
+tmp6b       ds 1 ; Temporary byte variable #6
+tmp7b       ds 1 ; Temporary byte variable #7
+tmp8b       ds 1 ; Temporary byte variable #8
 
 ;*****************************************************************************************
 
@@ -1705,7 +1706,9 @@ tpsMax_F:          ; 2 bytes for TPS calibration wide open throttle ADC(offset =
     dw $03E8       ; 1000
 	
 reqFuel_F:         ; 2 bytes for Pulse width for 14.7 AFR @ 100% VE (mS x 10)(offset = 1004)($03EC)
-    dw $0852       ; 2130 = 21.30 mS
+;*    dw $0852       ; 2130 = 21.30 mS
+;*    dw $042E       ; 1070 = 10.70 mS
+    dw $00D5       ; 0213 = 21.3 mS
     
 enginesize_F:      ; 2 bytes for displacement of two engine cylinders (for TS reqFuel calcs only)(cc)(offset = 1006)($03EE)
     dw $640        ; 1600

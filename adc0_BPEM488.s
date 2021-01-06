@@ -60,7 +60,8 @@
 ;*    - Update December 12 2020                                                          * 
 ;*    - Update December 13 2020                                                          * 
 ;*    - Update December 15 2020                                                          *
-;*    - Update December 28 2020 Itrim and Ftrim enable changed from brclr to brset       *        
+;*    - Update December 28 2020 Itrim and Ftrim enable changed from brclr to brset       * 
+;*    - Update January 6 2021 Corrected init macro                                       *        
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -203,15 +204,16 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                             ; with %0000000000000000 (All pins inputs)
                             ;(Registers are %00000000 out of reset)
 
-    movw  #$0000,RDR0AD0    ; Load Port AD0 Reduced Drive Registers RDR0AD0:RDR1AD0
-                            ; with %0000000000000000 (Full Drive Strength Enabled)
-                            ;(Registers are 500000000 out of reset)
-                            
+    movw  #$E000,DDR0AD0    ; Load Port AD0 Data Direction Registers DDR0AD0:DDR1AD0
+                            ; with %1110000000000000 (Outputs on pins 15,14,13
+                            ; ATD on pins 12,11,10,9,8,7,6,5,4,3,2,1,0)
+                            ;(Registers are %00000000 out of reset)
+
     movw  #$E000,PER0AD0    ; Load Port AD0 Pullup Enable Registers PER0AD0:PER1AD0
                             ; with %1110000000000000 (Pullups enabled on pins 15,14,13
                             ; Pullups disabled on pins 12,11,10,9,8,7,6,5,4,3,2,1,0)
                             ;(Registers are %00000000 out of reset)
-
+                            
     movb  #$0C,ATD0CTL0     ; Load ATD0 Control Register 0 with %00001100
                             ; (wrap after converting AN12)
 			                ;             ^  ^ 
@@ -228,37 +230,6 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                             ; ETRIGCH-----+--+
                             ;(Register is %00001111 out of reset)
                             
-                                
-;*    movb  #$62,ATD0CTL2    ; Load ATD Control Register 2 with %01100010 
-                           ;(fast flag clear, continue in stop, 
-                           ; no external trigger, Sequence 
-                           ; complete interrupt enabled,
-                           ; Compare interrupt disabled)
-                           ;          ^^^^^^^ 
-                           ;    AFFC--+|||||| 
-                           ; ICLKSTP---+||||| 
-                           ; ETRIGLE----+|||| 
-                           ;  ETRIGP-----+||| 
-                           ;  ETRIGE------+|| 
-                           ;   ASCIE-------+| 
-                           ;  ACMPIE--------+
-                           ;(Register is %00000000 out of reset)
-                        
-;*    movb  #$60,ATD0CTL2    ; Load ATD Control Register 2 with %01100000 
-                           ;(fast flag clear, continue in stop, 
-                           ; no external trigger, Sequence 
-                           ; complete interrupt disabled,
-                           ; Compare interrupt disabled)
-                           ;          ^^^^^^^ 
-                           ;    AFFC--+|||||| 
-                           ; ICLKSTP---+||||| 
-                           ; ETRIGLE----+|||| 
-                           ;  ETRIGP-----+||| 
-                           ;  ETRIGE------+|| 
-                           ;   ASCIE-------+| 
-                           ;  ACMPIE--------+
-                           ;(Register is %00000000 out of reset)
-                        
     movb  #$20,ATD0CTL2    ; Load ATD Control Register 2 with %00100000 
                            ;(no fast flag clear, continue in stop, 
                            ; no external trigger, Sequence 
@@ -274,19 +245,7 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                            ;  ACMPIE--------+;
                            ;(Register is %00000000 out of reset)
                         
-;*    movb  #$80,ATD0CTL3    ; Load  ATD Control Register 3 with %10000000
-                           ;(right justifed data, 16 conversions,
-                           ; no Fifo, no freeze)
-                           ;         ^^^^^^^^ 
-                           ;     DJM-+||||||| 
-                           ;     S8C--+|||||| 
-                           ;     S4C---+|||||
-                           ;     S2C----+|||| 
-                           ;     S1C-----+||| 
-                           ;    FIFO------+|| 
-                           ;     FRZ-------++
-                           ;(Register is %00100000 out of reset)                           
-                        
+                          
     movb  #$82,ATD0CTL3 ; Load ATD Control Register 3 with %10000010
                         ;(right justifed data, 16 conversions,
                         ; no Fifo, Finish conversion before stop in freeze)
@@ -298,8 +257,8 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                         ;     S1C-----+||| 
                         ;    FIFO------+|| 
                         ;     FRZ-------++
-                        ;(Register is %00100000 out of reset)                        
-
+                        ;(Register is %00100000 out of reset) 
+                         
     movb  #$E2,ATD0CTL4 ; Load ATD Control Register 4 with %11100010
                         ;(24 cycle sample time, prescale = 2
                         ; for 8.3MHz ATDCLK)
@@ -308,18 +267,9 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
                         ;     PRS----+---+
                         ;(Register is %00000101 out of reset)
 
-   movw  #$1FFF,ATD0DIENH  ; Load ATD0 Input Enable Register Hi byte and Lo byte with 
-                            ; %000111111111111 (Disable input buffer pins 15,14,13
-                            ; Enable input buffer pins 12,11,10,9,8,7,6,5,4,3,2,1,0)
-                            ;(Register is %0000000000000000 out of reset)
-                            
-;*    movw  #$E000,ATD0DIENH  ; Load ATD0 Input Enable Register Hi byte and Lo byte with 
+    movw  #$E000,ATD0DIENH  ; Load ATD0 Input Enable Register Hi byte and Lo byte with 
                             ; %1110000000000000 (Enable input buffer pins 15,14,13
                             ; Disable input buffer pins 12,11,10,9,8,7,6,5,4,3,2,1,0)
-                            ;(Register is %0000000000000000 out of reset)
-                            
-;*    movw  #$0000,ATD0DIENH  ; Load ATD0 Input Enable Register Hi byte and Lo byte with 
-                            ; %0000000000000000(Disable digital input buffers on all pins)
                             ;(Register is %0000000000000000 out of reset)
                             
 #emac

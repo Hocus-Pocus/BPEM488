@@ -57,7 +57,8 @@
 ;* Version History:                                                                      *
 ;*    May 17 2020                                                                        *
 ;*    - BEPEM488 dedicated hardware version version begins (work in progress)            *
-;*    - Update December 10 2020                                                          *   
+;*    - Update December 10 2020                                                          *
+;*    - Removed faulty ADC init code January 6 2021                                      *   
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -227,101 +228,6 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*****************************************************************************************
 ;*    This Macro initializes all GPIO ports for the BPEM488 project                      *
 ;*****************************************************************************************
-
-;*****************************************************************************************
-; - Initialize Port AD0. General purpose I/Os. All pins GPIO inputs, pull-ups enabled - 
-;   Page 155
-;   Note! ADC0 is initialized in adc0_BPEM488.s and will change PAD12 through PAD00 to 
-;   ADC inputs
-;*****************************************************************************************
-
-    movw  #$0000,DDR0AD0   ; Load Port AD0 Data Direction Register 0 and Port AD0 Data 
-	                       ; Direction Register 1 with %0000000000000000 (all pins inputs)
-						   
-    movw  #$FFFF,PER0AD0   ; Load Port AD0 Pull Up Enable Register 0 and Port AD0 Pull 
-	                       ; Up Enable Register 1 with %1111111111111111 (all pull up 
-						   ; devices devices enabled)
-                           
-;*****************************************************************************************
-;#macro INIT_ADC0, 0
-;
-;;****************************************************************************************
-;; - Initialize Analog to Digital Converter (ATD0) PAD12 through PAD00 for continuous 
-;;   conversions
-;;   8.3MHz ATDCLK period = 0.00000012048 Sec.
-;;   10 bit ATD Conversion period = 41 ATDCLK cycles(ref page 1219) 
-;;   Sample time per channel = 24+2 for discharge capacitor = 26 ATDCLK cycles
-;;   Sample time for all 16 channels = (41+26)x16=1072 ATDCLK periods = 0.00012915 Sec. 
-;;   (~129uS)
-;;*****************************************************************************************
-;
-;    movw  #$0000,ATD0DIENH  ; Load ATD0 Input Enable Register  
-;                            ; Hi byte and Lo byte with 
-;                            ; %1110000000000000 (PAD12 through PAD00 ADC)
-;                                
-;    movb  #$0C,ATD0CTL0 ; Load "ATD0CTL0" with %00001100
-;                        ; (wrap after converting AN12)
-;			             ;             ^  ^ 
-;			             ;    WRAP-----+--+ 
-;                                
-;    movb  #$30,ATD0CTL1 ; Load "ATD0CTL1" with %00110000
-;                        ; (no external trigger, 10 bit resolution, 
-;                        ; discharge cap before conversion)
-;                        ;         ^^^^^  ^ 
-;                        ;ETRIGSEL-+||||  | 
-;                        ;    SRES--++||  | 
-;                        ; SMP_DIS----+|  | 
-;                        ; ETRIGCH-----+--+
-;                                
-;;*    movb  #$62,ATD0CTL2 ; Load "ATD0CTL2" with %01100010 
-;                        ;(fast flag clear, continue in stop, 
-;                        ; no external trigger, Sequence 
-;                        ; complete interrupt enabled,
-;                        ; Compare interrupt disabled)
-;                        ;          ^^^^^^^ 
-;                        ;    AFFC--+|||||| 
-;                        ; ICLKSTP---+||||| 
-;                        ; ETRIGLE----+|||| 
-;                        ;  ETRIGP-----+||| 
-;                        ;  ETRIGE------+|| 
-;                        ;   ASCIE-------+| 
-;                        ;  ACMPIE--------+
-;                        
-;    movb  #$60,ATD0CTL2 ; Load "ATD0CTL2" with %01100000 
-;                        ;(fast flag clear, continue in stop, 
-;                        ; no external trigger, Sequence 
-;                        ; complete interrupt disabled,
-;                        ; Compare interrupt disabled)
-;                        ;          ^^^^^^^ 
-;                        ;    AFFC--+|||||| 
-;                        ; ICLKSTP---+||||| 
-;                        ; ETRIGLE----+|||| 
-;                        ;  ETRIGP-----+||| 
-;                        ;  ETRIGE------+|| 
-;                        ;   ASCIE-------+| 
-;                        ;  ACMPIE--------+
-;                                
-;    movb  #$80,ATD0CTL3 ; Load "ATD0CTL3" with %10000000
-;                        ;(right justifed data, 16 conversions,
-;                        ; no Fifo, no freeze)
-;                        ;         ^^^^^^^^ 
-;                        ;     DJM-+||||||| 
-;                        ;     S8C--+|||||| 
-;                        ;     S4C---+|||||
-;                        ;     S2C----+|||| 
-;                        ;     S1C-----+||| 
-;                        ;    FIFO------+|| 
-;                        ;     FRZ-------++ 
-;
-;    movb  #$E2,ATD0CTL4 ; Load "ATD0CTL4" with %11100010
-;                        ;(24 cycle sample time, prescale = 2
-;                        ; for 8.3MHz ATDCLK)
-;                        ;         ^ ^^   ^
-;                        ;     SMP-+-+|   | 
-;                        ;     PRS----+---+ 
-;                                
-;#emac
-;
 ;*****************************************************************************************
 
 ;   Note! ADC0 is initialized in adc0_BPEM488.s 
