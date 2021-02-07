@@ -58,7 +58,8 @@
 ;*    May 14 2020                                                                        * 
 ;*    - BPEM488 Dedicated Hardware version begins(work in progress)                      *
 ;*    - Update December 10 2020                                                          *
-;*    - Update January 6 2021 Corrected ADC0 init macro                                  *    
+;*    - Update January 6 2021 Corrected ADC0 init macro                                  * 
+;*    - Update February 7 2021 Change OFC logic                                          *    
 ;*****************************************************************************************
           
 ;*****************************************************************************************
@@ -236,7 +237,7 @@ FDpw:         ds 2 ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)(offset=
 PW:           ds 2 ; Running engine injector pulsewidth (mS x 10)(offset=100)
 LpH:          ds 2 ; Fuel burn Litres per hour(offset=102)
 FDsec:        ds 2 ; Fuel delivery pulse width total over 1 second (mS x 10)(offset=104)
-OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter(offset=106)
+OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter(offset=106)(NOT USED)
 TOEdurCnt:    ds 1 ; Throttle Opening Enrichment duration counter(offset=107)
 FDt:          ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)(offset=108)
 
@@ -290,7 +291,7 @@ testValb:     ds 1  ; Byte test value (for program developement only)(offset=138
 ; - "engine" equates
 ;***************************************************************************************** 
 
-OFCdelon     equ  $01 ; %00000001, bit 0, In Crank Delay Mode
+OFCdelon     equ  $01 ; %00000001, bit 0, In Crank Delay Mode (NOT USED)
 crank        equ  $02 ; %00000010, bit 1, In Crank Mode
 run          equ  $04 ; %00000100, bit 2, In Run Mode
 ASEon        equ  $08 ; %00001000, bit 3, In ASE Mode
@@ -1676,7 +1677,7 @@ ColdMul_F:         ; 2 bytes for Throttle Opening Enrichment multiplyer at -40F 
     dw $0082         ; 130% 
 	
 InjDelDegx10_F:    ; 2 bytes for Injection delay from trigger to start of injection (deg x 10) (offset = 984)($03D8)
-    dw $0002       ; 2 = 0.2 degree	
+    dw $021C       ; 540 = 54.0 degrees	
 	
 OFCtps_F:          ; 2 bytes for Overrun Fuel Cut min TpS%x10(offset = 986)($03DA)
     dw $0014       ; 20 = 2%
@@ -1684,10 +1685,10 @@ OFCtps_F:          ; 2 bytes for Overrun Fuel Cut min TpS%x10(offset = 986)($03D
 OFCrpm_F:          ; 2 bytes for Overrun Fuel Cut min RPM(offset = 988)($03DC)
     dw $0384       ; 900
     
-OFCmap_F:          ; 2 bytes for Overrun Fuel Cut maximum manifold pressure permissive (KPAx10)(offset = 990)($03DE)
+OFCmap_F:          ; 2 bytes for Overrun Fuel Cut maximum manifold pressure permissive (KPAx10)(offset = 990)($03DE)(NOT USED)
     dw $00FA       ; 250 = 25.0KPA
 	
-OFCdel_F:          ; 2 bytes for Overrun Fuel Cut delay time (Sec x 10)(offset = 992)($03E0)
+OFCdel_F:          ; 2 bytes for Overrun Fuel Cut delay time (Sec x 10)(offset = 992)($03E0)(NOT USED)
     dw $0014       ; 20 = 2.0Sec
 	
 crankingRPM_F:     ; 2 bytes for crank/run transition (RPM)(offset = 994)($03E2)

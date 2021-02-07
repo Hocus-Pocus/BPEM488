@@ -57,7 +57,8 @@
 ;* Version History:                                                                      *
 ;*    May 13, 2020                                                                       *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 10 2020                                                          *   
+;*    - Update December 10 2020                                                          *
+;*    - Update February 7 2021 Change OFC logic                                          *    
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -107,7 +108,7 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;FDpw:         ds 2 ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)(offset=106)
 ;PW:           ds 2 ; Running engine injector pulsewidth (mS x 10)(offset=108)
 ;FDsec:        ds 2 ; Fuel delivery pulse width total over 1 second (mS)(offset=112)
-;OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter(offset=114)
+;OFCdelCnt:    ds 1 ; Overrun Fuel Cut delay counter(offset=114)(Not Used)
 ;TOEdurCnt:    ds 1 ; Throttle Opening Enrichment duration counter(offset=115)
 ;FDt:          ds 2 ; Fuel Delivery pulse width total(mS) (for FDsec calcs)(offset=116)
 ;CASprd512:    ds 2 ; Crankshaft Angle Sensor period (5.12uS time base(offset=62)
@@ -120,7 +121,7 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ; - "engine" equates
 ;***************************************************************************************** 
 
-;OFCdelon     equ  $01 ; %00000001, bit 0, 0 = OFC timer not counting down(Grn), 
+;OFCdelon     equ  $01 ; %00000001, bit 0, 0 = OFC timer not counting down(Grn),(not used) 
                                         ; 1 = OFC timer counting down(Red)
 ;crank        equ  $02 ; %00000010, bit 1, 0 = engine not cranking(Grn), 
                                         ; 1 = engine cranking(Red)
@@ -169,9 +170,9 @@ INJCALCS_VARS_START_LIN	EQU	@ ; @ Represents the current value of the linear
 ;    dw $0014       ; 20 = 2%
 ;OFCrpm_F:          ; 2 bytes for Overrun Fuel Cut min RPM(offset = 988)($03DC)
 ;    dw $0384       ; 900
-;OFCmap_F:          ; 2 bytes for Overrun Fuel Cut maximum manifold pressure permissive (KPAx10)(offset = 990)($03DE)
+;OFCmap_F:          ; 2 bytes for Overrun Fuel Cut maximum manifold pressure permissive (KPAx10)(offset = 990)($03DE)(not used)
 ;    dw $00FA       ; 250 = 25.0KPA
-;OFCdel_F:          ; 2 bytes for Overrun Fuel Cut delay time (Sec x 10)(offset = 992)($03E0)
+;OFCdel_F:          ; 2 bytes for Overrun Fuel Cut delay time (Sec x 10)(offset = 992)($03E0)(not used)
 ;    dw $0032         ; 50 = 5.0Sec
 	
 ;*****************************************************************************************  
@@ -1069,21 +1070,21 @@ TOE_LOOP:
 	                    ; fall through)
     
 ;*****************************************************************************************
-; - Overrun Fuel Cut mode
+; - Overrun Fuel Cut mode 2/07/21 Note change in rti_BPEM488.s
 ;*****************************************************************************************
 ;*****************************************************************************************
 ;
 ; - Engine overrun occurs when the the vehicle is in motion, the throttle is closed and  
 ;   the engine is turning faster than the driver wants it to be, either because of vehicle   
-;   inertia or being on a negative grade. Under these conditions there will be a slight    
+;   inertia or by being on a negative grade. Under these conditions there will be a slight    
 ;   increase in engine braking and some fuel can be saved if the fuel injectors are not  
-;   pulsed. In order to enter OFC mode some conditions have to be met. The throttle  
-;   opening must be less than the minimum permitted opening. The engine RPM must be more 
-;   than the minimum premitted RPM. The manifold pressure must be less than the minimum 
-;   permitted manifold pressure. When these conditions are met there is a delay time 
-;   before OFC is enabled. The purpose of this is to have some hysteresis to prevent 
-;   rapid changes in modes. When any of the  conditions are not met, OFC is disabled and 
-;   will not be enabled again until all condtions are met and the delay time has expired.
+;   pulsed. OFC is only enabled manually by pulsing up on the dash mounted SPDT spring 
+;   return to centre toggle switch. In order to enter OFC mode several permissive 
+;   conditions must be met first. The throttle opening must be equal to or less than the 
+;   minimum permitted opening and the engine RPM must be equal to or more than the minimum 
+;   permitted RPM. OFC can be disabled manually by the driver at any time by pulsing 
+;   down on the dash mounted toggle switch. It will be disabled automatically if either 
+;   or both of the permissive conditions are no longer met 
 ; 
 ;*****************************************************************************************
 ;*****************************************************************************************
@@ -1107,78 +1108,49 @@ OFC_CHK:
                       ;(Overrun Fuel Cut min RPM)     
     cpx  RPM          ; Compare it value in RPM
     bhi  OFC_CHK_DONE ; If (X)<(M), branch to OFC_CHK_DONE:
-                      ;(RPM is below minimum so no fuel cut)
-	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #veBins_E     ; Load index register Y with address of first configurable constant
-                      ; on buffer RAM page 1 (veBins_E)
-    ldx   $03DE,Y     ; Load X with value in buffer RAM page 1 offset 990 (OFCmap)
-                      ;(Overrun Fuel Cut min manifold pressure)     
-    cpx  Mapx10       ; Compare it to value in Manifold Absolute Pressure (KPAx10)
-    blo  OFC_CHK_DONE ; If (X)<(M), branch to OFC_CHK_DONE:
-                      ;(Manifold pressure is above minimum so no fuel cut)
+                      ;(RPM is below minimum so no fuel cut
 					  
 ;*****************************************************************************************
-; - We have permissives for Overrun Fuel Cut. Check to see if we are waiting for the OFC 
-;   timer to time out, or if OFC is already in place, or if we should start the timer for
-;   OFC. 
+; - We have permissives for Overrun Fuel Cut. Check to see if OFC is already on and being  
+;   being commanded off.
 ;*****************************************************************************************
 
-	brset  engine,OFCdelon,OFC_DELAY ; If "OFCdelon" bit of "engine" bit field is set, branch 
-	                               ; to OFC_DELAY: (waiting for the OFC timer to time out)
-	brset  engine,OFCon,OFC_LOOP   ; If "OFCdon" bit of "engine" bit field is set, branch 
-	                               ; to OFC_LOOP: (OFC is in place, waiting until 
-								   ; permissives are no longer met)(fall through)
-	
+	brclr  engine,OFCon,OFC_EN_CHK ; If "OFCon" bit of "engine" bit field is clear, branch 
+	                               ; to OFC_EN_CHK: (OFC is off, check to see if it is  
+								   ; being commanded on
+
+    brclr PortAbits,OFCdis,OFC_CHK_DONE ; If "OFCdis" bit of "PortAbits" is clear (Low), 
+	                  ; branch to OFC_CHK_DONE: (OFC is on and OFC disable switch is on, 
+					  ; so disable fuel cut)
+	bra  OFC_LOOP     ; branch to OFC_LOOP:(OFC is on, permissives are met and not being 
+	                  ; commanded off, keep looping until permissives are no longer met 
+					  ; or OFC has been commanded off)					  
+					  
 ;*****************************************************************************************
-; - We have permissives for OFC. We are not waiting for the OFC timer to time out and OFC 
-;   is not already in place. Load "OFCdel" (Overrun Fuel Cut delay duration) with the 
-;   value in "OFCdel_F". Set the "OFCdelon" flag in "engine" bit field.
-;*****************************************************************************************
-	
-	movb  #(BUF_RAM_P1_START>>16),EPAGE  ; Move $FF into EPAGE
-    ldy   #veBins_E       ; Load index register Y with address of first configurable 
-                        ; constant on buffer RAM page 1 (veBins)
-    ldd   $03E0,Y       ; Load Accu D with value in buffer RAM page 1 offset 992 
-                        ; (OFCdel_F) (Overrun Fuel Cut delay time)
-    stab  OFCDelCnt     ; Copy to "OFCDelCnt" (Overrun Fuel Cut delay counter)(decremented 
- 	                    ; every 100mS in rti_BPEM488.s)
-	bset  engine,OFCdelon ; Set "OFCdelon" bit of "engine" bit field 
-    bra   OFC_LOOP      ; Branch to OFC_LOOP: (fall through) 
-	
-;*****************************************************************************************
-; - We have permissives for OFC. We are waiting for the OFC timer to time out. Check to 
-;   see if "OFCdel" (Overrun Fuel Cut delay duration) has been decremented to zero.
-;*****************************************************************************************
-	
-OFC_DELAY:
-    ldaa OFCdelCnt     ; "OFCdelCnt" -> Accu A 
-	beq  SET_OFC       ; If "OFCdelCnt" = zero branch to SET_OFC:   
-    bra  OFC_LOOP   ; (Branch to OFC_LOOP: (Timer not timed out so fall through)
-	
-;*****************************************************************************************
-; - We have permissives for OFC. The OFC timer has timed out. Clear the "OFCdelon" bit and 
-;   set the "OFCon" bit of "engine bit field. In the final pulse width calculations the
-;   "OFCon" bit of "engine" bit field will be tested. If the bit is set the"PWtk"
-;   (injector pulsewidth time value) will be loaded with zero. 
+; - We have permissives for Overrun Fuel Cut and it is not being commanded off. Check to 
+;   see if OFC is off and being commanded on.
 ;*****************************************************************************************
 
-SET_OFC:
-    bclr engine,OFCdelon ; Clear "OFCdelon" bit of "engine" bit field
-	bset engine,OFCon  ; Set "OFCon" bit of "engine" bit field (This bit will be tested 
-	                   ; in the final pulse width calculations, if set the pulse width 
-					   ; will be set to zero
-    bra  OFC_LOOP      ; (Branch to OFC_LOOP:(keep looping until permissives are no 
-	                   ; longer met)
-						
+OFC_EN_CHK:
+	brset  engine,OFCon,OFC_LOOP   ; If "OFCon" bit of "engine" bit field is set, branch 
+	                               ; to OFC_LOOP: (OFC is already on so skip over)
+    brset PortAbits,OFCen,OFC_LOOP ; "If OFCen" bit of "PortAbits" is set (High), branch to 
+	                               ; OFC_LOOP: (OFC enable switch is off so skip over)
+	bset engine,OFCon              ; Set "OFCon" bit of "engine" bit field (This bit will be tested 
+	                               ; in the final pulse width calculations, if set the pulse width 
+					               ; will be set to zero
+	bra  OFC_LOOP                  ; branch to OFC_LOOP:(keep looping until permissives are no 
+	                               ; longer met or OFC has been commanded off)
+    
 ;*****************************************************************************************
-; - Permissives have not or no longer are being met. Clear the flags.
+; - Permissives have not or are no longer are being met or OFC has been commanded off.  
+;   Clear the flag.
 ;*****************************************************************************************
 
 OFC_CHK_DONE:
-    bclr engine,OFCdelon  ; Clear "OFCdelon" bit of "engine" bit field
 	bclr engine,OFCon     ; Clear "OFCon" bit of "engine" bit field
 	
-OFC_LOOP:
+OFC_LOOP:                
 
 #emac
 
