@@ -57,7 +57,9 @@
 ;* Version History:                                                                      *
 ;*    May 17 2020                                                                        *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 10 2020                                                          *     
+;*    - Update December 10 2020                                                          *
+;*    March 22 2021                                                                      *
+;*    - Add current gear code                                                            *     
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -361,6 +363,92 @@ RunKPH:
     bclr ICflgs,KPHcalc ; Clear "KPHcalc" bit of "ICflgs"
 	
 RunKPHDone:
+
+;*****************************************************************************************
+; - If we know the speed of the speed of the engine, the speed of the vehicle, the final 
+;   drive gear ratio, the transmission gear ratios and the drive wheel diameter, we 
+;   can calculate which gear the transmission is currently in. In this case the 
+;   Final drive ratio is 3.54:1
+;   1st gear ratio is 5.00:1, total first gear ratio is 3.54 * 5.00 = 17.7:1
+;   2nd gear ratio is 3.04:1, total 2nd gear ratio is 3.54 * 3.04 = 10.7616:1
+;   3d gear ratio is 1.67:1, total 3d gear ratio is 3.54 * 1.67 = 5.9118:1
+;   4th gear ratio is 1:1, total 4th gear ratio is 3.54 * 1.00 = 3.54:1
+;   5th gear ratio is 0.74:1, total 5th gear ratio is 3.54 * 0.74 = 2.6196:1
+;   Drive wheel diameter is 0.7774 m
+;   Drive wheel circumferance is 0.7774 * 3.142857143 = 2.4432571m, or .002443257Km
+;
+;   We can develop a K factor for each final ratio by converting engine RPM to RPH
+;   (1 RPM = 60 RPH), divide this by the total gear ratio and multiply the result by the 
+;   drive wheel circumferance in Km. The K factors are as follows:
+;   1st gear: 60 / 17.7 * .002443257 = .008282
+;   2nd gear: 60 / 10.7616 * .002443257 = .013622
+;   3d gear: 60 / 5.9118 * .002443257 = .024797
+;   4th gear: 60 / 3.54 * .002443257 = .041411
+;   5th gear: 60 / 2.6196 * .002443257 = .055961
+;
+;   If we divide the vehicle speed in KPH by the engine speed in RPM the result will be the 
+;   K factor of the current gear we are in. Because there may be errors in the speeds, exact 
+;   ratios and wheel diameter I use a range of K factor values as opposed to the exact 
+;   calculated value to determine the current gear.
+;
+;   K factor < .0109520 = 1st gear
+;   K factor >= .0109520 and < .0191955 = 2nd gear
+;   K factor >= .0191955 and < .0330900 = 3d gear
+;   K factor >= .0330900 and < .0486860 = 4th gear
+;   K factor >= .0486860 = 5th gear
+;
+;   The vehicle speed variable is in KPKx10. In order to use integer math this variable is 
+;   multilied by 10,000 for calculations. for the same reason the comparison values are also 
+;   multiplied by 10,000 and now become:
+;
+;   K factor < 109 = 1st gear
+;   K factor >= 109 and < 191 = 2nd gear
+;   K factor >= 191 and < 330 = 3d gear
+;   K factor >= 330 and < 486 = 4th gear
+;   K factor >= 486 = 5th gear
+;
+;   Because the vehicle speed period will overflow at ~4.317 KPH these calculations won't work
+;   at speeds less than this. Nor will they work if the transfer case is in low range as this 
+;   changes the final drive ratio.
+;
+;*****************************************************************************************
+
+    ldd  KPH         ; "KPH" (vehicle speed x 10) -> Accu D
+    ldy  #$2710      ; Decimal 10,000 -> Accu Y
+    emul             ;(D)x(Y)=Y:D "KPH" * 10000
+	ldx  RPM         ; "RPM" (engine RPM) -> Accu X
+	ediv             ;(Y:D)/(X)=Y;Rem->D ("KPH" * "10,000" )/ RPM 
+    sty  GearKCur    ; Copy result to "GearKCur"
+    cpy  #$006D      ; Compare "GearKCur" with decimal 109
+    blo  Gear1       ; If "GearKCur is less than 109 branch to Gear1:
+    cpy  #$00BF      ; Compare "GearKCur" with decimal 191
+    blo  Gear2       ; If "GearKCur is less than 191 branch to Gear2:
+    cpy  #$014A      ; Compare "GearKCur" with decimal 330
+    blo  Gear3       ; If "GearKCur is less than 330 branch to Gear3:
+    cpy  #$01E6      ; Compare "GearKCur" with decimal 486
+    blo  Gear4       ; If "GearKCur is less than 486 branch to Gear4:
+    bra  Gear5       ; "GearKCur is >= 486 so branch to Gear5:
+
+Gear1:
+    movb  #$01,GearCur  ; Load "GearCur" with decimal 1
+    bra   GearCurDone   ; Branch to GearCurDone: 
+
+Gear2:
+    movb  #$02,GearCur  ; Load "GearCur" with decimal 2
+    bra   GearCurDone   ; Branch to GearCurDone:
+
+Gear3:
+    movb  #$03,GearCur  ; Load "GearCur" with decimal 3
+    bra   GearCurDone   ; Branch to GearCurDone:
+
+Gear4:
+    movb  #$04,GearCur  ; Load "GearCur" with decimal 4
+    bra   GearCurDone   ; Branch to GearCurDone:
+
+Gear5:
+    movb  #$05,GearCur  ; Load "GearCur" with decimal 5
+
+GearCurDone:
 
 #emac
 

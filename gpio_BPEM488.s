@@ -125,7 +125,7 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*     PB1 - ASDRelay             (output, active high, initialize low)                  *
 ;*     PB2 - EngAlarm             (output, active high, initialize low)                  *
 ;*     PB3 - AIOT                 (output, active high, initialize low)                  *
-;*     PB4 - PB4out               (output, active high, initialize low) spare            *
+;*     PB4 - Tach out             (output, active high, initialize low)                  *
 ;*     PB5 - PB5out               (output, active high, initialize low) spare            *
 ;*     PB6 - PB6out               (output, active high, initialize low) spare            *
 ;*     PB7 - Not used             (output, initialize low)                               *
@@ -194,7 +194,7 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*     PP2 - TIM1 OC2 Inj3 (3&6)    (output, active high, initialize low)                * 
 ;*     PP3 - TIM1 OC3 Inj4 (5&8)    (output, active high, initialize low)                *  
 ;*     PP4 - TIM1 OC4 Inj5 (7&2)    (output, active high, initialize low)                * 
-;*     PP5 - TIM1 OC5 PP5out        (output, initialize low) spare                       * 
+;*     PP5 - TIM1 OC5 PP5out        (output, initialize low, spare)                      * 
 ;*     PP6 - Not used               (output, initialize low)                             *
 ;*     PP7 - Not used               (output, initialize low)                             *
 ;*                                                                                       *
@@ -303,7 +303,7 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 ;*****************************************************************************************
 ; - Initialize Port P. General purpose I/Os. Fuel Injector Control TIM1 OC0 through    
-;   OC4, OC5 spare, GPIO outputs pins 6 and 7 
+;   OC4, OC5 Tach out, GPIO outputs pins 6 and 7 
 ;*****************************************************************************************
 
     movb  #$FF,DDRP   ; Load %11111111 into Port P Data 
@@ -319,7 +319,7 @@ GPIO_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*     PP2 - TIM1 OC2 Inj3 (3&6)    (output, active high, initialize low)                * 
 ;*     PP3 - TIM1 OC3 Inj4 (5&8)    (output, active high, initialize low)                *  
 ;*     PP4 - TIM1 OC4 Inj5 (7&2)    (output, active high, initialize low)                * 
-;*     PP5 - TIM1 OC5 PP5out        (output, spare, initialize low)                      * 
+;*     PP5 - TIM1 OC5 PP5out        (output, initialize low, spare)                      * 
 ;*     PP6 - Not used               (output, initialize low)                             *
 ;*     PP7 - Not used               (output, initialize low)                             *
 ;*****************************************************************************************

@@ -58,7 +58,9 @@
 ;* Version History:                                                                      *
 ;*    May 13 2020                                                                        *
 ;*    - BPEM488 version begins (work in progress)                                        *
-;*    - Update December 10 2020                                                          *     
+;*    - Update December 10 2020                                                          *
+;*    March 19 2021                                                                      *
+;*    - Add code for PB4 Tach out                                                        *        
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -300,7 +302,16 @@ STATE_STATUS_done:
 ;*****************************************************************************************
 ; - Get three consecutive rising edge signals for engine RPM and 
 ;   calculate the period. This period is for one fifth of a revolution (72 degrees). 
-;   RPM, Ignition and  Fuel calculations are done in the main loop.                                               
+;   RPM, Ignition and  Fuel calculations are done in the main loop.
+;
+; - Also, the tachometer in the instrument cluster of the '95 Dodge Ram with the 8.0L V10
+;   is expecting a 12V square wave signal of 125Hz at 3000 engine RPM. In order to 
+;   generate the appropriate signal for this tachometer the following logic is applied:
+;   3000 RPM/60 = 50 Hz
+;   125/50 = 2.5 pulse per revolution, or 5 pulses per 2 revolution
+;   Because we have ten notches on the crank tone ring, if we toggle an output every 3 
+;   notches we can create the desired frequency. Then it is just a matter of hardware 
+;   conditioning the circuit to create the desired 12V square wave signal                                                 
 ;*****************************************************************************************
 ;*****************************************************************************************
 ; - Reload stall counter with compare value. Stall check is done in the main loop every 
@@ -337,7 +348,7 @@ CAS_3d:
     std   CASprd2tk       ; Copy result to "CASprd2tk"
     addd  CASprd1tk       ; (A:B)+(M:M+1)_->A:B "CASprd2tk" + "CASprd1tk" = "CASprdtk"
     bclr  ICflgs,Ch1_3d   ; Clear "Ch1_3d" bit of "ICflgs"
-	
+    
 ;*****************************************************************************************
 ; - All calculations that use the Crank Angle Sensor period need to know what the 
 ;   resolution is. The timers are initalized with a 5.12uS resoluion but switched to 
@@ -379,6 +390,14 @@ CAS256:
     clrw  Degx10tk512    ; Clear "Degx10tk512"	
 	
 CASprdDone:
+
+;*****************************************************************************************
+; - Toggle PB4 (Tach out signal)
+;*****************************************************************************************
+
+    ldaa  PORTB        ; Load ACC A with value in Port B
+    eora  #$10         ; Exclusive or with $00010000                                              
+    staa   PORTB       ; Copy to Port B (toggle Bit4, Tach out)
 	 
 ;*****************************************************************************************
 ; - Determine if the engine is cranking or running. The timer is initialized with a 

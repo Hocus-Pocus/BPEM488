@@ -297,7 +297,6 @@ DoStall:
    clrw FDpw         ; Fuel Delivery pulse width (PW - Deadband) (mS x 10)
    clrw PW           ; Running engine injector pulsewidth (mS x 10)
    clrw FDsec        ; Fuel delivery pulse width total over 1 second (mS)
-   clr  OFCdelCnt    ; Overrun Fuel Cut Delay counter 
    clr  TOEdurCnt    ; Throttle Opening Enrichment duration counter   
    bset StateStatus,SynchLost ; Set "SynchLost" bit of "StateStatus" bit field (bit1)
    movb #$FF,ECT_PTPSR        ; Load ECT_PTPSR with %11111111 (prescale 256, 5.12us  
@@ -366,22 +365,12 @@ NoStall:
 
 ;*****************************************************************************************
 ; - Every 100 mS: 
-;   Decrement "OFCdelcmp" (counter for Overrun Fuel Cut delay calculations)
 ;   Decrement "TOEtimcmp" (counter for Throttle Opening Enrichment calculations)
 ;   Save current TPS percent reading "TpsPctx10" as "TpsPctx10last" to compute "tpsDOT"  
 ;   in acceleration  enrichment section. 
 ;*****************************************************************************************
 
 #macro MILLISEC100_ROUTINES, 0
-
-;*****************************************************************************************
-; - Decrement "OFCdelCnt" Overrun Fuel Cut delay counter 
-;*****************************************************************************************
-    ldaa OFCdelCnt    ; "OFCdelCnt" -> Accu A
-    beq  NoOFCdelDec  ; If zero branch to NoOFCdelDec:     
-	dec  OFCdelCnt    ; Decrement Overrun Fuel Cut delay duration counter
-
-NoOFCdelDec:
 
 ;*****************************************************************************************
 ; - Decrement "TOEdurCnt" Throttle Opening Enrichment duration counter

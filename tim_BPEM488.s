@@ -57,7 +57,7 @@
 ;* Version History:                                                                      *
 ;*    May 17 2020                                                                        *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December 10 2020                                                          *   
+;*    - Update December 10 2020                                                          *
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -116,7 +116,7 @@ TIM_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 ;*     PP2 - TIM1 OC2 Inj3 (3&6)    (output, active high, initialize low)                * 
 ;*     PP3 - TIM1 OC3 Inj4 (5&8)    (output, active high, initialize low)                *  
 ;*     PP4 - TIM1 OC4 Inj5 (7&2)    (output, active high, initialize low)                * 
-;*     PP5 - TIM1 OC5 PP5out        (output, initialize low) spare                       * 
+;*     PP5 - TIM1 OC5 PP5out        (output, initialize low, spare)                      * 
 ;*     PP6 - Not used               (output, initialize low)                             *
 ;*     PP7 - Not used               (output, initialize low)   
 ;*****************************************************************************************
