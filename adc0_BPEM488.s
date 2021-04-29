@@ -61,7 +61,9 @@
 ;*    - Update December 13 2020                                                          * 
 ;*    - Update December 15 2020                                                          *
 ;*    - Update December 28 2020 Itrim and Ftrim enable changed from brclr to brset       * 
-;*    - Update January 6 2021 Corrected init macro                                       *        
+;*    - Update January 6 2021 Corrected init macro                                       *
+;*    April 28 2021                                                                      *
+;*    - Add baroADC averaging code code                                                  *         
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -327,9 +329,13 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
 
 #macro RUN_ATD0, 0
 
-    brclr ATD0STAT0,SCF,NoSeqCmplt  ; If the Sequence Cpmplet Flag is not set, branch to
-                                    ; NoSeqCmplt:
-                                    
+    brclr ATD0STAT0,SCF,NoSeqCmpltLB  ; If the Sequence Cpmplet Flag is not set, branch to
+                                      ; branch to NoSeqCmpltLB:
+    bra  Start_ADC_Read               ; Branch to Start_ADC_Read:              
+NoSeqCmpltLB:
+    job   NoSeqCmplt  ; Jump or branch to NoSeqCmplt: (long branch)
+    
+Start_ADC_Read:                                    
     movb  #SCF,ATD0STAT0 ; Set the Sequence Complete Flag of ATD0STAT0 to clear the flag
     ldd   ATD0DR0H    ; Load accumulator with value in ATD Ch00 
     std   batAdc      ; Copy to batAdc
@@ -345,8 +351,33 @@ ADC0_VARS_END_LIN	EQU	@     ; @ Represents the current value of the linear
     std   tpsAdc      ; Copy to tpsAdc
     ldd   ATD0DR6H    ; Load accumulator with value in ATD Ch06 
     std   egoAdc1     ; Copy to egoAdc1
+    
+;*****************************************************************************************
+;- From observation, the MPXA6115AC7U barometric pressure sensor has an ADC jitter from
+;  about 828 to 832 counts at sea level on the observed day. This doesn't create any
+;  major problems with the pulse width calculations but it is irritating so I average 
+;  the ADC readings over 64 iterations to stabilize the results.
+;*****************************************************************************************
+    
     ldd   ATD0DR7H    ; Load accumulator with value in ATD Ch07 
-    std   baroAdc     ; Copy to baroAdc
+;    std   baroAdc     ; Copy to baroAdc
+    addd  baroADCsum  ;(A:B)+(M:M+1)->A:B Add value in ATD Ch07 with value in "baroADCsum"
+    std   baroADCsum  ; Copy result to "baroADCsum" (update "baroADCsum"
+    inc   baroADCcnt  ; Increment "baroADCcnt" (increment counter to average "baroADC")
+    ldaa  baroADCcnt  ; Load Accu A with value in "baroADCcnt"
+    cmpa  #$40        ; (A)-(M) (Compare "baroADCcnt" with decimal 64)
+    beq   AVbaroADC   ; If equal branch to AVbaroADC:
+    bra   Do_ATD_Ch08 ; Branch to Do_ATD_Ch08 (compare not equal so fall through)
+
+AVbaroADC:
+    clr   baroADCcnt  ; Clear "baroADCcnt" (ready to start count again)
+    ldd   baroADCsum  ; Load accumulator with value in "baroADCsum" 
+    ldx   #$40        ; Load Accu X with decimal 64
+    idiv              ; (D)/(X)->X Rem->D ("baroADCsum / 64)
+    stx   baroADC     ; Copy result to "baroADC"
+    clrw  baroADCsum  ; Clear "baroADCsum" (ready to start sum again)
+        
+Do_ATD_Ch08:    
     ldd   ATD0DR8H    ; Load accumulator with value in ATD Ch08 
     std   eopAdc      ; Copy to eopAdc
     ldd   ATD0DR9H    ; Load accumulator with value in ATD Ch09 

@@ -57,10 +57,12 @@
 ;* Version History:                                                                      *
 ;*    May 25 2020                                                                        *
 ;*    - BPEM488 dedicated hardware version begins (work in progress)                     *
-;*    - Update December10 2020                                                           *
+;*    - Update December 10 2020                                                          *
 ;*    - Update January 6 2021 Revnum                                                     * 
 ;*    - Update March 19 2021 Revnum                                                      *
-;*    - Update March 22 2021 Revnum                                                      * 
+;*    - Update April 11 2021 Revnum                                                      *
+;*    - Update April 20 2021 Revnum                                                      *
+;*    - Update April 28 2021 Revnum                                                      * 
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -689,7 +691,7 @@ Signature:
                                ; to communicate   
 
 RevNum:
-     fcc 'BPEM488 03 22 2021                                       '
+     fcc 'BPEM488 04 28 2021                                       '
 ;         123456789012345678901234567890123456789012345678901234567  ; 57 bytes
 ;                              ; This should be changed with each code revision but 
                                ; string length must stay the same

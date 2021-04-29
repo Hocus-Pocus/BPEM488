@@ -60,7 +60,9 @@
 ;*    - BPEM488 version begins (work in progress)                                        *
 ;*    - Update December 10 2020                                                          *
 ;*    March 19 2021                                                                      *
-;*    - Add code for PB4 Tach out                                                        *        
+;*    - Add code for PB4 Tach out                                                        *
+;*    April 20 2021                                                                      *
+;*    - Change RPM period code                                                           *         
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -177,7 +179,8 @@ ICflgs:      ds 1  ; Input Capture flags bit field
 
 RPMcalc:    equ $01   ; %00000001 (Bit 0) (Do RPM calculations flag)
 KpHcalc:    equ $02   ; %00000010 (Bit 1) (Do VSS calculations flag)
-Ch1_2nd:    equ $04   ; %00000100 (Bit 2) (Ch1 2nd edge flag)
+;Ch1_2nd:    equ $04   ; %00000100 (Bit 2) (Ch1 2nd edge flag)
+Ch1_On:     equ $04   ; %00000100 (Bit 2) (Ch1 On and counting flag)
 Ch2alt:     equ $08   ; %00001000 (Bit 3) (Ch2 alt flag)
 Ch1_3d:     equ $10   ; %00010000 (Bit 4) (Ch1 3d edge flag)
 RevMarker:  equ $20   ; %00100000 (Bit 5) (Crank revolution marker flag)
@@ -324,30 +327,54 @@ STATE_STATUS_done:
     ldd   $03E6,Y       ; Load Accu A with value in buffer RAM page 1 offset 998 
                         ; "Stallcnt" (stall counter)(offset = 998) 
     std  Stallcnt       ; Copy to "Stallcnt" (no crank or stall condition counter)
-                        ; (1mS increments)				 
+                        ; (1mS increments)
 
-    brset ICflgs,Ch1_2nd,CAS_2nd ; If "Ch1_2nd" bit of "ICflgs" is set, branch to "CAS_2nd:"
     brset ICflgs,Ch1_3d,CAS_3d   ; If "Ch1_3d" bit of "ICflgs" is set, branch to "CAS_3d:"
+    brset ICflgs,Ch1_On,CAS_2nd  ; If "Ch1_On" bit of "ICflgs" is set, branch to "CAS_2nd:"
     ldd   ECT_TC1H               ; Load accu D with value in "ECT_TC1H"
     std   CAS1sttk               ; Copy to "CAS1sttk"
-    bset  ICflgs,Ch1_2nd         ; Set "Ch1_2nd" bit of "ICflgs"
+	bset  ICflgs,Ch1_On          ; Set "Ch1_On" bit of "ICflgs"
     bra   CASDone                ; Branch to CASDone:
-    
+	
 CAS_2nd:
-    ldd   ECT_TC1H        ; Load accu D with value in "ECT_TC1H"
-    std   CAS2ndtk        ; Copy to "CAS2ndtk"
-    subd  CAS1sttk        ; Subtract (A:B)-(M:M+1)=>A:B "CAS1sttk" from value in "ECT_TC7H"
-    std   CASprd1tk       ; Copy result to "CASprd1tk"                                 
-    bclr  ICflgs,Ch1_2nd  ; Clear "Ch1_2nd" bit of "ICflgs"
-    bset  ICflgs,Ch1_3d   ; Set "Ch1_3d" bit of "ICflgs"
-    bra   CASDone         ; Branch to CASDone:
+    bset  ICflgs,Ch1_3d          ; Set "Ch1_3d" bit of "ICflgs"
+    bra   CASDone                ; Branch to CASDone:
 
 CAS_3d:
-    ldd   ECT_TC1H        ; Load accu D with value in "ECT_TC1H"
-    subd  CAS2ndtk        ; Subtract (A:B)-(M:M+1)=>A:B "CAS2ndtk" from value in "ECT_TC7H"
-    std   CASprd2tk       ; Copy result to "CASprd2tk"
-    addd  CASprd1tk       ; (A:B)+(M:M+1)_->A:B "CASprd2tk" + "CASprd1tk" = "CASprdtk"
-    bclr  ICflgs,Ch1_3d   ; Clear "Ch1_3d" bit of "ICflgs"
+    ldd   ECT_TC1H          ; Load accu D with value in "ECT_TC1H"
+    std   CAS2ndtk          ; Copy to "CAS2ntk"
+    subd  CAS1sttk          ; Subtract (A:B)-(M:M+1)=>A:B "CAS1sttk" from value in "CAS2ntk"
+	                        ; Result in Acu D will be stored as either "CASprd512" or "CASprd256"
+							; depending on whether we are cranking or running
+	movw  CAS2ndtk,CAS1sttk  ; Copy value in "CAS2ndtk" to "CAS1sttk"
+    bclr  ICflgs,Ch1_3d     ; Clear "Ch1_3d" bit of "ICflgs"	
+                        
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; - Old Code  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;    brset ICflgs,Ch1_2nd,CAS_2nd ; If "Ch1_2nd" bit of "ICflgs" is set, branch to "CAS_2nd:"
+;    brset ICflgs,Ch1_3d,CAS_3d   ; If "Ch1_3d" bit of "ICflgs" is set, branch to "CAS_3d:"
+;    ldd   ECT_TC1H               ; Load accu D with value in "ECT_TC1H"
+;    std   CAS1sttk               ; Copy to "CAS1sttk"
+;    bset  ICflgs,Ch1_2nd         ; Set "Ch1_2nd" bit of "ICflgs"
+;    bra   CASDone                ; Branch to CASDone:
+    
+;CAS_2nd:
+;    ldd   ECT_TC1H        ; Load accu D with value in "ECT_TC1H"
+;    std   CAS2ndtk        ; Copy to "CAS2ndtk"
+;    subd  CAS1sttk        ; Subtract (A:B)-(M:M+1)=>A:B "CAS1sttk" from value in "ECT_TC7H"
+;    std   CASprd1tk       ; Copy result to "CASprd1tk"                                 
+;    bclr  ICflgs,Ch1_2nd  ; Clear "Ch1_2nd" bit of "ICflgs"
+;    bset  ICflgs,Ch1_3d   ; Set "Ch1_3d" bit of "ICflgs"
+;    bra   CASDone         ; Branch to CASDone:
+
+;CAS_3d:
+;    ldd   ECT_TC1H        ; Load accu D with value in "ECT_TC1H"
+;    subd  CAS2ndtk        ; Subtract (A:B)-(M:M+1)=>A:B "CAS2ndtk" from value in "ECT_TC7H"
+;    std   CASprd2tk       ; Copy result to "CASprd2tk"
+;    addd  CASprd1tk       ; (A:B)+(M:M+1)_->A:B "CASprd2tk" + "CASprd1tk" = "CASprdtk"
+;    bclr  ICflgs,Ch1_3d   ; Clear "Ch1_3d" bit of "ICflgs"
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
 ;*****************************************************************************************
 ; - All calculations that use the Crank Angle Sensor period need to know what the 
