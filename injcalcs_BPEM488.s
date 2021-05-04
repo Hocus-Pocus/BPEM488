@@ -728,7 +728,7 @@ N0_WUEcheck_LONG_BRANCH:
 ; - Free stack space (result in D)
 ;*****************************************************************************************
 
-    leas  10,SP     ; Stack pointer -> bottom of stack    
+    leas  10,SP     ; Stack pointer -> bottom of stack
     std   ASEcor    ; Copy result to "ASEcor" ASE correction (%)
     
 ;*****************************************************************************************
@@ -891,13 +891,8 @@ DoColdAdd:
 ; - Free stack space (result in D)
 ;*****************************************************************************************
 
-    leas  10,SP       ; Stack pointer -> bottom of stack    
+    leas  10,SP       ; Stack pointer -> bottom of stack
     stab  ColdAddpct  ; Copy result to "ColdAddpct" (%)(bins are byte values)
-
-;**********************************************************************
-; - De-Bug LED                                                        * in use inj calcs
-     bset  PORTB, PB2   ; Set Bit1, Port B (LED4, board 1 to 28)     *
-;**********************************************************************    
 
 ColdAddDone:
     
@@ -953,8 +948,8 @@ DoColdMul:
 ; - Free stack space (result in D)
 ;*****************************************************************************************
 
-    leas  10,SP         ; Stack pointer -> bottom of stack    
-    stab   ColdMulpct   ; Copy result to "ColdMulpct" (%) (bins are byte values)
+   leas  10,SP         ; Stack pointer -> bottom of stack
+   stab   ColdMulpct   ; Copy result to "ColdMulpct" (%) (bins are byte values)
 
 ColdMulDone:
 

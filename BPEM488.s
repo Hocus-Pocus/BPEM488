@@ -67,7 +67,10 @@
 ;*    April 20 2021                                                                      *
 ;*    - Change RPM period code                                                           *
 ;*    April 28 2021                                                                      *
-;*    - Add baroADC averaging code code                                                  *             
+;*    - Add baroADC averaging code code                                                  * 
+;*    May 4 2021                                                                         *
+;*    - Move macro calls for ST_ LU, VE_LU, AFR_LU, DWELL_COR_LU, BARO_COR_LU, and       *
+;*      MAT_COR_LU to work around corrupted returns                                      *             
 ;*****************************************************************************************
           
 ;*****************************************************************************************
@@ -1066,7 +1069,7 @@ MainLoop:
 ;**********************************************************************
 ; - De-Bug LED  PB4 out                                               *
 ;     bset  PORTB, PB4   ; Set bit4, Port B                           *
-;                        ; ("PB4 out" LED output LEDs Board)          *
+;                        ; ("PB4 out" LED output LEDs Board)(Tach out)*
 ;**********************************************************************
 ;**********************************************************************
 ; - De-Bug LED  PB5 out                                               *
@@ -1076,7 +1079,7 @@ MainLoop:
 ;**********************************************************************
 ; - De-Bug LED  PB6 out                                               *
 ;     bset  PORTB, PB6   ; Set bit6, Port B                           *
-;                        ; ("PB4 out" LED output LEDs Board)          *
+;                        ; ("PB6 out" LED output LEDs Board)          *
 ;**********************************************************************
 ;**********************************************************************
 ; - De-Bug LED  LOP Alarm                                             *
@@ -1086,7 +1089,7 @@ MainLoop:
 ;**********************************************************************
 ; - De-Bug LED  HOT Alarm                                             *
 ;     bset  PORTK, PK1   ; Set Bit1, Port K                           *
-;                        ; ("LOT Alarm" LED output LEDs Board)        *
+;                        ; ("HOT Alarm" LED output LEDs Board)        *
 ;**********************************************************************
 ;**********************************************************************
 ; - De-Bug LED  HET Alarm                                             *
@@ -1215,13 +1218,13 @@ NoKPHcalc:
 ; - Look up current value in ST table (STcurr) (degrees*10)
 ;*****************************************************************************************
 
-    ST_LU    ; Macro in injcalcs_BPEM.s
-
+;*    ST_LU    ; Macro in igncalcs_BPEM.s ; Macro call moved to state_BPEM488.s 5-4-21
+    
 ;*****************************************************************************************
 ; - Look up current value in Dwell Battery Adjustment Table (dwellcor)(% x 10)    
 ;*****************************************************************************************
 
-    DWELL_COR_LU    ; Macro in injcalcs_BPEM.s
+;*    DWELL_COR_LU    ; Macro in igncalcs_BPEM.s ; Macro call moved to state_BPEM488.s 5-4-21
 
 ;*****************************************************************************************
 ; The determination of whether the engine is cranking or running is made in the 
@@ -1267,7 +1270,7 @@ IgnCalcsDone:
 ; - Look up current value in VE table (veCurr)(%x10)
 ;*****************************************************************************************
 
-    VE_LU       ; Macro in injcalcsBPEM.s
+;*    VE_LU       ; Macro in injcalcsBPEM.s ; Macro call moved to state_BPEM488.s 5-4-21
     
 ;*****************************************************************************************
 ; The Air/Fuel Ratio of the fuel mixture affects how an engine will run. Generally 
@@ -1282,8 +1285,8 @@ IgnCalcsDone:
 ; - Look up current value in AFR table (afrCurr)(AFRx10)
 ;*****************************************************************************************
 
-    AFR_LU       ; Macro in injcalcsBPEM.s
-    	
+;*    AFR_LU       ; Macro in injcalcsBPEM.s ; Macro call moved to state_BPEM488.s 5-4-21
+    
 ;*****************************************************************************************
 ; - Injector dead band is the time required for the injectors to open and close and must
 ;   be included in the pulse width time. The amount of time will depend on battery voltge.
@@ -1301,13 +1304,13 @@ IgnCalcsDone:
 ; - Look up current value in Barometric Correction Table (barocor) 
 ;*****************************************************************************************
 
-    BARO_COR_LU       ; Macro in injcalcsBPEM.s
+;*    BARO_COR_LU       ; Macro in injcalcsBPEM.s ; Macro call moved to state_BPEM488.s 5-4-21
     
 ;*****************************************************************************************
 ; - Look up current value in MAT Air Density Table (matcor)           
 ;*****************************************************************************************
 
-    MAT_COR_LU       ; Macro in injcalcsBPEM.s
+;*    MAT_COR_LU       ; Macro in injcalcsBPEM.s ; Macro call moved to state_BPEM488.s 5-4-21
     
 ;*****************************************************************************************
 ; - Every mS:
@@ -1508,13 +1511,13 @@ NO_WUE_ASE:
 ;   accordingly.
 ;*****************************************************************************************
 
-    TOE_OFC_CALCS       ; Macro in injcalcsBPEM.s
+;    TOE_OFC_CALCS       ; Macro in injcalcsBPEM.s ; macro call moved to state BPEM488
 	
 ;*****************************************************************************************
 ; - Calculate injector pulse width for a running engine "PW" (mS x 10)
 ;*****************************************************************************************
 
-    RUN_PW_CALCS       ; Macro in injcalcsBPEM.s
+;    RUN_PW_CALCS       ; Macro in injcalcsBPEM.s  ; macro call moved to state BPEM488
     
 ;*****************************************************************************************
 ; - Calculate fuel burn Litres per Hour ("LpH"), Kilometers per Litre ("KmpL") and

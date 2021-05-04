@@ -63,6 +63,7 @@
 ;*    - Update April 11 2021 Revnum                                                      *
 ;*    - Update April 20 2021 Revnum                                                      *
 ;*    - Update April 28 2021 Revnum                                                      * 
+;*    - Update May 4 2021 Revnum                                                         * 
 ;*****************************************************************************************
 
 ;*****************************************************************************************
@@ -691,7 +692,7 @@ Signature:
                                ; to communicate   
 
 RevNum:
-     fcc 'BPEM488 04 28 2021                                       '
+     fcc 'BPEM488 05 04 2021                                       '
 ;         123456789012345678901234567890123456789012345678901234567  ; 57 bytes
 ;                              ; This should be changed with each code revision but 
                                ; string length must stay the same

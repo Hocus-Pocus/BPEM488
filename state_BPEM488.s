@@ -667,6 +667,17 @@ Notch_CT3_T1:
 ; - This is one of 4 Synchronization points but no event happens
 ;*****************************************************************************************
 
+    ST_LU             ; Macro in igncalcs_BPEM.s
+    DWELL_COR_LU      ; Macro in igncalcs_BPEM.s
+    VE_LU             ; Macro in injcalcsBPEM.s
+    AFR_LU            ; Macro in injcalcsBPEM.s
+    TOE_OFC_CALCS     ; Macro in injcalcsBPEM.s
+    RUN_PW_CALCS      ; Macro in injcalcsBPEM.s
+    BARO_COR_LU       ; Macro in injcalcsBPEM.s
+    MAT_COR_LU        ; Macro in injcalcsBPEM.s
+                      ; All of these Macro calls moved from the main loop in BPEM488.s
+                      ; as a work around for random corrupted returns 5-4-21
+
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT3_T2:
@@ -740,6 +751,17 @@ Notch_CT4_T5:
 ; - This is one of 4 Synchronization points but no event happens
 ;*****************************************************************************************
 
+    ST_LU             ; Macro in igncalcs_BPEM.s
+    DWELL_COR_LU      ; Macro in igncalcs_BPEM.s
+    VE_LU             ; Macro in injcalcsBPEM.s
+    AFR_LU            ; Macro in injcalcsBPEM.s
+    TOE_OFC_CALCS     ; Macro in injcalcsBPEM.s
+    RUN_PW_CALCS      ; Macro in injcalcsBPEM.s
+    BARO_COR_LU       ; Macro in injcalcsBPEM.s
+    MAT_COR_LU        ; Macro in injcalcsBPEM.s
+                      ; All of these Macro calls moved from the main loop in BPEM488.s
+                      ; as a work around for random corrupted returns 5-4-21
+
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT4_T6:
@@ -811,6 +833,17 @@ Notch_CT4_T9:
 ;*****************************************************************************************
 ; - No event
 ;*****************************************************************************************
+
+    ST_LU             ; Macro in igncalcs_BPEM.s
+    DWELL_COR_LU      ; Macro in igncalcs_BPEM.s
+    VE_LU             ; Macro in injcalcsBPEM.s
+    AFR_LU            ; Macro in injcalcsBPEM.s
+    TOE_OFC_CALCS     ; Macro in injcalcsBPEM.s
+    RUN_PW_CALCS      ; Macro in injcalcsBPEM.s
+    BARO_COR_LU       ; Macro in injcalcsBPEM.s
+    MAT_COR_LU        ; Macro in injcalcsBPEM.s
+                      ; All of these Macro calls moved from the main loop in BPEM488.s
+                      ; as a work around for random corrupted returns 5-4-21
 
     jmp   StateHandlersDone   ; Jump to StateHandlersDone:     
 
@@ -885,6 +918,17 @@ Notch_CT4_T3:
 ; - No event
 ;*****************************************************************************************
 
+    ST_LU             ; Macro in igncalcs_BPEM.s
+    DWELL_COR_LU      ; Macro in igncalcs_BPEM.s
+    VE_LU             ; Macro in injcalcsBPEM.s
+    AFR_LU            ; Macro in injcalcsBPEM.s
+    TOE_OFC_CALCS     ; Macro in injcalcsBPEM.s
+    RUN_PW_CALCS      ; Macro in injcalcsBPEM.s
+    BARO_COR_LU       ; Macro in injcalcsBPEM.s
+    MAT_COR_LU        ; Macro in injcalcsBPEM.s
+                      ; All of these Macro calls moved from the main loop in BPEM488.s
+                      ; as a work around for random corrupted returns 5-4-21
+                      
     jmp   StateHandlersDone   ; Jump to StateHandlersDone: 
 
 Notch_CT4_T4:    
@@ -958,6 +1002,17 @@ Notch_CT1_T7:
 ;*****************************************************************************************
 ; - No event
 ;*****************************************************************************************
+
+    ST_LU             ; Macro in igncalcs_BPEM.s
+    DWELL_COR_LU      ; Macro in igncalcs_BPEM.s
+    VE_LU             ; Macro in injcalcsBPEM.s
+    AFR_LU            ; Macro in injcalcsBPEM.s
+    TOE_OFC_CALCS     ; Macro in injcalcsBPEM.s
+    RUN_PW_CALCS      ; Macro in injcalcsBPEM.s
+    BARO_COR_LU       ; Macro in injcalcsBPEM.s
+    MAT_COR_LU        ; Macro in injcalcsBPEM.s
+                      ; All of these Macro calls moved from the main loop in BPEM488.s
+                      ; as a work around for random corrupted returns 5-4-21
 
     jmp   StateHandlersDone   ; Jump to StateHandlersDone:     
 
